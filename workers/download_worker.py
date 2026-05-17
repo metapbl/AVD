@@ -4,6 +4,7 @@
 
 from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
+from utils.file_utils import strip_ansi
 
 
 class DownloadWorker(QThread):
@@ -89,7 +90,7 @@ class DownloadWorker(QThread):
 
         if status == "downloading":
             # 진행률
-            pct_str = d.get("_percent_str", "0%").strip()
+            pct_str = strip_ansi(d.get("_percent_str", "0%")).strip()
             try:
                 pct = float(pct_str.replace("%", ""))
                 self.progress.emit(pct)
@@ -97,20 +98,22 @@ class DownloadWorker(QThread):
                 pass
 
             # 속도
-            speed = d.get("_speed_str", "").strip()
+            speed = strip_ansi(d.get("_speed_str", "")).strip()
             if speed:
                 self.speed.emit(speed)
 
             # 남은 시간
-            eta = d.get("_eta_str", "").strip()
+            eta = strip_ansi(d.get("_eta_str", "")).strip()
             if eta:
                 self.eta.emit(eta)
 
             # 파일 크기
-            size = d.get("_total_bytes_str", "") or \
-                   d.get("_total_bytes_estimate_str", "")
+            size = strip_ansi(
+                d.get("_total_bytes_str", "")
+                or d.get("_total_bytes_estimate_str", "")
+            ).strip()
             if size:
-                self.file_size.emit(size.strip())
+                self.file_size.emit(size)
 
         elif status == "finished":
             # 단일 스트림 완료 (병합 전)
