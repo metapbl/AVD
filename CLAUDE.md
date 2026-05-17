@@ -1,7 +1,7 @@
 # AV_Downloader — Claude 컨텍스트 파일
 
 > 이 파일은 새 세션 시작 시 Claude 에게 프로젝트 맥락을 즉시 제공하기 위한 컨텍스트 파일입니다.
-> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지로 본문을 붙여넣어 사용합니다.
+> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub raw URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "새 세션 시작 방법" 참조).
 
 ---
 
@@ -104,10 +104,26 @@
 
 ## 새 세션 시작 방법
 
-새 Claude 세션의 첫 메시지로 이 파일 본문을 통째로 붙여넣고, 다음 한 줄을 덧붙입니다:
+환경에 따라 두 가지 방식을 쓴다.
 
-> `WORKLOG.md` 의 "현재와 다음" 섹션에서 첫 번째 항목을 이어가 주세요.
+### claude.ai 웹 채팅 (현재 주력)
 
-또는 특정 작업을 지정:
+새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 raw URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
 
-> `WORKLOG.md` 의 ADR-XXX 결정을 검토하고, 관련된 후속 작업을 진행해 주세요.
+> 프로젝트 컨텍스트: https://raw.githubusercontent.com/ggoyong2-ctrl/AV_Downloader/main/CLAUDE.md
+>
+> 최신 작업 로그: https://raw.githubusercontent.com/ggoyong2-ctrl/AV_Downloader/main/WORKLOG.md
+>
+> 위 두 문서를 먼저 읽어주십시오.
+
+그 뒤 작업 지시는 다음 셋 중 하나로:
+
+- "WORKLOG.md 섹션 3 첫 번째 항목을 이어가 주세요" — 로드맵 우선 항목 진행
+- "ADR-NNN 의 후속 작업을 진행해 주세요" — 특정 결정의 후속
+- "[구체적 작업 지시]" — 명확한 작업이 있는 경우
+
+로컬에 push 하지 않은 변경분이 있다면 그 사실을 첫 메시지에 같이 알린다 (Claude 가 GitHub raw 에서 가져오는 것은 main 시점이므로).
+
+### Claude Code (터미널 도구)
+
+자동으로 본 파일을 읽으므로 별도 안내 불필요. 작업 지시만 한 줄로 시작한다.

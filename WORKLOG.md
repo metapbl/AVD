@@ -24,13 +24,7 @@
 
 ### 1.1. 새 세션 시작 방법
 
-새 Claude 세션의 첫 메시지로 `CLAUDE.md` 본문 전체를 붙여넣은 후, 다음 중 한 줄로 작업을 시작합니다.
-
-- "이 문서의 섹션 3 첫 번째 항목부터 이어가 주세요" — 로드맵 우선 항목 진행
-- "ADR-NNN 의 후속 작업을 진행해 주세요" — 특정 결정의 후속
-- "[구체적 작업 지시]" — 명확한 작업이 있는 경우
-
-`CLAUDE.md` 와 본 문서를 함께 제공하면 Claude 가 즉시 맥락을 잡습니다.
+`CLAUDE.md` 의 "새 세션 시작 방법" 섹션을 따른다. 환경별(claude.ai 웹 채팅 / Claude Code) 절차가 거기에 정리되어 있다.
 
 ### 1.2. 작업 완료 시 갱신 규칙
 
@@ -46,6 +40,28 @@
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
 
 ### 2026-05-17
+
+- **`docs(claude)`**: "새 세션 시작 방법" 섹션을 환경별 안내로 개정.
+  - claude.ai 웹 채팅 / Claude Code 두 환경 분리
+  - 웹 채팅에서는 본문 통째 붙여넣기 대신 GitHub raw URL 던지는 방식 채택 (Claude 가 `crawler` 로 직접 가져옴 — 진짜 HEAD 반영)
+  - 로컬 미푸시 변경분 환기 규칙 명문화
+
+- **`fix(ui)`**: 다운로드 진행률을 "N.N% 다운로드 중" 형식으로 상태 라벨에 표시.
+  - `workers/download_worker.py`: postprocess 후크에서 `Merger` 후처리기만 머지로 인식하도록 좁힘. 기존엔 `ThumbnailsConvertor` 등 모든 후처리기의 `started`에서 `merging` 시그널이 발사되어, 영상 스트림 종료 직후 라벨이 "병합 중"으로 잠기고 오디오 스트림 다운로드 동안에도 그대로 고정되는 UX 버그가 있었음
+  - `workers/download_worker.py`: `_output_path` 갱신을 모든 후처리기의 `finished`에서 수행하도록 변경. 체인 마지막 단계(`MoveFiles`)의 최종 경로를 반영
+  - `ui/download_item_widget.py`: `update_progress` 가드 추가 — 상태가 `DOWNLOADING`일 때만 상태 라벨을 "N.N% 다운로드 중"으로 갱신
+  - `ui/download_item_widget.py`: `update_status` 가 `self.item.status` 를 단일 출처로 갱신하도록 정리. `MERGING` 분기를 "병합 중" 라벨로 통일하고 ETA 자리에 박던 "병합 중..." 표기 제거
+  - 진단으로 확인된 후처리 체인 순서: `ThumbnailsConvertor` → `Merger` → `Metadata` → `EmbedThumbnail` → `MoveFiles` (yt-dlp 2026.3.17 기준)
+
+- **`docs(claude)`**: 코드 제시 규칙에 300줄 기준과 변경 지점 명시 규칙 추가.
+  - 약 300줄 미만 파일은 통째로 제시, 그 이상은 함수 단위 부분 발췌
+  - 파일 전체를 보낼 때는 코드 블록 바깥에 변경 지점을 한 문장으로 명시
+
+- **`fix(utils)`**: `format_duration` float/None 안전 처리 + `strip_ansi` 헬퍼 추가.
+
+- **`fix(ui)`**: yt-dlp 진행률 메시지의 ANSI 컬러 코드 제거.
+
+- **`docs(claude)`**: Claude 협업 규약 3줄 추가 (소스 코드 참조 / 코드 들여쓰기 / 코드 제시 전 확인).
 
 - **`feat(downloader)`**: 다운로드 파일에 썸네일·메타데이터 임베드 추가.
   - `EmbedThumbnail`, `FFmpegMetadata`, `FFmpegThumbnailsConvertor` (webp→jpg) 후처리기 체인 추가
@@ -69,12 +85,12 @@
   - `WORKLOG.md` 재구조화 — Changelog 와 ADR 분리
   - 협업 모델을 Opus 4.7 단일 체계로 명시 (2026-05-17 부)
 
-### 2026년 봄 (이전 세션, 정확한 일자 불명)
-
 - **`docs`**: Node.js 요구사항을 README 에 명시 (yt-dlp EJS 메커니즘 설명).
+
 - **`chore`**: 레포 URL 수정, README 본격 작성, `requirements.txt` UTF-8 정상화.
   - `utils/updater.py` 의 `GITHUB_REPO` 플레이스홀더를 `ggoyong2-ctrl/AV_Downloader` 로
   - PowerShell `>` 리다이렉션이 UTF-16 LE BOM 으로 만든 `requirements.txt` 를 UTF-8 로 재작성
+
 - **`feat`**: 최초 푸시 (Initial commit: yt-dlp based media downloader).
   - 초기 골격은 Claude Sonnet 4.6 작업
   - `config.json` 은 gitignore 처리 (사용자별 개인 경로 포함)
@@ -87,11 +103,11 @@
 
 ### 🔵 진행 중 (In Progress)
 
-*현재 없음. 작업 로그 6번(썸네일 문제)이 2026-05-17에 완전히 종결됨.*
+*현재 없음.*
 
 ### 🟡 단기 (Short‑term, 1~2 세션 내)
 
-- [ ] **테스트 영상 다양화 검증**
+- [x] **테스트 영상 다양화 검증** ✅ (2026-05-17 완료, ffprobe로 1·2·3 모두 확인)
   - 커스텀 썸네일이 있는 영상으로 임베드 정상 동작 확인
   - 4K/8K 영상에서 `bestvideo+bestaudio` 동작 확인 (VP9/AV1 코덱)
   - MP3 추출 시 ID3v2.3 태그가 Windows 탐색기에서 정상 표시되는지 확인
@@ -100,13 +116,23 @@
 - [ ] **README.md 업데이트**
   - CLAUDE.md 존재 및 사용법 한 줄 추가
   - WORKLOG.md 구조 변경 사실 한 줄 추가
+- [ ] **다운로드 항목 메타데이터 표시 결손**
+  - 파일 크기, 해상도, 비디오 코덱/포맷, 오디오 코덱/비트레이트 등이 UI에 표시되지 않음
+  - `DownloadWorker.file_size` 시그널은 정의돼 있으나 위젯 슬롯 연결이 없을 가능성 — `main_window.py` 라우팅 확인 필요
+  - 해상도/코덱/비트레이트는 `FormatInfo` 에 있을 가능성이 높으나 위젯이 받지 않음 — 데이터 흐름 설계 필요
+  - 발견: 2026-05-17 검증 중
+- [ ] **영상 길이가 항상 `0:00` 으로 표시되는 버그**
+  - `DownloadItemWidget._build_ui()` 에서 `format_duration(self.item.duration)` 을 라벨에 박는데, 위젯 생성 시점엔 `item.duration` 이 아직 0 (InfoWorker 완료 전)
+  - `_on_info_fetched` 에서 `item.duration` 은 갱신되나, `lbl_meta` 라벨 텍스트를 다시 갱신하는 경로가 없음
+  - 해결책 후보: `update_title` 과 같은 패턴의 `update_meta(uploader, duration)` 메서드 추가
+  - 발견: 2026-05-17 (사용자 지적 — "그전부터의 구조였습니다")
 
 ### 🟢 중기 (Mid‑term, 다음 마일스톤)
 
 - [ ] **취소 시 부분 파일 정리**
-  - `_on_cancel`/`_on_cancel_all`에서 .part, .ytdl 임시 파일 자동 삭제
+  - `_on_cancel`/`_on_cancel_all` 에서 .part, .ytdl 임시 파일 자동 삭제
 - [ ] **네트워크 재시도 로직**
-  - `workers/download_worker.py`에서 일시적 오류(타임아웃, 503 등)는 N회 자동 재시도
+  - `workers/download_worker.py` 에서 일시적 오류(타임아웃, 503 등)는 N회 자동 재시도
 - [ ] **포맷 선택 UX 개선**
   - "최고 화질 (자동)"과 "최고 호환 (MP4/H.264)" 분리 (ADR‑002 후보)
 - [ ] **다운로드 큐 동시성 제어**
@@ -115,7 +141,7 @@
 ### 🟣 장기 (Long‑term, 백로그)
 
 - [ ] **자동 업데이트 검증**
-  - `utils/updater.py`가 yt‑dlp 신버전 감지 시 안전하게 갱신하는지 확인
+  - `utils/updater.py` 가 yt‑dlp 신버전 감지 시 안전하게 갱신하는지 확인
 - [ ] **다국어 지원**
   - i18n 도입 (한국어/영어 기본)
 - [ ] **플레이리스트 일괄 다운로드**
@@ -203,6 +229,7 @@
 - `>` 리다이렉트는 기본적으로 UTF‑16 LE BOM으로 파일을 만든다. UTF‑8이 필요하면 `Out-File -Encoding utf8` 또는 `Set-Content -Encoding utf8`을 명시한다.
 - `git diff`가 멈추고 `:`이 보이면 less 페이저다. `q`로 종료, `Space`로 한 페이지, `G`로 끝으로 이동. 페이저 없이 보려면 `git --no-pager diff`.
 - 빈 파일의 Git SHA는 `e69de29bb2d1d6434b8b29ae775ad8c2e48c5391`.
+- PowerShell `git commit -m "..."` 에서 큰따옴표 안에 큰따옴표를 넣으려고 `""` 로 이스케이프하면 빈 문자열로 해석되어 인자가 끊긴다. 큰따옴표 안에는 작은따옴표를 쓰거나, 헤더 한 줄로만 커밋하고 본문은 WORKLOG 로 빼는 게 안전하다.
 
 ### Python · PySide6
 
@@ -216,6 +243,7 @@
 - 2025년부터 EJS(Embedded JavaScript)를 사용. Node.js/Deno/Bun 중 하나가 PATH에 있어야 함. 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
 - `info["thumbnail"]`은 보통 정확하지만, `info["thumbnails"]` 리스트에서 직접 선별할 수도 있다.
 - `bestvideo+bestaudio/best`는 코덱 효율 우선이라 H.264보다 파일이 작을 수 있다.
+- `postprocess_hook` 은 ffmpeg 머지만이 아니라 **모든 후처리기**의 started/finished 를 발사한다. `d["postprocessor"]` 값으로 단계를 구분해야 한다. 2026.3.17 기준 ADR-001 체인의 순서는 `ThumbnailsConvertor` → `Merger` → `Metadata` → `EmbedThumbnail` → `MoveFiles`. 또한 postprocess 후크에는 **퍼센트 정보가 없다** (`status`/`postprocessor`/`info_dict`/`_default_template` 4개 키만 제공). 머지·임베드 단계에 퍼센트 진행률 표시는 현 구조로 불가.
 
 ### Git
 
