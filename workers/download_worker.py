@@ -122,17 +122,28 @@ class DownloadWorker(QThread):
 
     def _on_postprocess(self, d: dict):
         """
-        yt-dlp 후처리 콜백
-        영상+음성 병합 시작/완료 시점에 호출됨
-        """
-        status = d.get("status")
+        yt-dlp 후처리 콜백.
 
-        if status == "started":
-            # 병합 시작 알림
+        ADR-001 이후 후처리 체인이 길어져, 한 다운로드에 다음 후처리기들이
+        순차적으로 발사된다 (yt-dlp 2026.3.17 기준 진단 확인):
+            ThumbnailsConvertor → Merger → Metadata → EmbedThumbnail → MoveFiles
+
+        이 중 사용자에게 "병합 중"으로 보여야 하는 단계는 영상+오디오를
+        실제로 머지하는 'Merger' 한 단계뿐이다. 다른 후처리기에서 merging
+        시그널을 발사하면, 영상 스트림 종료 직후 ThumbnailsConvertor 시점에
+        라벨이 "병합 중"으로 잠겨 이후 오디오 스트림 다운로드 동안에도
+        그대로 고정되는 UX 버그가 발생한다.
+        """
+        status        = d.get("status")
+        postprocessor = d.get("postprocessor", "")
+
+        if postprocessor == "Merger" and status == "started":
+            # 진짜 머지 단계 — 사용자에게 "병합 중" 표시
             self.merging.emit()
 
-        elif status == "finished":
-            # 병합 완료 - 최종 파일 경로 저장
+        if status == "finished":
+            # 모든 후처리기의 완료 이벤트에서 최종 파일 경로 갱신.
+            # 체인의 마지막 단계(MoveFiles 등)가 최종 경로를 갖는다.
             self._output_path = d.get("info_dict", {}).get(
                 "filepath",
                 self._output_path
