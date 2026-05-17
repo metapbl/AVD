@@ -63,21 +63,44 @@ def format_file_size(bytes_size: int) -> str:
     return f"{bytes_size:.2f} PB"
 
 
-def format_duration(seconds: int) -> str:
+def format_duration(seconds: int | float | None) -> str:
     """
     초 단위 영상 길이를 시:분:초 형태로 변환
     예: 3661 → "1:01:01"
+
+    yt-dlp 의 duration 은 영상에 따라 int 또는 float 로 반환되며,
+    라이브/일부 플랫폼에서는 None 일 수도 있다. 경계에서 정규화한다.
     """
-    if seconds <= 0:
+    if seconds is None:
+        return "0:00"
+    try:
+        total = int(seconds)
+    except (TypeError, ValueError):
+        return "0:00"
+    if total <= 0:
         return "0:00"
 
-    h = seconds // 3600
-    m = (seconds % 3600) // 60
-    s = seconds % 60
+    h = total // 3600
+    m = (total % 3600) // 60
+    s = total % 60
 
     if h > 0:
         return f"{h}:{m:02d}:{s:02d}"
     return f"{m}:{s:02d}"
+
+
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def strip_ansi(text: str) -> str:
+    """
+    yt-dlp 가 진행률 메시지에 섞어 보내는 ANSI 컬러 이스케이프 시퀀스를 제거한다.
+    CLI 에서는 색상 표시지만 GUI 의 QLabel 은 해석하지 못해
+    □[0;32m 처럼 깨져 보인다. 출구(워커 → GUI) 단계에서 한 번 통과시킨다.
+    """
+    if not text:
+        return text
+    return _ANSI_ESCAPE_RE.sub("", text)
 
 
 def open_folder(path: str):
