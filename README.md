@@ -18,6 +18,10 @@ yt-dlp 기반의 영상·오디오 다운로더. YouTube를 비롯해 yt-dlp가 
   - Windows: [공식 빌드](https://www.gyan.dev/ffmpeg/builds/) 다운로드 후 PATH 등록
   - 또는 `winget install Gyan.FFmpeg`
 - **운영체제**: 현재 Windows 환경에서 검증되었습니다. macOS/Linux는 일부 기능(폴더 열기 등)이 동작하지 않을 수 있습니다.
+- **Node.js** (선택, 그러나 YouTube 다운로드에는 사실상 필수) — yt-dlp가 YouTube의 자바스크립트 챌린지를 해결하기 위해 외부 JS 런타임을 요구합니다.
+  - Windows: [Node.js 공식 사이트](https://nodejs.org/) 또는 `winget install OpenJS.NodeJS`
+  - 자세한 내용: [yt-dlp EJS Wiki](https://github.com/yt-dlp/yt-dlp/wiki/EJS)
+
 
 ## 설치
 
