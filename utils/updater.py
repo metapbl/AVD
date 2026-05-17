@@ -12,7 +12,7 @@ from pathlib import Path
 APP_VERSION = "1.0.0"
 
 # GitHub 저장소 주소 (나중에 본인 저장소로 변경)
-GITHUB_REPO = "본인아이디/AV_Downloader"
+GITHUB_REPO = "ggoyong2-ctrl/AV_Downloader"
 
 # yt-dlp GitHub API 주소
 YTDLP_API_URL = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
