@@ -50,6 +50,12 @@ class DownloadWorker(QThread):
         스레드 실행 진입점
         Downloader.download() 호출 후 시그널로 결과 전달
         """
+        # 취소 예외 타입을 import (yt-dlp 버전에 따라 위치가 다를 수 있어 안전 처리)
+        try:
+            from yt_dlp.utils import DownloadCancelled
+        except ImportError:
+            DownloadCancelled = None
+
         try:
             self._downloader.download(
                 url              = self.url,
@@ -60,15 +66,15 @@ class DownloadWorker(QThread):
                 postprocess_hook = self._on_postprocess,
             )
 
-            # 취소되지 않았으면 완료 시그널 전송
+            # 정상 완료
             self.finished.emit(self._output_path)
 
         except Exception as e:
-            err = str(e)
-            if "취소" in err or "Cancelled" in err:
+            # 취소 예외는 타입으로 판별 (문자열 매칭은 언어/버전에 취약)
+            if DownloadCancelled is not None and isinstance(e, DownloadCancelled):
                 self.cancelled.emit()
             else:
-                self.error.emit(err)
+                self.error.emit(str(e))
 
     def cancel(self):
         """외부에서 취소 요청"""

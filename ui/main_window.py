@@ -20,7 +20,7 @@ from utils.config_manager import ConfigManager
 from utils.updater import YtdlpUpdater
 from utils.file_utils import open_folder
 from core.info_fetcher import VideoInfo, FormatInfo
-
+from workers.thumbnail_worker import ThumbnailWorker
 
 class MainWindow(QMainWindow):
     """AV Downloader 메인 윈도우"""
@@ -32,7 +32,8 @@ class MainWindow(QMainWindow):
         self.widgets        : dict[str, DownloadItemWidget] = {}
         self.info_workers   : dict[str, InfoWorker]         = {}
         self.dl_workers     : dict[str, DownloadWorker]     = {}
-
+        self._thumb_workers: dict[str, ThumbnailWorker] = {}
+        
         self.setWindowTitle("AV Downloader")
         self.setMinimumSize(800, 600)
         self._build_ui()
@@ -193,16 +194,44 @@ class MainWindow(QMainWindow):
         widget.update_status(DownloadStatus.WAITING)
         self.status_bar.showMessage("화질을 선택해 주세요.")
 
-        # 썸네일 다운로드 시작
+        # ── 썸네일 다운로드 ──
+        # v7: QPixmap 이 아닌 bytes 를 받는 워커로 교체.
+        #     item_id 동봉 + dict 로 관리 (늦은 시그널 차단).
         if info.thumbnail:
             from workers.thumbnail_worker import ThumbnailWorker
-            thumb_worker = ThumbnailWorker(info.thumbnail)
-            thumb_worker.finished.connect(widget.update_thumbnail)
+            # 타입 보장 — 과거 버전이 list 로 초기화해뒀던 경우까지 방어
+            if not isinstance(getattr(self, "_thumb_workers", None), dict):
+                self._thumb_workers = {}
+
+            # 같은 item_id 의 이전 워커가 남아있으면 무효화
+            prev = self._thumb_workers.pop(item_id, None)
+            if prev is not None:
+                try:
+                    prev.cancel()
+                except Exception:
+                    pass
+
+            thumb_worker = ThumbnailWorker(item_id, info.thumbnail)
+            thumb_worker.finished.connect(
+                self._on_thumb_ready, Qt.ConnectionType.QueuedConnection
+            )
+            thumb_worker.failed.connect(
+                self._on_thumb_failed, Qt.ConnectionType.QueuedConnection
+            )
+            # 워커 종료 시 자동 정리
+            thumb_worker.finished.connect(
+                lambda iid, _d, w=thumb_worker: self._cleanup_thumb_worker(w)
+            )
+            thumb_worker.failed.connect(
+                lambda iid, _r, w=thumb_worker: self._cleanup_thumb_worker(w)
+            )
+            self._thumb_workers[item_id] = thumb_worker
             thumb_worker.start()
-            # 워커 참조 보관 (GC 방지)
-            if not hasattr(self, '_thumb_workers'):
-                self._thumb_workers = []
-            self._thumb_workers.append(thumb_worker)
+
+        # 다이얼로그 띄우기 직전 — 위젯 트리가 paint-ready 가 되도록 한 번 flush.
+        # 이게 없으면 modal 이벤트 루프가 paint 를 한 번 건너뛰는 경계 케이스 발생.
+        from PySide6.QtWidgets import QApplication
+        QApplication.processEvents()
 
         # 화질 선택 다이얼로그 표시
         dialog = FormatSelectDialog(info, self)
@@ -213,6 +242,42 @@ class MainWindow(QMainWindow):
             lambda: self._on_remove(item_id)
         )
         dialog.exec()
+        
+    def _on_thumb_ready(self, item_id: str, data: bytes):
+        """
+        썸네일 워커 완료 — GUI 스레드에서 QPixmap 생성하여 위젯에 전달.
+        v7 신규: bytes → 위젯 내부에서 QPixmap 변환.
+        """
+        widget = self.widgets.get(item_id)
+        if widget is None:
+            # 사용자가 이미 항목을 지운 경우 — 무시
+            return
+        try:
+            widget.update_thumbnail(data)
+        except RuntimeError:
+            # 위젯이 파괴된 경우
+            pass
+
+    def _on_thumb_failed(self, item_id: str, reason: str):
+        """썸네일 다운로드 실패 — 라벨은 기본 이모지 유지하고 조용히 무시."""
+        # 필요 시 status_bar 로깅:
+        # self.status_bar.showMessage(f"썸네일 로드 실패: {reason}", 3000)
+        pass
+
+    def _cleanup_thumb_worker(self, worker):
+        """완료/실패한 썸네일 워커를 dict 에서 제거."""
+        if not hasattr(self, "_thumb_workers"):
+            return
+        # 값으로 찾아 제거
+        for iid, w in list(self._thumb_workers.items()):
+            if w is worker:
+                self._thumb_workers.pop(iid, None)
+                break
+        # QThread 정리 — finished 이후엔 안전하게 deleteLater
+        try:
+            worker.deleteLater()
+        except Exception:
+            pass
 
     def _on_info_error(self, item_id: str, err: str):
         """영상 정보 추출 실패"""
@@ -314,9 +379,25 @@ class MainWindow(QMainWindow):
 
     def _on_cancel_all(self):
         """전체 취소 버튼 클릭"""
-        for worker in self.dl_workers.values():
-            if worker.isRunning():
-                worker.cancel()
+        # 진행 중인 워커가 있는지 먼저 확인
+        active = [w for w in self.dl_workers.values() if w.isRunning()]
+        if not active:
+            self.status_bar.showMessage("취소할 다운로드가 없습니다.")
+            return
+
+        # 실수 방지 - 사용자 확인
+        reply = QMessageBox.question(
+            self,
+            "전체 취소",
+            f"진행 중인 다운로드 {len(active)}개를 모두 취소하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,  # 기본값은 No로 (실수 안전장치)
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        for worker in active:
+            worker.cancel()
 
     def _on_open_folder(self, item_id: str):
         """폴더 열기 버튼 클릭"""
@@ -326,6 +407,16 @@ class MainWindow(QMainWindow):
 
     def _on_remove(self, item_id: str):
         """항목 삭제 버튼 클릭"""
+        # 진행 중 썸네일 워커 무효화 — dict 타입 보장
+        tw_dict = getattr(self, "_thumb_workers", None)
+        if isinstance(tw_dict, dict):
+            tw = tw_dict.pop(item_id, None)
+            if tw is not None:
+                try:
+                    tw.cancel()
+                except Exception:
+                    pass
+
         widget = self.widgets.pop(item_id, None)
         if widget:
             self.list_layout.removeWidget(widget)

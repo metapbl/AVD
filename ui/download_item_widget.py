@@ -220,12 +220,38 @@ class DownloadItemWidget(QWidget):
         self.lbl_title.setText(title)
         self.item.title = title
 
-    def update_thumbnail(self, pixmap: QPixmap):
-        """썸네일 이미지 업데이트"""
+    def update_thumbnail(self, data: bytes):
+        """
+        썸네일 이미지 업데이트.
+
+        v7 변경: QPixmap 인자 → bytes 인자.
+        QPixmap 생성·디코드를 이 메서드(GUI 스레드) 안에서 수행한다.
+        워커 스레드에서 만든 QPixmap 은 paint engine 에서 빈 텍스처로
+        그려지는 버그가 있어 GUI 스레드 단독 생성이 필수.
+        """
+        if not data:
+            return
+
+        pixmap = QPixmap()
+        if not pixmap.loadFromData(data):
+            # 디코드 실패 — 라벨은 기본 이모지 유지
+            return
+
+        # 라벨의 실제 크기 사용. 초기 0x0 회피용으로 fixed size fallback.
+        target_w = self.lbl_thumb.width()  or 120
+        target_h = self.lbl_thumb.height() or 68
+
         scaled = pixmap.scaled(
-            120, 68,
+            target_w, target_h,
             Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
+            Qt.TransformationMode.SmoothTransformation,
         )
-        self.lbl_thumb.setPixmap(scaled)
-        self.lbl_thumb.setText("")
+
+        try:
+            self.lbl_thumb.setPixmap(scaled)
+            self.lbl_thumb.setText("")
+            # paint 강제 트리거 — modal 다이얼로그 직후의 paint 누락 방어
+            self.lbl_thumb.update()
+        except RuntimeError:
+            # 위젯이 이미 삭제된 경우 (사용자가 항목을 빠르게 지웠을 때)
+            pass
