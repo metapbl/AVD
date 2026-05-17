@@ -236,3 +236,6 @@ downloads/
 # 환경설정·민감정보
 .env
 config.local.*
+
+# 사용자별 개인 설정 (검토 후 처리 예정)
+config.json
