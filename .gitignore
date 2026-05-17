@@ -216,3 +216,23 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# === Custom: yt-dlp downloader project ===
+
+# 다운로드 산출물
+downloads/
+*.mp4
+*.mp3
+*.m4a
+*.webm
+*.mkv
+*.part
+*.ytdl
+
+# 로그·임시파일
+*.log
+*.tmp
+
+# 환경설정·민감정보
+.env
+config.local.*
