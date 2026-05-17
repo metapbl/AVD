@@ -243,3 +243,6 @@ config.json
 .vscode/
 
 all_changes.txt
+
+# Backup files
+*.bak

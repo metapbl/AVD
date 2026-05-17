@@ -1,208 +1,230 @@
 # AV_Downloader 작업 로그
 
-> 이 문서는 AV_Downloader 프로젝트의 작업 진척과 잔여 과제를 추적합니다.
-> 다음 세션에서 AI 보조를 받을 때 이 파일을 먼저 공유하면 즉시 맥락을 잡을 수 있습니다.
+> 이 문서는 AV_Downloader 의 작업 진척, 결정 사항, 잔여 과제를 추적합니다.
+> 프로젝트의 변하지 않는 정보(기술 스택·폴더 구조·코딩 컨벤션 등)는 `CLAUDE.md` 에 별도로 관리하며, 이 파일은 시간과 함께 자라는 정보만 담습니다.
 
 **최종 업데이트**: 2026-05-17
 
 ---
 
-## 1. 프로젝트 개요
+## 문서 구조
 
-- **리포지토리**: https://github.com/ggoyong2-ctrl/AV_Downloader
-- **로컬 경로**: `C:\Users\ggoyo_zhxlvdr\AV_Downloader`
-- **성격**: yt-dlp 기반 영상·오디오 다운로더 (PySide6 GUI, 다크 테마)
-- **원작성**: Claude Sonnet 4.6
-- **검토·개선**: Claude Opus 4.7과 협업 중
-- **개발 환경**: Windows, Python 3.13/3.14, PowerShell, VS Code, `venv` 활성화
+이 파일은 네 섹션으로 구성됩니다.
 
-## 2. 의존성 (requirements.txt)
+- **섹션 1 — 빠른 안내**: 새 세션 시작 시 어떻게 이 문서를 활용할지.
+- **섹션 2 — Changelog**: 시간 역순으로 모든 의미 있는 변경 사항을 누적.
+- **섹션 3 — 현재와 다음**: 진행 중인 작업과 단기·중기·장기 로드맵.
+- **섹션 4 — ADR (결정 기록)**: 아키텍처·중대 버그 해결 등 큰 결정의 맥락과 결과.
 
-```
-certifi==2026.4.22
-charset-normalizer==3.4.7
-idna==3.15
-PySide6==6.11.1
-PySide6_Addons==6.11.1
-PySide6_Essentials==6.11.1
-requests==2.34.2
-shiboken6==6.11.1
-urllib3==2.7.0
-yt-dlp==2026.3.17
-```
+각 섹션은 서로 다른 시간 척도를 가집니다. 섹션 2 는 한 번 적은 줄을 절대 지우지 않고 누적됩니다. 섹션 3 은 유동적이며 항목이 완료되면 섹션 2 로 옮깁니다. 섹션 4 는 큰 결정이 있을 때만 새 항목이 추가됩니다.
 
-**시스템 요구사항**: Python 3.10+, ffmpeg (PATH 등록), Node.js (YouTube의 JS 챌린지 해결용, 사실상 필수)
+---
 
-## 3. 폴더 구조
+## 1. 빠른 안내
 
-```
-AV_Downloader/
-├── main.py                          # 진입점
-├── config.json                      # 사용자 설정 (gitignore됨)
-├── requirements.txt
-├── run.bat
-├── README.md
-├── WORKLOG.md                       # 이 파일
-├── .gitignore
-├── core/
-│   ├── downloader.py                # yt-dlp 다운로드 실행
-│   └── info_fetcher.py              # 영상 정보 추출
-├── models/
-│   └── download_item.py             # 데이터 클래스, 상태 Enum
-├── ui/
-│   ├── main_window.py               # 메인 윈도우
-│   ├── download_item_widget.py      # 목록 항목 위젯
-│   ├── add_link_dialog.py           # URL 입력 다이얼로그
-│   ├── format_select_dialog.py     # 화질 선택 다이얼로그
-│   └── preferences_dialog.py        # 환경설정 다이얼로그
-├── utils/
-│   ├── config_manager.py            # 설정 JSON 영속화
-│   ├── file_utils.py                # 파일명·경로 유틸
-│   └── updater.py                   # yt-dlp/앱 자체 업데이트
-└── workers/
-    ├── download_worker.py           # 다운로드 백그라운드 스레드
-    ├── info_worker.py               # 정보 추출 백그라운드 스레드
-    └── thumbnail_worker.py          # 썸네일 다운로드 백그라운드 스레드
-```
+### 1.1. 새 세션 시작 방법
 
-## 4. 완료된 커밋 (시간순)
+새 Claude 세션의 첫 메시지로 `CLAUDE.md` 본문 전체를 붙여넣은 후, 다음 중 한 줄로 작업을 시작합니다.
 
-1. **`Initial commit: yt-dlp based media downloader`**
-   - 최초 푸시. `config.json`은 gitignore로 제외 (사용자별 개인 경로 포함)
-2. **`chore: fix repo URL, add README, populate requirements.txt`**
-   - `utils/updater.py`의 `GITHUB_REPO` 플레이스홀더 수정 (`"본인아이디/AV_Downloader"` → `"ggoyong2-ctrl/AV_Downloader"`)
-   - `README.md` 본격 작성 (설치, 실행, 요구사항)
-   - `requirements.txt` UTF-8 정상화 (PowerShell `>` 리다이렉션이 UTF-16 LE BOM으로 만들었던 것)
-3. **`docs: clarify Node.js requirement for YouTube JS challenges`**
-   - Node.js 요구사항 README 추가 (yt-dlp EJS 메커니즘 설명)
+- "이 문서의 섹션 3 첫 번째 항목부터 이어가 주세요" — 로드맵 우선 항목 진행
+- "ADR-NNN 의 후속 작업을 진행해 주세요" — 특정 결정의 후속
+- "[구체적 작업 지시]" — 명확한 작업이 있는 경우
 
-## 5. 미커밋 상태의 작업
+`CLAUDE.md` 와 본 문서를 함께 제공하면 Claude 가 즉시 맥락을 잡습니다.
 
-다음 변경들이 로컬에서 작업되었으나 아직 커밋되지 않았습니다. **디버그 print가 잔존**하므로 정식 커밋 전 정리 필요합니다.
+### 1.2. 작업 완료 시 갱신 규칙
 
-- `workers/download_worker.py`
-  - 취소 판별을 문자열 매칭에서 `yt_dlp.utils.DownloadCancelled` 타입 기반으로 변경
-- `ui/main_window.py`
-  - `__init__`에 `self._thumb_workers: list = []` 추가
-  - `_on_info_fetched`의 썸네일 워커 생성부에 cleanup 콜백 연결
-  - `_cleanup_thumb_worker` 메서드 추가
-  - `_on_cancel_all`에 확인 다이얼로그 추가 (기본 버튼 No)
-- `ui/download_item_widget.py`
-  - `update_thumbnail`에 빈 픽스맵 방어 추가
-  - **디버그 print 잔존**
-- `core/info_fetcher.py`
-  - `_pick_thumbnail` 메서드 추가 (jpg/png 우선 선택)
-  - **디버그 print 잔존**
-- `core/downloader.py`
-  - 네트워크 재시도 옵션 추가: `retries`, `fragment_retries`, `socket_timeout`, `retry_sleep_functions`
-- `workers/thumbnail_worker.py`
-  - QPixmap에서 QImage 기반으로 변경 (스레드 안전성 가설 — 결과적으로 효과 없었음)
-  - **디버그 print 잔존**
+- 의미 단위가 끝나 커밋이 발생하면 → 섹션 2 (Changelog) 의 맨 위에 한 줄 추가
+- 큰 결정(아키텍처·중대 버그 해결)이 있으면 → 섹션 4 (ADR) 에 새 항목 추가
+- 새 할 일이 생기면 → 섹션 3 (현재와 다음) 의 적절한 위치에 추가
+- 섹션 3 의 항목이 완료되면 → 섹션 2 로 이동하며 섹션 3 에서는 제거 또는 ✅ 표시
 
-## 6. 진행 중 / 미해결: 썸네일 표시 버그
+---
 
-### 증상
+## 2. Changelog (시간 역순)
 
-영상에 따라 썸네일이 표시되지 않고 🎬 이모지가 그대로 남는 현상.
+> [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
 
-- **표시 안 됨**: `https://www.youtube.com/watch?v=PPKuqgyzCXc`
-- **표시 됨**: `https://www.youtube.com/watch?v=F644LGcDYUY` (윤찬임 - 쇼팽 왈츠)
+### 2026-05-17
 
-### 결정적 단서
+- **`feat(downloader)`**: 다운로드 파일에 썸네일·메타데이터 임베드 추가.
+  - `EmbedThumbnail`, `FFmpegMetadata`, `FFmpegThumbnailsConvertor` (webp→jpg) 후처리기 체인 추가
+  - `writethumbnail`, `embedthumbnail` 플래그 활성화
+  - MP3 의 경우 `-id3v2_version 3 -write_id3v1 1` 강제 (Windows 탐색기·구형 음악 플레이어 호환)
+  - 관련: ADR-001
 
-진단용 print 결과, **모든 단계가 정상 동작**하는데도 화면에는 안 보임:
+- **`fix(ui)`**: 워커 라이프사이클, 스레드 안전성, 취소 가드 정비.
+  - 썸네일 워커: QPixmap 생성을 워커 스레드 → GUI 스레드로 이동, raw bytes 만 시그널로 전달
+  - `ThumbnailWorker` 시그니처에 `item_id` 추가 — 늦은 시그널이 엉뚱한 위젯에 꽂히는 사고 방지
+  - `_thumb_workers` 를 list → dict 로 전환, `cancel()` 메서드 추가
+  - `_on_cancel_all`: 활성 워커 사전 체크 + 확인 다이얼로그 (실수 방지)
+  - `DownloadWorker`: 취소 예외를 문자열 매칭 대신 `isinstance(DownloadCancelled)` 로 판정
+  - 관련: ADR-001
 
-```
-[InfoFetcher] thumbnail = 'https://i.ytimg.com/vi/PPKuqgyzCXc/maxresdefault.jpg'
-[InfoFetcher] thumbnails 개수 = 42
-[ThumbnailWorker] 1.시작: https://i.ytimg.com/vi/PPKuqgyzCXc/maxresdefault.jpg
-[ThumbnailWorker] 2.응답 수신: status=200, bytes=38729
-[ThumbnailWorker] 3.디코딩: loaded=True, isNull=False, size=PySide6.QtCore.QSize(1280, 720)
-[ThumbnailWorker] 4.emit 직전
-[ThumbnailWorker] 5.emit 완료
-[Widget] update_thumbnail 호출: isNull=False, size=PySide6.QtCore.QSize(1280, 720)
-[Widget] setPixmap 완료
-```
+- **`chore`**: `.vscode/` 를 `.gitignore` 에 추가.
+  - VS Code 워크스페이스 설정이 레포로 들어가는 것을 방지
 
-화면에는 비디오플레이어 아이콘(🎬) 그대로. setPixmap은 호출되었으나 픽스맵이 그려지지 않음.
+- **`docs`**: 작업 로그 시스템을 Keep a Changelog + ADR 형식으로 재구조화.
+  - `CLAUDE.md` 신규 작성 — 변하지 않는 프로젝트 컨텍스트
+  - `WORKLOG.md` 재구조화 — Changelog 와 ADR 분리
+  - 협업 모델을 Opus 4.7 단일 체계로 명시 (2026-05-17 부)
 
-### 시도했으나 실패한 가설
+### 2026년 봄 (이전 세션, 정확한 일자 불명)
 
-1. **WebP 디코딩 문제** — 실패. 문제 영상의 thumbnail URL은 jpg였음.
-2. **QPixmap 스레드 안전성** — 실패. 워커를 QImage 기반으로 바꾸고 메인 스레드에서 QPixmap.fromImage로 변환했으나 동일 증상.
-3. **maxresdefault 404** — 실패. 브라우저로 직접 열면 정상 표시됨.
+- **`docs`**: Node.js 요구사항을 README 에 명시 (yt-dlp EJS 메커니즘 설명).
+- **`chore`**: 레포 URL 수정, README 본격 작성, `requirements.txt` UTF-8 정상화.
+  - `utils/updater.py` 의 `GITHUB_REPO` 플레이스홀더를 `ggoyong2-ctrl/AV_Downloader` 로
+  - PowerShell `>` 리다이렉션이 UTF-16 LE BOM 으로 만든 `requirements.txt` 를 UTF-8 로 재작성
+- **`feat`**: 최초 푸시 (Initial commit: yt-dlp based media downloader).
+  - 초기 골격은 Claude Sonnet 4.6 작업
+  - `config.json` 은 gitignore 처리 (사용자별 개인 경로 포함)
 
-### 다음 세션에서 시도할 후보 (우선순위 순)
+---
 
-1. **★ 모달 다이얼로그 순서 문제** — `_on_info_fetched`에서 `FormatSelectDialog.exec()`(모달)가 호출되는데, 그 모달이 떠 있는 동안 썸네일 시그널이 도착하면 위젯 갱신이 어떻게 처리되는지 확인. **모달이 닫힌 후에 썸네일 워커를 시작**해보는 변경이 첫 시도로 적절.
-2. `lbl_thumb`의 `pixmap()` 호출 결과와 `geometry()`, `isVisible()` 직접 출력해 위젯 상태 점검.
-3. `QLabel.setScaledContents(True)` 또는 사이즈 정책 변경 시도.
-4. `lbl_thumb`의 부모 위젯이 픽스맵을 덮어쓰는지 확인 (Qt Inspector 등).
-5. Python 3.13과 3.14 환경 차이 확인 (현재 두 버전 캐시가 공존했던 흔적이 `__pycache__`에 있었음).
-6. 아예 `QLabel` 대신 `paintEvent` 오버라이드로 직접 그리기.
-7. PySide6 버전 다운그레이드 테스트.
+## 3. 현재 및 다음 작업 (Current & Next)
 
-## 7. 남은 작업 (Roadmap)
+> 진행 중인 작업과 앞으로 할 작업을 적습니다. 완료되면 위 **Changelog**로 옮기고 이 섹션에서는 삭제합니다.
 
-### 즉시 (디버깅 마무리 후)
-- [ ] 썸네일 표시 버그 해결
-- [ ] 모든 디버그 print 제거
-- [ ] 커밋: `fix: improve cancellation, prevent thumbnail leak, add network retries, fix thumbnail rendering`
+### 🔵 진행 중 (In Progress)
 
-### 단기 (3단계 잔여)
-- [ ] `_pick_thumbnail`의 jpg 우선 선택 로직 검증 후 유지/조정
-- [ ] 썸네일 워커 정리 누수 확인 (실패 케이스에서 `_thumb_workers`에서 빠지는지)
+*현재 없음. 작업 로그 6번(썸네일 문제)이 2026-05-17에 완전히 종결됨.*
 
-### 중기 (4단계 — 설정 일관성)
-- [ ] `PreferencesDialog`의 `settings_saved` 시그널을 `main_window`에서 받아 처리하거나, 시그널 자체 제거
-- [ ] `DEFAULT_CONFIG`의 `theme`과 `language` 항목 일단 제거 (실제 미구현 설정 노출 안 함)
+### 🟡 단기 (Short‑term, 1~2 세션 내)
 
-### 중장기 (5단계 — 동시성)
-- [ ] `max_concurrent` 실제 적용
-- [ ] 다운로드 큐 구현, 슬롯 관리
-- [ ] `QThreadPool` 활용 검토 (현재 import만 됨, 미사용)
+- [ ] **테스트 영상 다양화 검증**
+  - 커스텀 썸네일이 있는 영상으로 임베드 정상 동작 확인
+  - 4K/8K 영상에서 `bestvideo+bestaudio` 동작 확인 (VP9/AV1 코덱)
+  - MP3 추출 시 ID3v2.3 태그가 Windows 탐색기에서 정상 표시되는지 확인
+- [ ] **`_pick_thumbnail` 흔적 정리**
+  - `core/info_fetcher.py`에서 의미 없는 공백/정렬 변경분 검토 후 정리 커밋
+- [ ] **README.md 업데이트**
+  - CLAUDE.md 존재 및 사용법 한 줄 추가
+  - WORKLOG.md 구조 변경 사실 한 줄 추가
 
-### 장기 (6단계 — 견고성·이식성)
-- [ ] 진행률을 `_percent_str` 문자열 파싱 대신 `downloaded_bytes / total_bytes` 숫자 계산으로 전환
-- [ ] 파일명 중복 방지 (`nooverwrites: True` 또는 `get_unique_path` 활용)
-- [ ] `open_folder` 크로스 플랫폼 분기 (Windows/macOS/Linux)
-- [ ] QSS를 `ui/styles/dark.qss` 등 별도 파일로 분리
-- [ ] yt-dlp 버전 비교를 `packaging.version`으로 전환
-- [ ] `_update_temp.exe`를 `tempfile` 기반 임시 디렉토리로 이동
-- [ ] `AppUpdater.replace_and_restart` 대신 GitHub Releases 페이지를 브라우저로 여는 방식 검토
+### 🟢 중기 (Mid‑term, 다음 마일스톤)
 
-### 기능 확장 (선택)
-- [ ] 다크/라이트 테마 전환
-- [ ] 다국어 (i18n)
-- [ ] 다운로드 이력 영속화
-- [ ] 플레이리스트 일괄 다운로드
-- [ ] 다운로드 속도 제한
+- [ ] **취소 시 부분 파일 정리**
+  - `_on_cancel`/`_on_cancel_all`에서 .part, .ytdl 임시 파일 자동 삭제
+- [ ] **네트워크 재시도 로직**
+  - `workers/download_worker.py`에서 일시적 오류(타임아웃, 503 등)는 N회 자동 재시도
+- [ ] **포맷 선택 UX 개선**
+  - "최고 화질 (자동)"과 "최고 호환 (MP4/H.264)" 분리 (ADR‑002 후보)
+- [ ] **다운로드 큐 동시성 제어**
+  - 동시 다운로드 N개 제한 설정 (Preferences 항목 추가)
 
-## 8. 핵심 학습 (이번 세션)
+### 🟣 장기 (Long‑term, 백로그)
 
-- **PowerShell `>` 리다이렉션은 UTF-16 LE BOM으로 파일을 씀**
-  - `pip freeze > requirements.txt` 시 텍스트가 깨진다. git이 "Binary files differ"로 인식.
-  - 대안: `pip freeze | Out-File -Encoding utf8 requirements.txt` 또는 에디터에서 직접 작성.
+- [ ] **자동 업데이트 검증**
+  - `utils/updater.py`가 yt‑dlp 신버전 감지 시 안전하게 갱신하는지 확인
+- [ ] **다국어 지원**
+  - i18n 도입 (한국어/영어 기본)
+- [ ] **플레이리스트 일괄 다운로드**
+  - 한 URL로 N개 항목 추가
+- [ ] **테마/스타일 옵션**
+  - 라이트/다크/시스템 자동 전환
 
-- **타입 힌트만으로는 속성이 생성되지 않음**
-  - `self.x: list` 만 쓰면 `AttributeError`. 반드시 `self.x: list = []`.
+---
 
-- **yt-dlp는 2025년부터 EJS(외부 JS 런타임) 도입**
-  - `js_runtimes`, `remote_components` 옵션은 YouTube 다운로드에 사실상 필수.
-  - Node.js / Deno / Bun 중 하나 시스템에 설치 필요.
-  - 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
+## 4. 아키텍처 결정 기록 (ADR)
 
-- **`.gitignore`는 이미 추적 중인 파일에는 효과 없음**
-  - 한 번 추적된 파일을 무시하려면 `git rm --cached <파일>`로 인덱스에서 빼야 함.
+> 중요한 설계 결정을 한 항목씩 기록합니다. 한번 작성된 ADR은 **수정하지 않고** 새 ADR로 대체합니다 (Superseded 표시).
+> 참고: [ADR — Architectural Decision Records](https://adr.github.io/)
 
-- **빈 파일의 git SHA는 `e69de29...`**
-  - diff에서 `index e69de29..xxx` 보이면 한쪽이 빈 파일과의 비교.
+### ADR‑001: 썸네일 처리 — UI 미리보기와 파일 임베드의 분리
 
-- **PySide6에서 QPixmap은 GUI 스레드에서만 다뤄야 함 (이론)**
-  - 다만 이번 썸네일 버그는 이 가설로 설명되지 않음 — 다른 원인이 있는 것으로 보임.
+- **상태**: Accepted
+- **날짜**: 2026-05-17
+- **관련 커밋**: `fix(ui): worker lifecycle...`, `feat(downloader): embed thumbnail...`
+- **관련 이슈**: WORKLOG 6번 (해결됨)
 
-## 9. 다음 세션 시작 방법
+#### 맥락 (Context)
 
-1. 이 파일(`WORKLOG.md`)을 그대로 새 대화의 첫 메시지로 붙여넣기.
-2. "6번 항목의 썸네일 버그부터 이어서 진행해주세요" 식으로 요청.
-3. 또는 다른 작업부터 시작하고 싶다면 "7번 로드맵의 ○○부터" 식으로 명시.
+"썸네일이 안 보인다"는 동일한 문구가 두 개의 전혀 다른 대상을 가리키고 있었음:
+
+1. **UI 미리보기 썸네일** — `DownloadItemWidget.lbl_thumb` QLabel에 표시되는 작업 화면 내 미리보기
+2. **파일 임베드 썸네일** — 다운로드된 mp4/mp3에 메타데이터로 박혀 Windows 탐색기·플레이어 아이콘으로 노출되는 이미지
+
+용어 혼동으로 진단·해결이 수 차례 지연됨. 두 대상은 코드 위치, 라이브러리, 스레드 모델이 완전히 다름.
+
+#### 결정 (Decision)
+
+두 썸네일을 **명시적으로 구분**하여 코드와 문서에 반영한다.
+
+**UI 미리보기 (PySide6 영역)**
+- `QPixmap`/`QImage`는 **반드시 GUI 스레드에서만** 생성한다.
+- 워커 스레드(`ThumbnailWorker`)는 raw bytes만 시그널로 전달하고, 위젯이 GUI 스레드에서 `QPixmap.loadFromData()`로 변환한다.
+- 워커 시그널은 `Qt.QueuedConnection`을 명시한다.
+- 워커는 `item_id`를 함께 전달해 위젯 재사용 시 시그널 오염을 방지한다.
+- `_thumb_workers`는 dict 구조로 관리하고 cancel 메서드를 제공한다.
+
+**파일 임베드 (yt‑dlp/FFmpeg 영역)**
+- yt‑dlp 옵션 `writethumbnail=True`, `embedthumbnail=True`를 설정한다.
+- postprocessor 체인을 다음 순서로 구성한다:
+  1. `FFmpegThumbnailsConvertor` (webp → jpg 변환)
+  2. `EmbedThumbnail` (파일에 임베드)
+  3. `FFmpegMetadata` (제목·업로더 등 메타데이터)
+- MP3는 `-id3v2_version 3 -write_id3v1 1`로 Windows 탐색기 호환을 보장한다.
+- FFmpeg/FFprobe가 PATH에 있어야 한다.
+
+#### 결과 (Consequences)
+
+**긍정**
+- 워커 스레드에서 QPixmap을 만들던 잠재적 크래시/표시 누락이 사라짐
+- 다운로드 파일이 탐색기·음악 플레이어에서 썸네일을 정상 표시
+- 두 대상이 코드·문서·대화에서 분리되어 디버깅 비용 감소
+
+**부정**
+- FFmpeg 의존이 명시적으로 필요 (사용자 환경 안내 필요)
+- postprocessor 체인이 길어져 다운로드 후처리 시간이 약간 증가
+
+#### 대안 검토
+
+- **A안 — 워커에서 QPixmap 생성 후 emit**: PySide6 규약 위반. 채택 불가.
+- **B안 — `info["thumbnail"]` 신뢰 안 하고 자체 선택 로직(`_pick_thumbnail`)**: 진단 결과 yt‑dlp가 이미 maxresdefault를 정확히 반환함. 불필요한 복잡도. 채택 안 함.
+- **C안(채택)**: 위 결정 참조.
+
+---
+
+### ADR‑002: (예약됨) 포맷 선택 — "최고 화질" 의미 분리
+
+- **상태**: Proposed
+- **날짜**: TBD
+
+현재 "최고 화질"은 yt‑dlp의 `bestvideo+bestaudio/best`로 동작하며, YouTube의 VP9/AV1 우선 정책에 따라 H.264 1080p보다 파일이 작아질 수 있음. 사용자 혼란 방지를 위해 "최고 화질 (자동 · 효율 우선)"과 "최고 호환 (MP4/H.264)"를 분리할지 결정 필요. 추후 작성.
+
+---
+
+## 부록 A. 학습된 교훈 (Lessons)
+
+> 같은 실수를 반복하지 않기 위한 메모. 주제별로 누적합니다.
+
+### PowerShell · Windows 환경
+
+- `>` 리다이렉트는 기본적으로 UTF‑16 LE BOM으로 파일을 만든다. UTF‑8이 필요하면 `Out-File -Encoding utf8` 또는 `Set-Content -Encoding utf8`을 명시한다.
+- `git diff`가 멈추고 `:`이 보이면 less 페이저다. `q`로 종료, `Space`로 한 페이지, `G`로 끝으로 이동. 페이저 없이 보려면 `git --no-pager diff`.
+- 빈 파일의 Git SHA는 `e69de29bb2d1d6434b8b29ae775ad8c2e48c5391`.
+
+### Python · PySide6
+
+- 타입 힌트(`self.x: dict = {}`)는 어노테이션일 뿐, 변수를 자동 생성하지 않는 위치도 있다. `__init__`에서 명시적으로 초기화한다.
+- `QPixmap`·`QImage`는 GUI 스레드 전용. 워커 스레드에서 만들면 표시 누락·크래시가 발생한다.
+- 시그널‑슬롯은 스레드를 넘을 때 `Qt.QueuedConnection`을 명시하면 안전하다.
+- `QLabel.setScaledContents(True)`는 0×0 라벨에서 빈 화면을 만들 수 있다. 직접 `scaled()` 호출이 안전하다.
+
+### yt‑dlp
+
+- 2025년부터 EJS(Embedded JavaScript)를 사용. Node.js/Deno/Bun 중 하나가 PATH에 있어야 함. 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
+- `info["thumbnail"]`은 보통 정확하지만, `info["thumbnails"]` 리스트에서 직접 선별할 수도 있다.
+- `bestvideo+bestaudio/best`는 코덱 효율 우선이라 H.264보다 파일이 작을 수 있다.
+
+### Git
+
+- `.gitignore`는 **이미 추적 중인 파일에는 영향 없음**. 빼려면 `git rm --cached <path>`.
+- 의미 단위로 커밋을 나누려면 `git add -p`로 hunk 단위 스테이징.
+- Conventional Commits 권장: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`. 참고: https://www.conventionalcommits.org/
+
+### 협업 · 커뮤니케이션
+
+- **용어가 같다고 대상도 같지는 않다.** "썸네일"처럼 일상어가 두 개 이상의 기술 객체를 가리킬 때, 먼저 어느 대상인지 확정한다.
+- 진단 코드(print, 임시 파일 저장)는 가설 검증 후 즉시 제거하고 커밋에 섞지 않는다.
+- 가설은 한 번에 하나씩 검증한다. 동시에 여러 패치를 적용하면 원인 추적이 어려워진다.
