@@ -39,20 +39,20 @@ class InfoFetcher:
             "quiet"             : True,
             "no_warnings"       : True,
             "extract_flat"      : False,
-            "js_runtimes"       : {"node": {}},        # ← 수정
+            "js_runtimes"       : {"node": {}},
             "remote_components" : ["ejs:github"],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-
+            
         return VideoInfo(
-            url         = url,
-            title       = info.get("title", "제목 없음"),
-            thumbnail   = info.get("thumbnail", ""),
-            duration    = info.get("duration", 0),
-            uploader    = info.get("uploader", ""),
-            formats     = self._parse_formats(info),
+            url       = url,
+            title     = info.get("title", "제목 없음"),
+            thumbnail = info.get("thumbnail", ""),
+            duration  = info.get("duration", 0),
+            uploader  = info.get("uploader", ""),
+            formats   = self._parse_formats(info),
         )
 
     def _parse_formats(self, info: dict) -> list[FormatInfo]:
