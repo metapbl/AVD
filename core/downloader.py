@@ -24,7 +24,7 @@ _BASE_OPTS = {
     # ── 회복력 (Read timed out 대비) ──
     "socket_timeout"       : 30,
     "retries"              : 10,
-    "fragment_retries"     : "infinite",
+    "fragment_retries"     : float("inf"),
     "file_access_retries"  : 5,
     "retry_sleep_functions": {
         "http"    : lambda n: min(2 ** n, 30),
