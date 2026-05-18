@@ -3,7 +3,7 @@
 > 이 문서는 AV_Downloader 의 작업 진척, 결정 사항, 잔여 과제를 추적합니다.
 > 프로젝트의 변하지 않는 정보(기술 스택·폴더 구조·코딩 컨벤션 등)는 `CLAUDE.md` 에 별도로 관리하며, 이 파일은 시간과 함께 자라는 정보만 담습니다.
 
-**최종 업데이트**: 2026-05-17
+**최종 업데이트**: 2026-05-18
 
 ---
 
@@ -38,6 +38,26 @@
 ## 2. Changelog (시간 역순)
 
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
+
+### 2026-05-18
+
+- **`fix(downloader)`**: NFC 메타데이터를 yt-dlp 의 정상 경로로 흘려보내는 구조로 재구성.
+  - `core/downloader.py`: 본 다운로드 호출을 `ydl.download([url])` 에서 `ydl.process_ie_result(probed, download=True)` 로 교체. yt-dlp 의 `FFmpegMetadataPP` 가 info dict 의 `title`/`artist` 를 그대로 `-metadata` 인자로 변환하므로, 재추출 없이 우리 NFC dict 를 그대로 후처리 체인에 넘기면 NFC 가 보장된다
+  - `core/downloader.py`: mp3 분기에서 `-map_metadata -1` 제거. 이 옵션이 m4a ftyp 잔재(`major_brand` 등) 를 끊는 본래 목적은 달성했으나, FFmpegMetadataPP 가 같은 ffmpeg 호출에서 박는 `-metadata title=…` 까지 함께 무효화해 ID3 TIT2 가 통째로 사라지는 부작용이 확인됨. NFC title 보존이 우선이므로 제거. major_brand 잔재는 무해한 메타 노이즈로 수용
+  - 검증: m4a 의 `©nam` atom, mp3 의 TIT2 프레임 모두 NFC UTF-8 (`0xea·0xeb·0xec` 계열) / UTF-16 LE (`0x45 0xc5` 계열) 단일 코드포인트로 박힘. 자모 분리(`0xe1 0x84`) 흔적 없음
+  - 관련: 부록 A "학습된 교훈" 의 `yt-dlp` / `유니코드·파일명` 항목 갱신
+
+- **`fix(downloader)`**: 모든 오디오 추출에 NFC 메타 우회로 확장 (중간 단계, 후속 패치로 대체됨).
+  - `if ext == "mp3"` 조건을 `if is_audio` 로 넓혀 m4a/wav/aac 에서도 `-metadata title=NFC값` 강제 주입을 시도. mp3 는 우연히 동작했으나 m4a 는 ffmpeg 호출 단계 분리로 인해 미적용. 이후 `process_ie_result` 경로로 근본 해결됨
+
+- **`fix(downloader)`**: 유니코드 NFC 정규화 + MP3 컨테이너 잔재 메타 제거 1차 시도.
+  - `utils/file_utils.py`: `normalize_unicode`, `normalize_info_dict` 헬퍼 추가. `sanitize_filename` 도입부에서도 NFC 적용
+  - `core/info_fetcher.py`: `extract_info` 직후 info dict 전체에 NFC 적용
+  - `core/downloader.py`: 사전 `extract_info(download=False)` 호출 → NFC 화 → `outtmpl` 의 title 자리를 NFC 고정 문자열로 박음. mp3 한정 `-map_metadata -1` + `-metadata title=…` 우회로 도입 (이후 `process_ie_result` 로 대체)
+
+- **`docs(claude)`**: 코드 제시 규칙을 변경 규모 기준으로 재정의 + 터미널 명령 동반 제시 규칙 신설 + VS Code 통합 터미널 명시.
+
+- **`docs(worklog)`**: 사이드 메모 세 건(파일명·ID3 NFC 정규화 / MP3 major_brand 잔재 / Read timed out 회복력) 단기 섹션에 기록. 학습된 교훈에 `yt-dlp` / `유니코드·파일명` 카테고리 추가.
 
 ### 2026-05-17
 
@@ -111,6 +131,7 @@
   - 커스텀 썸네일이 있는 영상으로 임베드 정상 동작 확인
   - 4K/8K 영상에서 `bestvideo+bestaudio` 동작 확인 (VP9/AV1 코덱)
   - MP3 추출 시 ID3v2.3 태그가 Windows 탐색기에서 정상 표시되는지 확인
+- [x] **파일명·ID3 태그 유니코드 NFC 정규화** ✅ (2026-05-18 완료, `process_ie_result` 경로로 m4a/mp3 양쪽 데이터 NFC 확정)
 - [ ] **`_pick_thumbnail` 흔적 정리**
   - `core/info_fetcher.py`에서 의미 없는 공백/정렬 변경분 검토 후 정리 커밋
 - [ ] **README.md 업데이트**
@@ -126,17 +147,16 @@
   - `_on_info_fetched` 에서 `item.duration` 은 갱신되나, `lbl_meta` 라벨 텍스트를 다시 갱신하는 경로가 없음
   - 해결책 후보: `update_title` 과 같은 패턴의 `update_meta(uploader, duration)` 메서드 추가
   - 발견: 2026-05-17 (사용자 지적 — "그전부터의 구조였습니다")
-- [ ] **파일명·ID3 태그 유니코드 NFC 정규화**
-  - 증상: SoundCloud 출처 트랙(`AKMU - 기쁨, 슬픔, 아름다운 마음.mp3`)에서 한글이 NFD(자모 분리, U+1100~U+11FF) 로 저장됨. 파일명·ID3 `TIT2` 양쪽 모두 영향
-  - 함정: `chcp 65001` 콘솔에서도 폰트가 자모 결합을 시각적으로 합쳐 그려 NFC 처럼 보일 수 있음. 진단은 실제 코드포인트(`python -c "import sys; print([hex(ord(c)) for c in sys.argv[1]])"`) 로 확인할 것
-  - 처방: `utils/file_utils.py` 에 `normalize_info_dict(info: dict) -> dict` 헬퍼 추가 → info dict 의 모든 문자열 값에 `unicodedata.normalize('NFC', ...)` 재귀 적용. `core/info_fetcher.py` 와 `workers/download_worker.py` 두 진입 지점에서 호출
-  - 근거: yt-dlp 가 받아온 시점에 이미 NFD 였음 (앱이 만든 게 아님). 처방은 진입 지점에서 NFC 로 통일하는 것
-  - 발견: 2026-05-17 (사용자 보고 + ffprobe 검증)
-- [ ] **MP3 `major_brand` 등 컨테이너 잔재 메타 제거**
-  - 증상: MP3 파일의 ID3 에 `major_brand=isom`, `minor_version=512`, `compatible_brands=isomiso2mp41` 가 박힘. 이는 ISO BMFF (MP4/M4A) 의 ftyp 박스 필드로, MP3 에는 원리상 없어야 함
-  - 원인: yt-dlp `ExtractAudio` 가 원본 m4a(AAC) 를 MP3 로 재인코딩할 때 ffmpeg 의 기본 `-map_metadata 0` 으로 ftyp 박스 메타가 ID3 TXXX 로 그대로 옮겨짐. 검증: `encoder=Lavf62.12.101`, `Lavc62.28` 가 재인코딩 사실 입증
-  - 처방: `FFmpegExtractAudio` 후처리기의 `postprocessor_args` 에 `-map_metadata -1` 주입. 후속 `FFmpegMetadata` 가 yt-dlp 가 산출한 깨끗한 태그(NFC 정규화 후) 를 새로 씀
-  - 발견: 2026-05-17 (사용자 보고 + ffprobe 검증, `AKMU.mp3`)
+- [ ] **MP3 컨테이너 잔재 메타의 *선별적* 제거 (`major_brand` 등)**
+  - 1차 시도(`-map_metadata -1`) 는 ID3 TIT2 까지 함께 날리는 부작용으로 철회됨
+  - FFmpegMetadataPP 의 `meta_<key>` info dict 주입 경로 또는 후처리 후 별도 ffmpeg 호출로 `major_brand` / `minor_version` / `compatible_brands` 세 키만 표적 제거
+  - 우선순위 낮음 (잔재는 디코더 동작에 무해, ffprobe 에서만 보이는 메타 노이즈)
+  - 발견: 2026-05-18
+- [ ] **SoundCloud 출처의 `comment` 가 트랙 URL 로 자동 채워짐**
+  - yt-dlp 의 `FFmpegMetadataPP` 가 `webpage_url` 을 `comment` 로 매핑. 원본 트랙 설명을 잃음
+  - `parse_metadata` 또는 `info["comment"]` 사전 주입으로 회피 가능
+  - 우선순위 낮음
+  - 발견: 2026-05-18 (NFC 검증 중 부수 발견)
 - [ ] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화**
   - 증상: 응답 지연이 누적되면 작업이 에러로 취소됨. 재시도하면 통과하기도 함 (일시적 네트워크 stall)
   - 원인 가설: yt-dlp 기본 `socket_timeout` 이 짧고(20s), `retries`/`fragment_retries`/`file_access_retries` 를 우리 쪽에서 명시하지 않아 한 번의 stall 이 `urllib3.ReadTimeoutError → DownloadError` 로 그대로 전파됨 (yt-dlp #15833, #14571 동일 증상)
@@ -147,7 +167,6 @@
     - `file_access_retries=5`
     - `retry_sleep_functions={'http': lambda n: min(2**n, 30), 'fragment': lambda n: min(2**n, 30)}`
   - 발견: 2026-05-17 (사용자 사이드 메모)
-
 
 ### 🟢 중기 (Mid‑term, 다음 마일스톤)
 
@@ -266,14 +285,18 @@
 - `info["thumbnail"]`은 보통 정확하지만, `info["thumbnails"]` 리스트에서 직접 선별할 수도 있다.
 - `bestvideo+bestaudio/best`는 코덱 효율 우선이라 H.264보다 파일이 작을 수 있다.
 - `postprocess_hook` 은 ffmpeg 머지만이 아니라 **모든 후처리기**의 started/finished 를 발사한다. `d["postprocessor"]` 값으로 단계를 구분해야 한다. 2026.3.17 기준 ADR-001 체인의 순서는 `ThumbnailsConvertor` → `Merger` → `Metadata` → `EmbedThumbnail` → `MoveFiles`. 또한 postprocess 후크에는 **퍼센트 정보가 없다** (`status`/`postprocessor`/`info_dict`/`_default_template` 4개 키만 제공). 머지·임베드 단계에 퍼센트 진행률 표시는 현 구조로 불가.
-- `ExtractAudio` 로 m4a→mp3 재인코딩하면 ffmpeg 가 기본 `-map_metadata 0` 으로 원본 ftyp 박스 필드(`major_brand` 등)를 ID3 의 TXXX 로 옮겨 박는다. MP3 에는 원리상 없어야 할 메타가 남으므로 `postprocessor_args` 에 `-map_metadata -1` 을 주입해 끊고, 뒤의 `FFmpegMetadata` 가 깨끗하게 다시 쓰게 한다.
+- `ExtractAudio` 로 m4a→mp3 재인코딩하면 ffmpeg 가 기본 `-map_metadata 0` 으로 원본 ftyp 박스 필드(`major_brand` 등)를 ID3 의 TXXX 로 옮겨 박는다. MP3 에는 원리상 없어야 할 메타가 남는다. `-map_metadata -1` 로 끊을 수는 있으나 그러면 같은 ffmpeg 호출에서 FFmpegMetadataPP 가 박는 `-metadata title=…` 까지 함께 무효화되어 ID3 TIT2 가 사라진다. 선별 제거가 필요하면 `meta_<key>` info dict 주입 또는 별도 ffmpeg 호출 경로를 써야 한다.
 - 기본 retry/timeout 은 짧다. 실서비스 GUI 에서는 `socket_timeout`, `retries`, `fragment_retries='infinite'`, `file_access_retries`, `retry_sleep_functions` 를 명시해 일시적 stall 을 내부에서 흡수시켜야 한다.
+- **`ydl.download([url])` 은 내부에서 `extract_info` 를 다시 돌린다.** 우리가 호출 전에 가공한 info dict 가 있어도 무시되고 원본 NFD 메타가 그대로 후처리 체인에 흘러간다. 사전 정규화한 dict 를 유지하려면 `ydl.process_ie_result(info, download=True)` 를 써야 한다. yt-dlp 내부에서도 광범위하게 쓰이는 경로라 안정적.
+- **`FFmpegMetadataPP` 는 info dict 의 `title`/`artist`/`description` 등을 직접 읽어 `-metadata` 인자로 변환한다.** 즉 메타 내용을 통제하려면 ffmpeg 인자를 우회로 박는 것보다 info dict 자체를 정규화한 뒤 `process_ie_result` 로 흘리는 것이 단순하고 견고하다. 사용자 정의 키는 `meta_<name>` 또는 `meta_<idx>_<name>` 형태로 info dict 에 박으면 우선 적용된다.
 
 ### 유니코드·파일명
 
 - 유니코드 정규화는 **클라우드·OS·소스 사이트 경계에서 깨진다**. SoundCloud 의 한글 메타는 NFD(자모 분리, U+1100~U+11FF) 로 들어오는 경우가 있다. macOS 경유 클라우드 동기화도 마찬가지. 우리 앱은 **info dict 진입 지점에서 NFC 로 통일**하는 것을 원칙으로 한다 (`unicodedata.normalize('NFC', ...)`).
 - **콘솔 렌더링은 NFD 를 NFC 처럼 그려낼 수 있다.** `chcp 65001` 로 cmd.exe 를 UTF-8 로 바꾸면 한글이 멀쩡히 "기쁨" 으로 보이지만, 실제로는 `ㄱ + ㅣ + ㅃ + ㅡ + ㅁ` 5개 jamo 일 수 있다. 진단할 때는 ffprobe 출력 모양에 속지 말고 실제 코드포인트를 봐야 한다 (`python -c "import sys; print([hex(ord(c)) for c in open(sys.argv[1]).read()])"` 또는 ID3 값을 파일로 떠서 hex dump).
 - ID3v2.3 의 텍스트 인코딩은 UTF-16 (BOM 포함) 이 호환성 가장 높다. yt-dlp + ffmpeg 기본 동작이 이를 따르므로 우리는 별도 옵션을 줄 필요 없으나, 값으로 넘어가는 문자열은 NFC 여야 한다.
+- **ffprobe JSON 출력 자체도 NFD 를 NFC 처럼 보여줄 수 있다.** `chcp 65001` + ffprobe JSON 으로 한글이 깨끗하게 보이더라도, 콘솔 폰트의 자모 결합 렌더링 결과일 뿐 데이터는 NFD 일 수 있다. 2026-05-18 디버깅 중 이 함정에 두 번 빠졌다. **NFC/NFD 판정은 반드시 파일 원본 바이트에서**: m4a 는 `©nam` atom 의 데이터 영역, mp3 는 `TIT2` 프레임의 텍스트 영역을 직접 hex 로 봐야 한다. NFC 한글 한 글자는 UTF-8 3바이트(`0xea·0xeb·0xec` 시작), NFD 는 자모별 3바이트씩 2~3개(`0xe1 0x84 …` 패턴)다.
+- **표시 레이어는 모두 정직하지 않다.** Windows 탐색기 속성창은 NFD 를 분리해서 보여주고(정직), VS Code 터미널은 결합해서 그리고(NFC 처럼 보임), ffprobe JSON 도 결합해서 그린다. 같은 데이터가 어디서는 깨져 보이고 어디서는 멀쩡해 보이는 게 정상이다. 표시 어긋남으로 데이터를 추론하지 말 것.
 
 ### Git
 
