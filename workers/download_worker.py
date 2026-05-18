@@ -2,9 +2,21 @@
 # 다운로드를 백그라운드 스레드에서 실행하는 파일
 # UI가 멈추지 않도록 QThread로 분리
 
+import time
+
 from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
 from utils.file_utils import strip_ansi
+
+
+# yt-dlp 가 _eta_str 자리에 ETA 산정 불가의 의미로 박는 placeholder 들.
+# 빈 문자열은 별도 처리(아예 안 옴) 되므로 여기서 제외.
+_ETA_UNKNOWN_TOKENS = frozenset({
+    "unknown", "unknown eta",
+    "--:--", "--:--:--",
+    "00:00", "00:00:00",
+    "n/a",
+})
 
 
 class DownloadWorker(QThread):
@@ -14,7 +26,7 @@ class DownloadWorker(QThread):
     시그널:
         progress    : 진행률 (0.0 ~ 100.0)
         speed       : 다운로드 속도 문자열 (예: "2.3 MiB/s")
-        eta         : 남은 시간 문자열 (예: "00:42")
+        eta         : 남은 시간 문자열 (예: "00:42", HLS 폴백 시 "~0:42")
         file_size   : 파일 크기 문자열 (예: "128.5 MiB")
         merging     : 영상+음성 병합 시작 알림
         finished    : 다운로드 완료 - 저장된 파일 경로 전달
@@ -45,6 +57,13 @@ class DownloadWorker(QThread):
         self.save_dir   = save_dir
         self._downloader = Downloader()
         self._output_path = ""  # 완료된 파일 경로 저장용
+
+        # ETA 폴백용 — 다운로드 시작 시각.
+        # HLS 같이 total_bytes 가 없는 케이스에서 yt-dlp 가 _eta_str 에
+        # "Unknown" 류 placeholder 를 박는데, 우리가 _percent_str 의 진행률과
+        # 경과 시간으로 직접 ETA 를 추정해 emit 한다. 추정값은 표기에 "~" 를
+        # 붙여 사용자에게 추정임을 알린다.
+        self._dl_start_ts: float = 0.0
 
     def run(self):
         """
@@ -89,23 +108,26 @@ class DownloadWorker(QThread):
         status = d.get("status")
 
         if status == "downloading":
+            # 시작 시각 기록 (ETA 폴백 산정용)
+            if self._dl_start_ts == 0.0:
+                self._dl_start_ts = time.monotonic()
+
             # 진행률
             pct_str = strip_ansi(d.get("_percent_str", "0%")).strip()
+            pct: float | None
             try:
                 pct = float(pct_str.replace("%", ""))
                 self.progress.emit(pct)
             except ValueError:
-                pass
+                pct = None
 
             # 속도
             speed = strip_ansi(d.get("_speed_str", "")).strip()
             if speed:
                 self.speed.emit(speed)
 
-            # 남은 시간
-            eta = strip_ansi(d.get("_eta_str", "")).strip()
-            if eta:
-                self.eta.emit(eta)
+            # 남은 시간 — yt-dlp 값 우선, unknown 류면 폴백 계산
+            self._emit_eta(d, pct)
 
             # 파일 크기
             size = strip_ansi(
@@ -119,6 +141,43 @@ class DownloadWorker(QThread):
             # 단일 스트림 완료 (병합 전)
             self._output_path = d.get("filename", "")
             self.progress.emit(100.0)
+            # 다음 스트림(예: 오디오) 다운로드를 위해 시작 시각 리셋
+            self._dl_start_ts = 0.0
+
+    def _emit_eta(self, d: dict, pct: float | None):
+        """
+        ETA 시그널 발사.
+
+        1) yt-dlp 의 _eta_str 이 의미 있는 값이면 그대로 emit.
+        2) _eta_str 이 비었거나 unknown placeholder("Unknown", "--:--", "00:00" 등)
+           이면 — HLS 처럼 total_bytes 가 없는 케이스 — 우리가 측정한 elapsed 와
+           _percent_str 기반 pct 로 ETA 를 추정해 "~M:SS" 형태로 emit.
+
+        추정 가능 조건은 pct >= 0.5 (초반 출렁임 회피) + elapsed > 0.
+        조건 미충족이면 emit 하지 않는다 (위젯 라벨은 직전 값 또는 빈 값 유지).
+        """
+        raw = strip_ansi(d.get("_eta_str", "")).strip()
+        if raw and raw.lower() not in _ETA_UNKNOWN_TOKENS:
+            self.eta.emit(raw)
+            return
+
+        # 폴백 계산
+        if pct is None or pct < 0.5:
+            return
+        elapsed = time.monotonic() - self._dl_start_ts
+        if elapsed <= 0:
+            return
+
+        remaining = elapsed * (100.0 - pct) / pct
+        if remaining < 0:
+            return
+
+        secs = int(remaining)
+        if secs >= 3600:
+            text = f"~{secs // 3600}:{(secs % 3600) // 60:02d}:{secs % 60:02d}"
+        else:
+            text = f"~{secs // 60}:{secs % 60:02d}"
+        self.eta.emit(text)
 
     def _on_postprocess(self, d: dict):
         """

@@ -41,6 +41,12 @@
 
 ### 2026-05-18
 
+- **`fix(downloader)`**: HLS(SoundCloud 등) 출처에서 남은시간이 "Unknown"으로 표시되던 문제 해결.
+  - `workers/download_worker.py`: 다운로드 시작 시각을 워커 상태로 보유하고, yt-dlp 의 `_eta_str` 이 비었거나 unknown placeholder(`Unknown`/`--:--`/`00:00` 등)일 때 `_percent_str` 기반 `pct` 와 측정 `elapsed` 로 ETA 를 직접 추정해 `~M:SS` 형식으로 emit. 추정값은 `~` 접두로 사용자에게 추정임을 표시
+  - 원인: HLS 다운로드는 `total_bytes`/`total_bytes_estimate` 가 둘 다 없어 yt-dlp 내부 ETA 산식(`(total - downloaded) / speed`) 이 성립하지 않음. 진행률은 프래그먼트 기준으로 별도 산정돼 정상 표시되지만 ETA 만 공란/placeholder 가 됨
+  - 검증: YouTube mp4(기존 정상) + SoundCloud HLS 오디오(`https://soundcloud.com/k55tixoawe96/akmu`) 양쪽에서 ETA 표시 확인
+  - 관련: 부록 A "학습된 교훈" 의 `yt-dlp` 항목에 HLS ETA 부재 한 줄 추가 권장 (이번 커밋엔 미포함)
+
 - **`fix(downloader)`**: NFC 메타데이터를 yt-dlp 의 정상 경로로 흘려보내는 구조로 재구성.
   - `core/downloader.py`: 본 다운로드 호출을 `ydl.download([url])` 에서 `ydl.process_ie_result(probed, download=True)` 로 교체. yt-dlp 의 `FFmpegMetadataPP` 가 info dict 의 `title`/`artist` 를 그대로 `-metadata` 인자로 변환하므로, 재추출 없이 우리 NFC dict 를 그대로 후처리 체인에 넘기면 NFC 가 보장된다
   - `core/downloader.py`: mp3 분기에서 `-map_metadata -1` 제거. 이 옵션이 m4a ftyp 잔재(`major_brand` 등) 를 끊는 본래 목적은 달성했으나, FFmpegMetadataPP 가 같은 ffmpeg 호출에서 박는 `-metadata title=…` 까지 함께 무효화해 ID3 TIT2 가 통째로 사라지는 부작용이 확인됨. NFC title 보존이 우선이므로 제거. major_brand 잔재는 무해한 메타 노이즈로 수용
