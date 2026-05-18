@@ -3,7 +3,41 @@
 
 import os
 import re
+import unicodedata
 from pathlib import Path
+
+
+def normalize_unicode(text: str) -> str:
+    """
+    문자열을 유니코드 NFC 로 정규화한다.
+
+    SoundCloud · macOS 등 일부 소스에서 한글이 NFD(자모 분리, U+1100~U+11FF)
+    로 들어오는 경우가 있다. Windows 탐색기·일부 콘솔 폰트는 NFD 를 NFC 처럼
+    합쳐 그려주기 때문에 표시상 같아 보이지만, 바이트 수준에서는 분해되어
+    있어 ID3 태그·파일명에서 글자 깨짐을 유발한다. 모든 진입 지점에서
+    이 함수를 통과시켜 NFC 로 통일한다.
+
+    None / 비문자열은 안전하게 원형 반환.
+    """
+    if not isinstance(text, str):
+        return text
+    return unicodedata.normalize("NFC", text)
+
+
+def normalize_info_dict(info):
+    """
+    yt-dlp 가 반환한 info dict 의 모든 문자열 값을 재귀적으로 NFC 로 정규화.
+
+    dict · list · 문자열만 재귀하며, bytes / 숫자 / None 등은 그대로 둔다.
+    bytes 는 raw 응답일 수 있어 decode 시도하지 않는다.
+    """
+    if isinstance(info, dict):
+        return {k: normalize_info_dict(v) for k, v in info.items()}
+    if isinstance(info, list):
+        return [normalize_info_dict(v) for v in info]
+    if isinstance(info, str):
+        return normalize_unicode(info)
+    return info
 
 
 def sanitize_filename(name: str) -> str:
@@ -11,6 +45,8 @@ def sanitize_filename(name: str) -> str:
     파일명으로 사용할 수 없는 특수문자를 제거하거나 치환
     Windows 기준으로 처리 (가장 엄격한 기준)
     """
+    # 유니코드 정규화 (NFD → NFC). 한글 자모 분리 방지.
+    name = normalize_unicode(name)
     # 윈도우 금지 문자 제거: \ / : * ? " < > |
     name = re.sub(r'[\\/:*?"<>|]', "_", name)
     # 앞뒤 공백 및 점 제거

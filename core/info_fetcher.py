@@ -4,6 +4,8 @@
 import yt_dlp
 from dataclasses import dataclass
 
+from utils.file_utils import normalize_info_dict
+
 
 @dataclass
 class FormatInfo:
@@ -45,7 +47,12 @@ class InfoFetcher:
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            
+
+        # SoundCloud · macOS 등 일부 소스의 NFD 한글을 NFC 로 정규화.
+        # 이 한 줄로 title · uploader · description · formats 내부 문자열까지
+        # 재귀적으로 NFC 가 보장된다.
+        info = normalize_info_dict(info)
+
         return VideoInfo(
             url       = url,
             title     = info.get("title", "제목 없음"),
