@@ -6,6 +6,33 @@ from pathlib import Path
 from utils.file_utils import ensure_dir, normalize_info_dict, sanitize_filename
 
 
+# ── 모듈 공통 yt-dlp 옵션 ─────────────────────────────────
+# probe 와 본 다운로드 양쪽이 공유해야 하는 옵션을 한 곳에 모은다.
+# - quiet/no_warnings   : 콘솔 잡음 억제
+# - js_runtimes/remote_components : YouTube EJS 챌린지 해결 (Node.js 필수)
+# - socket_timeout 이하 : 일시적 stall 흡수. yt-dlp 기본값은 짧아서
+#   urllib3 ReadTimeoutError 가 그대로 DownloadError 로 전파됨.
+#   여기서 내부 재시도로 흡수시킨다. 지수 백오프 상한 30초.
+_BASE_OPTS = {
+    "quiet"                : True,
+    "no_warnings"          : True,
+
+    # JS 챌린지 해결
+    "js_runtimes"          : {"node": {}},
+    "remote_components"    : ["ejs:github"],
+
+    # ── 회복력 (Read timed out 대비) ──
+    "socket_timeout"       : 30,
+    "retries"              : 10,
+    "fragment_retries"     : "infinite",
+    "file_access_retries"  : 5,
+    "retry_sleep_functions": {
+        "http"    : lambda n: min(2 ** n, 30),
+        "fragment": lambda n: min(2 ** n, 30),
+    },
+}
+
+
 class Downloader:
     """yt-dlp 기반 다운로드 실행 클래스"""
 
@@ -44,11 +71,8 @@ class Downloader:
         # 로 호출한다. 이렇게 하면 yt-dlp 는 재추출 없이 우리 NFC dict 를
         # 그대로 후처리 체인에 넘긴다.
         probe_opts = {
-            "quiet"             : True,
-            "no_warnings"       : True,
-            "skip_download"     : True,
-            "js_runtimes"       : {"node": {}},
-            "remote_components" : ["ejs:github"],
+            **_BASE_OPTS,
+            "skip_download": True,
         }
         with yt_dlp.YoutubeDL(probe_opts) as ydl_probe:
             probed = ydl_probe.extract_info(url, download=False)
@@ -90,16 +114,12 @@ class Downloader:
 
         # ── yt-dlp 옵션 구성 ─────────────────────────────
         ydl_opts = {
+            **_BASE_OPTS,
+
             "format"             : format_id,
             # title 자리는 NFC 로 우리가 직접 박고, ext 만 yt-dlp 가 치환.
             "outtmpl"            : str(Path(save_dir) / f"{outtmpl_title}.%(ext)s"),
             "merge_output_format": ext if not is_audio else None,
-            "quiet"              : True,
-            "no_warnings"        : True,
-
-            # JS 챌린지 해결
-            "js_runtimes"        : {"node": {}},
-            "remote_components"  : ["ejs:github"],
 
             # ── 썸네일 / 메타데이터 임베드 핵심 ──
             "writethumbnail"     : True,        # 썸네일을 임시로 받아둔다
