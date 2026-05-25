@@ -41,6 +41,11 @@
 
 ### 2026-05-18
 
+- **`fix(ui)`**: 영상 길이가 항상 `0:00` 으로 표시되던 버그 해결.
+  - `ui/download_item_widget.py`: `update_meta(uploader, duration)` 공개 메서드 추가. `_build_ui` 와 동일 포맷을 공유하도록 정적 헬퍼 `_format_meta` 로 단일 출처화. `update_title` 과 같은 패턴 — 라벨 갱신 + `self.item` 단일 출처 동기화
+  - `ui/main_window.py`: `_on_info_fetched` 에서 `update_title` 직후 `update_meta(info.uploader, info.duration)` 호출 추가
+  - 원인: 위젯 생성 시점엔 InfoWorker 가 아직 끝나기 전이라 `item.uploader=""`, `item.duration=0` 이고 `_build_ui` 가 `format_duration(0) → "0:00"` 으로 라벨을 박는다. 이후 `item.duration` 은 갱신되지만 `lbl_meta` 를 다시 그릴 경로가 없어 "  •  0:00" 으로 굳어 있었음
+
 - **`fix(downloader)`**: HLS(SoundCloud 등) 출처에서 남은시간이 "Unknown"으로 표시되던 문제 해결.
   - `workers/download_worker.py`: 다운로드 시작 시각을 워커 상태로 보유하고, yt-dlp 의 `_eta_str` 이 비었거나 unknown placeholder(`Unknown`/`--:--`/`00:00` 등)일 때 `_percent_str` 기반 `pct` 와 측정 `elapsed` 로 ETA 를 직접 추정해 `~M:SS` 형식으로 emit. 추정값은 `~` 접두로 사용자에게 추정임을 표시
   - 원인: HLS 다운로드는 `total_bytes`/`total_bytes_estimate` 가 둘 다 없어 yt-dlp 내부 ETA 산식(`(total - downloaded) / speed`) 이 성립하지 않음. 진행률은 프래그먼트 기준으로 별도 산정돼 정상 표시되지만 ETA 만 공란/placeholder 가 됨
@@ -148,11 +153,6 @@
   - `DownloadWorker.file_size` 시그널은 정의돼 있으나 위젯 슬롯 연결이 없을 가능성 — `main_window.py` 라우팅 확인 필요
   - 해상도/코덱/비트레이트는 `FormatInfo` 에 있을 가능성이 높으나 위젯이 받지 않음 — 데이터 흐름 설계 필요
   - 발견: 2026-05-17 검증 중
-- [ ] **영상 길이가 항상 `0:00` 으로 표시되는 버그**
-  - `DownloadItemWidget._build_ui()` 에서 `format_duration(self.item.duration)` 을 라벨에 박는데, 위젯 생성 시점엔 `item.duration` 이 아직 0 (InfoWorker 완료 전)
-  - `_on_info_fetched` 에서 `item.duration` 은 갱신되나, `lbl_meta` 라벨 텍스트를 다시 갱신하는 경로가 없음
-  - 해결책 후보: `update_title` 과 같은 패턴의 `update_meta(uploader, duration)` 메서드 추가
-  - 발견: 2026-05-17 (사용자 지적 — "그전부터의 구조였습니다")
 - [ ] **MP3 컨테이너 잔재 메타의 *선별적* 제거 (`major_brand` 등)**
   - 1차 시도(`-map_metadata -1`) 는 ID3 TIT2 까지 함께 날리는 부작용으로 철회됨
   - FFmpegMetadataPP 의 `meta_<key>` info dict 주입 경로 또는 후처리 후 별도 ffmpeg 호출로 `major_brand` / `minor_version` / `compatible_brands` 세 키만 표적 제거

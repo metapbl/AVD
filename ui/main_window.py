@@ -191,6 +191,7 @@ class MainWindow(QMainWindow):
         item.thumbnail = info.thumbnail
 
         widget.update_title(info.title)
+        widget.update_meta(info.uploader, info.duration)
         widget.update_status(DownloadStatus.WAITING)
         self.status_bar.showMessage("화질을 선택해 주세요.")
 
@@ -242,7 +243,7 @@ class MainWindow(QMainWindow):
             lambda: self._on_remove(item_id)
         )
         dialog.exec()
-        
+
     def _on_thumb_ready(self, item_id: str, data: bytes):
         """
         썸네일 워커 완료 — GUI 스레드에서 QPixmap 생성하여 위젯에 전달.

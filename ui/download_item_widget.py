@@ -59,10 +59,11 @@ class DownloadItemWidget(QWidget):
         self.lbl_title.setWordWrap(False)
         info_layout.addWidget(self.lbl_title)
 
-        # 업로더 + 재생시간
-        meta = f"{self.item.uploader}  •  " \
-               f"{format_duration(self.item.duration)}"
-        self.lbl_meta = QLabel(meta)
+        # 업로더 + 재생시간 — 위젯 생성 시점엔 둘 다 비어 있을 수 있다.
+        # InfoWorker 완료 후 update_meta 가 같은 헬퍼로 다시 그린다.
+        self.lbl_meta = QLabel(
+            self._format_meta(self.item.uploader, self.item.duration)
+        )
         self.lbl_meta.setObjectName("itemMeta")
         info_layout.addWidget(self.lbl_meta)
 
@@ -181,6 +182,17 @@ class DownloadItemWidget(QWidget):
             QPushButton#btnRemove:hover { background: #e05555; color: #fff; }
         """)
 
+    # ── 사적 포맷 헬퍼 ───────────────────────────────
+
+    @staticmethod
+    def _format_meta(uploader: str, duration: int) -> str:
+        """
+        lbl_meta 라벨에 들어갈 "업로더 • 재생시간" 문자열을 만든다.
+        _build_ui 의 초기 표시와 update_meta 의 갱신이 동일 포맷을 쓰도록
+        단일 출처화한 헬퍼. 한 곳만 고치면 양쪽이 함께 따라온다.
+        """
+        return f"{uploader}  •  {format_duration(duration)}"
+
     # ── 외부에서 호출하는 업데이트 메서드 ──
 
     def update_progress(self, pct: float):
@@ -232,6 +244,19 @@ class DownloadItemWidget(QWidget):
         """제목 레이블 업데이트"""
         self.lbl_title.setText(title)
         self.item.title = title
+
+    def update_meta(self, uploader: str, duration: int):
+        """
+        업로더·재생시간 레이블 업데이트.
+
+        위젯 생성 시점에는 InfoWorker 가 아직 끝나지 않아 uploader/duration
+        이 빈 값이거나 0 이다. _build_ui 가 박은 초기 "  •  0:00" 라벨을
+        InfoWorker 완료 후 이 메서드로 덮어쓴다. update_title 과 같은 패턴
+        — 라벨 갱신 + 단일 출처(self.item) 동기화.
+        """
+        self.item.uploader = uploader
+        self.item.duration = duration
+        self.lbl_meta.setText(self._format_meta(uploader, duration))
 
     def update_thumbnail(self, data: bytes):
         """
