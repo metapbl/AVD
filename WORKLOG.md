@@ -143,6 +143,23 @@
   - 4K/8K 영상에서 `bestvideo+bestaudio` 동작 확인 (VP9/AV1 코덱)
   - MP3 추출 시 ID3v2.3 태그가 Windows 탐색기에서 정상 표시되는지 확인
 - [x] **파일명·ID3 태그 유니코드 NFC 정규화** ✅ (2026-05-18 완료, `process_ie_result` 경로로 m4a/mp3 양쪽 데이터 NFC 확정)
+- [x] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화** ✅ (2026-05-18 완료, `core/downloader.py` 의 `_BASE_OPTS` 로 socket_timeout/retries/fragment_retries/file_access_retries/retry_sleep_functions 적용. `fragment_retries` 는 CLI 외 경로에선 `float('inf')` 필요 — 핫픽스 `93578c3`)
+- [ ] **취소·재시작·삭제 동선 정비** (사용자 사양, 2026-05-18 합의)
+  - **취소 시 잔여물 즉시 삭제**: yt-dlp 의 두 후크(`progress_hook` 의 `d["filename"]`, `postprocess_hook` 의 `d["info_dict"]["filepath"]` 와 `__files_to_move`)에서 받은 모든 파일 경로를 워커별 `_touched_files: set[str]` 에 누적. 취소 시 그 집합 + 각 경로의 `.part`/`.ytdl` 형제를 삭제. prefix 매칭 같은 추측 경로는 쓰지 않음 — yt-dlp 가 알려주는 경로만 신뢰
+  - **자식 프로세스 종료**: yt-dlp 가 띄우는 ffmpeg.exe / node.exe(EJS) 자식이 취소 직후에도 살아 있으면 잔여물 삭제가 Windows 파일 잠금으로 실패한다. 워커가 다운로드 시작 직전 우리 프로세스의 자식 PID 집합을 스냅샷하고, 취소 시 다시 스냅샷해 **차분(=새로 늘어난 자식) 만** `terminate()` (5초 후 미사망 시 `kill()`). 동시 다운로드 시 다른 워커의 자식까지 잡지 않도록 워커별 차분 방식이 핵심. 새 의존성 `psutil` 도입 — `requirements.txt` 갱신 잊지 말 것
+  - **postprocess 단계 취소 검사**: 현재 `progress_hook` 에만 `DownloadCancelled` 검사가 있어 머지·임베드 중 취소가 안 됨. `postprocess_hook` 에도 동일 검사 추가
+  - **버튼 라벨 전환**: `DownloadItemWidget.btn_cancel` 을 상태에 따라 "취소"/"재시도" 로 동적 전환. 신규 시그널 `retry_requested(item_id)`. `main_window._on_retry` 가 같은 `format_id`·`save_dir` 로 새 `DownloadWorker` 기동 (화질 다이얼로그 안 띄움). 잔여물이 이미 삭제됐으니 yt-dlp 는 깨끗한 상태에서 처음부터 다시 받음
+  - **✕ 의 분기**: `item.status == DONE` 이고 `Path(item.save_path).exists()` 가 True 일 때만 "파일도 함께 삭제하시겠습니까?" 확인 다이얼로그(기본값 No — `_on_cancel_all` 의 실수 방지 전례). 체크 시 디스크 파일까지 삭제. 그 외엔 확인 없이 리스트에서만 제거
+  - 변경 파일 예상: `workers/download_worker.py`, `core/downloader.py`, `ui/download_item_widget.py`, `ui/main_window.py`, `utils/file_utils.py`(자식 PID 스냅샷·삭제 헬퍼), `requirements.txt`
+  - 함정 주의: yt-dlp 라이브러리는 같은 프로세스 안에 여러 `YoutubeDL` 인스턴스를 평행하게 두는 사용 패턴을 공식 보장하지 않음. 동시 다운로드 다수 환경에서의 일부 전역 상태 충돌 가능성은 중기 항목 "다운로드 큐 동시성 제어" 와 결부됨 — 이번 항목 범위 밖
+  - 발견: 2026-05-18 (사용자 실사용 피드백)
+- [ ] **항목 레이아웃 단순화** (사용자 사양, 2026-05-18 합의)
+  - **취소/✕ 버튼 잘림 수정**: 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내는 현상. `lbl_title` 의 size policy 를 `Ignored, Preferred` 로 두고 `QFontMetrics.elidedText` 로 직접 잘라 표시. 워드랩은 켜지 않음(항목 높이 들쭉날쭉 방지)
+  - **진행률 바 폭 상한**: `progress_bar.setMaximumWidth(400)`. 사용자 요구 "현재 길이에서 200px 단축" 의 견고한 형태(큰 윈도우에서도 과확장 방지)
+  - **4행 균등 분배**: `info_layout` 안 네 자식(제목 / 메타 / 진행률 / 상태행) 모두 `stretch=1` 부여. 부모 높이(=썸네일 높이) 안에서 균등 분배되어 항목 전체 높이가 썸네일 높이로 결정됨. 사용자 요구 "썸네일 세로 폭 안에 모두 들어가게" 의 정직한 해법
+  - 폰트 크기·spacing·margin 미세조정은 안 함 (이전 세션에서 사용자가 거부한 접근)
+  - 변경 파일: `ui/download_item_widget.py` 한 파일
+  - 발견: 2026-05-18 (사용자 실사용 피드백)
 - [ ] **`_pick_thumbnail` 흔적 정리**
   - `core/info_fetcher.py`에서 의미 없는 공백/정렬 변경분 검토 후 정리 커밋
 - [ ] **README.md 업데이트**
@@ -163,16 +180,6 @@
   - `parse_metadata` 또는 `info["comment"]` 사전 주입으로 회피 가능
   - 우선순위 낮음
   - 발견: 2026-05-18 (NFC 검증 중 부수 발견)
-- [ ] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화**
-  - 증상: 응답 지연이 누적되면 작업이 에러로 취소됨. 재시도하면 통과하기도 함 (일시적 네트워크 stall)
-  - 원인 가설: yt-dlp 기본 `socket_timeout` 이 짧고(20s), `retries`/`fragment_retries`/`file_access_retries` 를 우리 쪽에서 명시하지 않아 한 번의 stall 이 `urllib3.ReadTimeoutError → DownloadError` 로 그대로 전파됨 (yt-dlp #15833, #14571 동일 증상)
-  - 처방: `workers/download_worker.py` 의 ydl_opts 에 추가:
-    - `socket_timeout=30`
-    - `retries=10`
-    - `fragment_retries='infinite'`
-    - `file_access_retries=5`
-    - `retry_sleep_functions={'http': lambda n: min(2**n, 30), 'fragment': lambda n: min(2**n, 30)}`
-  - 발견: 2026-05-17 (사용자 사이드 메모)
 
 ### 🟢 중기 (Mid‑term, 다음 마일스톤)
 
