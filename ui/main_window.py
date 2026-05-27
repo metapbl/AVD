@@ -16,6 +16,7 @@ from ui.download_item_widget import DownloadItemWidget
 from ui.add_link_dialog import AddLinkDialog
 from ui.format_select_dialog import FormatSelectDialog
 from ui.preferences_dialog import PreferencesDialog
+from ui.confirm_remove_dialog import ConfirmRemoveDialog
 from workers.info_worker import InfoWorker
 from workers.download_worker import DownloadWorker
 from utils.config_manager import ConfigManager
@@ -91,12 +92,14 @@ class MainWindow(QMainWindow):
         self.btn_add.clicked.connect(self._on_add_link)
         layout.addWidget(self.btn_add)
 
-        # 전체 취소 버튼
-        self.btn_cancel_all = QPushButton("전체 취소")
-        self.btn_cancel_all.setObjectName("btnCancelAll")
-        self.btn_cancel_all.setFixedHeight(36)
-        self.btn_cancel_all.clicked.connect(self._on_cancel_all)
-        layout.addWidget(self.btn_cancel_all)
+        # 목록 비우기 버튼 (구 "전체 취소").
+        # 동작 재정의: 진행 중인 워커는 취소하고, 모든 항목을 목록에서 제거.
+        # 체크박스로 "다운로드된 파일들 일괄 삭제" 옵션 노출 (기본 해제).
+        self.btn_clear_list = QPushButton("목록 비우기")
+        self.btn_clear_list.setObjectName("btnClearList")
+        self.btn_clear_list.setFixedHeight(36)
+        self.btn_clear_list.clicked.connect(self._on_clear_list)
+        layout.addWidget(self.btn_clear_list)
 
         # 환경설정 버튼
         btn_prefs = QPushButton("⚙ 설정")
@@ -243,7 +246,7 @@ class MainWindow(QMainWindow):
             lambda fmt: self._on_format_selected(item_id, fmt)
         )
         dialog.rejected.connect(
-            lambda: self._on_remove(item_id)
+            lambda: self._on_remove(item_id, skip_confirm=True)
         )
         dialog.exec()
 
@@ -299,7 +302,8 @@ class MainWindow(QMainWindow):
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         dialog.exec()
-        self._on_remove(item_id)
+        # 시스템 경로로 도달한 자동 정리 — 사용자의 ✕ 클릭이 아니므로 확인 생략
+        self._on_remove(item_id, skip_confirm=True)
 
     def _on_format_selected(self, item_id: str, fmt: FormatInfo):
         """화질 선택 완료 후 다운로드 시작"""
@@ -376,10 +380,28 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("취소됨")
 
     def _on_cancel(self, item_id: str):
-        """항목 취소 버튼 클릭"""
+        """
+        항목 "취소" 버튼 클릭.
+
+        진행 중인 워커가 있을 때만 확인 다이얼로그를 띄우고 취소한다.
+        진행 중이 아닌 경우(이미 끝났거나 에러 상태)는 도달하지 말아야 할
+        경로지만(버튼이 "재시도" 라벨이 됐을 테니), 방어적으로 무시한다.
+        """
         worker = self.dl_workers.get(item_id)
-        if worker and worker.isRunning():
-            worker.cancel()
+        if worker is None or not worker.isRunning():
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "다운로드 취소",
+            "이 다운로드를 취소하시겠습니까?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,   # 기본값 No — 실수 방지
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        worker.cancel()
 
     def _on_retry(self, item_id: str):
         """
@@ -437,65 +459,94 @@ class MainWindow(QMainWindow):
         self.dl_workers[item_id] = worker
         worker.start()
 
-    def _on_cancel_all(self):
-        """전체 취소 버튼 클릭"""
-        # 진행 중인 워커가 있는지 먼저 확인
-        active = [w for w in self.dl_workers.values() if w.isRunning()]
-        if not active:
-            self.status_bar.showMessage("취소할 다운로드가 없습니다.")
+    def _on_clear_list(self):
+        """
+        "목록 비우기" 버튼 클릭 (구 "전체 취소").
+
+        동작:
+        - 진행 중 워커는 모두 취소 시그널 송신
+        - 모든 항목을 목록에서 제거
+        - 사용자가 "다운로드된 파일들 일괄 삭제" 체크 시, 완료된 항목의
+          디스크 파일도 모두 삭제
+
+        다이얼로그는 ConfirmRemoveDialog 한 종류로 통일. 본문에 진행 중
+        개수 M 을 명시하고, 완료 파일이 1개 이상일 때만 체크박스 노출.
+        """
+        if not self.items:
+            self.status_bar.showMessage("목록이 비어 있습니다.")
             return
 
-        # 실수 방지 - 사용자 확인
-        reply = QMessageBox.question(
-            self,
-            "전체 취소",
-            f"진행 중인 다운로드 {len(active)}개를 모두 취소하시겠습니까?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,  # 기본값은 No로 (실수 안전장치)
+        # 통계 — 본문/체크박스 노출 결정용
+        active_count = sum(
+            1 for w in self.dl_workers.values() if w.isRunning()
         )
-        if reply != QMessageBox.StandardButton.Yes:
+        done_with_file_count = sum(
+            1 for it in self.items.values()
+            if it.status == DownloadStatus.DONE
+            and it.save_path
+            and Path(it.save_path).is_file()
+        )
+
+        # 본문 구성 — 진행 중 항목이 있을 때만 그 줄을 덧붙임
+        message = "목록의 모든 항목을 제거하시겠습니까?"
+        if active_count > 0:
+            message += f"\n\n진행 중인 다운로드 {active_count}개는 취소됩니다."
+
+        checkbox_text = (
+            "다운로드된 파일들 일괄 삭제"
+            if done_with_file_count > 0
+            else None
+        )
+
+        dlg = ConfirmRemoveDialog(
+            self,
+            title         = "목록 비우기",
+            message       = message,
+            checkbox_text = checkbox_text,
+        )
+        dlg.exec()
+        if not dlg.confirmed:
             return
 
-        for worker in active:
-            worker.cancel()
+        # 1) 진행 중 워커 일괄 취소 — 워커가 자식 프로세스·잔여물 정리
+        for worker in list(self.dl_workers.values()):
+            if worker.isRunning():
+                try:
+                    worker.cancel()
+                except Exception:
+                    pass
 
-    def _on_open_folder(self, item_id: str):
-        """폴더 열기 버튼 클릭"""
-        item = self.items.get(item_id)
-        if item and item.save_path:
-            open_folder(item.save_path)
+        # 2) (체크 시) 완료된 항목의 디스크 파일 삭제 — 항목 dict 비우기 전에
+        if dlg.delete_disk_files:
+            for it in list(self.items.values()):
+                if (
+                    it.status == DownloadStatus.DONE
+                    and it.save_path
+                    and Path(it.save_path).is_file()
+                ):
+                    try:
+                        Path(it.save_path).unlink(missing_ok=True)
+                    except OSError:
+                        # 권한 / 잠금 — 조용히 통과
+                        pass
 
-    def _on_remove(self, item_id: str):
+        # 3) 모든 항목 위젯 제거
+        for item_id in list(self.items.keys()):
+            self._remove_item_quiet(item_id)
+
+        # 4) 빈 화면 표시
+        self.lbl_empty.setVisible(True)
+        self.status_bar.showMessage("목록을 비웠습니다.")
+
+    def _remove_item_quiet(self, item_id: str):
         """
-        항목 삭제 (✕) 버튼 클릭.
+        다이얼로그·확인 없이 항목을 정리하는 내부 헬퍼.
 
-        분기:
-        - DONE 이고 디스크 산출물이 존재하면 → "파일도 함께 삭제하시겠습니까?"
-          확인 다이얼로그. 기본값 No (실수 안전장치 — _on_cancel_all 의 전례).
-        - 그 외엔 확인 없이 리스트에서만 제거. 활성 다운로드 워커가 살아 있으면
-          취소 시그널을 보내고 (워커가 자식 프로세스·잔여물을 정리), 그대로
-          목록에서 제거한다.
+        _on_clear_list 의 일괄 처리와 _on_remove 의 단건 처리가 같은 정리
+        루틴을 공유한다. _on_remove 가 자체 다이얼로그를 띄운 뒤, 실제
+        정리는 이 함수로 위임한다.
         """
-        item = self.items.get(item_id)
-
-        delete_file = False
-        if (
-            item is not None
-            and item.status == DownloadStatus.DONE
-            and item.save_path
-            and Path(item.save_path).is_file()
-        ):
-            reply = QMessageBox.question(
-                self,
-                "항목 삭제",
-                f"이 항목을 목록에서 제거합니다.\n\n"
-                f"디스크의 파일도 함께 삭제하시겠습니까?\n{item.save_path}",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,  # 기본값 No
-            )
-            delete_file = (reply == QMessageBox.StandardButton.Yes)
-
-        # 진행 중 썸네일 워커 무효화 — dict 타입 보장
+        # 진행 중 썸네일 워커 무효화
         tw_dict = getattr(self, "_thumb_workers", None)
         if isinstance(tw_dict, dict):
             tw = tw_dict.pop(item_id, None)
@@ -505,23 +556,6 @@ class MainWindow(QMainWindow):
                 except Exception:
                     pass
 
-        # 활성 다운로드 워커가 있으면 취소 시그널 — 잔여물 정리는 워커가 함
-        dw = self.dl_workers.get(item_id)
-        if dw is not None and dw.isRunning():
-            try:
-                dw.cancel()
-            except Exception:
-                pass
-
-        # 디스크 파일 삭제는 위젯 제거 전에 (위젯 deleteLater 와 무관하게)
-        if delete_file and item is not None:
-            try:
-                Path(item.save_path).unlink(missing_ok=True)
-            except OSError:
-                # 권한 / 잠금 — 조용히 통과. 파일이 못 지워졌다고 항목 제거를
-                # 막지는 않는다 (사용자가 직접 탐색기에서 지울 수 있게).
-                pass
-
         widget = self.widgets.pop(item_id, None)
         if widget:
             self.list_layout.removeWidget(widget)
@@ -530,6 +564,89 @@ class MainWindow(QMainWindow):
         self.items.pop(item_id, None)
         self.info_workers.pop(item_id, None)
         self.dl_workers.pop(item_id, None)
+
+    def _on_open_folder(self, item_id: str):
+        """폴더 열기 버튼 클릭"""
+        item = self.items.get(item_id)
+        if item and item.save_path:
+            open_folder(item.save_path)
+
+    def _on_remove(self, item_id: str, skip_confirm: bool = False):
+        """
+        항목 ✕ 버튼 클릭.
+
+        분기 (상태별):
+        - 진행 중 (DOWNLOADING / MERGING / FETCHING):
+            "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?"
+            (체크박스 없음 — 산출물이 아직 없으므로)
+        - 완료(DONE) + 디스크 파일 존재:
+            "이 항목을 목록에서 제거하시겠습니까?"
+            + 체크박스 "다운로드된 파일 삭제" (기본 해제)
+        - 그 외 (DONE 인데 파일 없음, ERROR, CANCELLED, WAITING):
+            "이 항목을 목록에서 제거하시겠습니까?"
+            (체크박스 없음)
+
+        skip_confirm=True 는 시스템 경로(InfoWorker 에러, FormatSelectDialog
+        rejected)에서 자동 정리 시 사용 — 사용자의 ✕ 클릭이 아니므로 다이얼로그
+        를 건너뛰고 바로 정리한다.
+        """
+        item = self.items.get(item_id)
+        if item is None:
+            return
+
+        # 통계 — 분기 결정용
+        worker = self.dl_workers.get(item_id)
+        is_active = worker is not None and worker.isRunning()
+
+        is_done_with_file = (
+            item.status == DownloadStatus.DONE
+            and bool(item.save_path)
+            and Path(item.save_path).is_file()
+        )
+
+        # 다이얼로그 분기
+        delete_file = False
+        if not skip_confirm:
+            if is_active:
+                message       = (
+                    "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?"
+                )
+                checkbox_text = None
+            elif is_done_with_file:
+                message       = "이 항목을 목록에서 제거하시겠습니까?"
+                checkbox_text = "다운로드된 파일 삭제"
+            else:
+                message       = "이 항목을 목록에서 제거하시겠습니까?"
+                checkbox_text = None
+
+            dlg = ConfirmRemoveDialog(
+                self,
+                title         = "항목 제거",
+                message       = message,
+                checkbox_text = checkbox_text,
+            )
+            dlg.exec()
+            if not dlg.confirmed:
+                return
+            delete_file = dlg.delete_disk_files
+
+        # 활성 워커가 있으면 취소 — 잔여물 정리는 워커가 함
+        if is_active:
+            try:
+                worker.cancel()
+            except Exception:
+                pass
+
+        # 디스크 파일 삭제 (위젯 제거 전)
+        if delete_file and is_done_with_file:
+            try:
+                Path(item.save_path).unlink(missing_ok=True)
+            except OSError:
+                # 권한 / 잠금 — 조용히 통과
+                pass
+
+        # 위젯·dict 정리
+        self._remove_item_quiet(item_id)
 
         # 목록이 비면 빈 화면 레이블 표시
         if not self.widgets:
@@ -599,14 +716,14 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
             }
             QPushButton#btnAdd:hover { background: #5aa0e9; }
-            QPushButton#btnCancelAll {
+            QPushButton#btnClearList {
                 background: #555;
                 color: #ccc;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnCancelAll:hover { background: #e05555; color: #fff; }
+            QPushButton#btnClearList:hover { background: #e05555; color: #fff; }
             QPushButton#btnPrefs {
                 background: #444;
                 color: #ccc;
