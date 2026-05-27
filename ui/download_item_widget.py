@@ -242,6 +242,8 @@ class DownloadItemWidget(QWidget):
         - 그 외(WAITING/FETCHING/DOWNLOADING/MERGING) : "취소" 라벨로 복원
 
         status 라벨의 ERROR 시 빨간색은 활성 상태 (재)진입 시 원복한다.
+        ERROR / CANCELLED 시에는 진행률 바도 0 으로 초기화한다 —
+        재시도는 yt-dlp 가 처음부터 받으므로 멈춰 있는 막대는 시각적 모순.
         """
         # 단일 출처 동기화 — 이후 update_progress 의 가드가 올바로 동작하도록
         self.item.status = status
@@ -266,6 +268,7 @@ class DownloadItemWidget(QWidget):
             self.lbl_status.setStyleSheet("color: #e05555;")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.progress_bar.setValue(0)
 
         elif status == DownloadStatus.CANCELLED:
             # 사용자 취소 — 에러와 동일하게 재시도 가능
@@ -274,6 +277,7 @@ class DownloadItemWidget(QWidget):
             self.btn_open.setVisible(False)
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.progress_bar.setValue(0)
 
         elif status == DownloadStatus.MERGING:
             # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA 자리는 비움.
