@@ -1,6 +1,8 @@
 # ui/main_window.py
 # 메인 윈도우 - 앱의 핵심 화면
 
+from pathlib import Path
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QScrollArea, QMessageBox,
@@ -152,6 +154,7 @@ class MainWindow(QMainWindow):
         # 위젯 생성 후 목록에 추가
         widget = DownloadItemWidget(item, self)
         widget.cancel_requested.connect(self._on_cancel)
+        widget.retry_requested.connect(self._on_retry)
         widget.open_requested.connect(self._on_open_folder)
         widget.remove_requested.connect(self._on_remove)
         self.widgets[item.item_id] = widget
@@ -378,6 +381,62 @@ class MainWindow(QMainWindow):
         if worker and worker.isRunning():
             worker.cancel()
 
+    def _on_retry(self, item_id: str):
+        """
+        재시도 버튼 클릭.
+
+        ERROR / CANCELLED 상태의 항목을 같은 format_id / ext / save_dir 로
+        다시 다운로드한다. 화질 다이얼로그는 다시 띄우지 않는다 — 사용자가
+        한 번 고른 사양을 그대로. 잔여물(.part / .ytdl) 은 이전 워커가
+        취소/에러 종료 시점에 _cleanup_residue 로 이미 정리했으므로 yt-dlp 는
+        깨끗한 상태에서 처음부터 받는다.
+        """
+        item   = self.items.get(item_id)
+        widget = self.widgets.get(item_id)
+        if not item or not widget:
+            return
+
+        # 이전 워커 참조 정리 — isRunning() 은 False 일 것이지만 명시적 pop
+        prev = self.dl_workers.pop(item_id, None)
+        if prev is not None:
+            try:
+                prev.deleteLater()
+            except Exception:
+                pass
+
+        # save_path 는 다운로드 완료 시점에 파일 경로로 덮어쓰일 수 있다.
+        # 재시도에서는 저장 디렉터리가 필요하므로 config 의 최신 값을 다시 읽는다
+        # (사용자가 환경설정에서 폴더를 바꿨을 가능성도 흡수).
+        save_dir = self.config.get("save_path", "")
+        item.save_path = save_dir
+
+        widget.update_status(DownloadStatus.DOWNLOADING)
+        self.status_bar.showMessage(f"재시도 중: {item.title}")
+
+        worker = DownloadWorker(
+            url       = item.url,
+            format_id = item.format_id,
+            ext       = item.ext,
+            save_dir  = save_dir,
+        )
+        worker.progress.connect(widget.update_progress)
+        worker.speed.connect(widget.update_speed)
+        worker.eta.connect(widget.update_eta)
+        worker.merging.connect(
+            lambda: widget.update_status(DownloadStatus.MERGING)
+        )
+        worker.finished.connect(
+            lambda path: self._on_download_done(item_id, path)
+        )
+        worker.error.connect(
+            lambda err: self._on_download_error(item_id, err)
+        )
+        worker.cancelled.connect(
+            lambda: self._on_download_cancelled(item_id)
+        )
+        self.dl_workers[item_id] = worker
+        worker.start()
+
     def _on_cancel_all(self):
         """전체 취소 버튼 클릭"""
         # 진행 중인 워커가 있는지 먼저 확인
@@ -407,7 +466,35 @@ class MainWindow(QMainWindow):
             open_folder(item.save_path)
 
     def _on_remove(self, item_id: str):
-        """항목 삭제 버튼 클릭"""
+        """
+        항목 삭제 (✕) 버튼 클릭.
+
+        분기:
+        - DONE 이고 디스크 산출물이 존재하면 → "파일도 함께 삭제하시겠습니까?"
+          확인 다이얼로그. 기본값 No (실수 안전장치 — _on_cancel_all 의 전례).
+        - 그 외엔 확인 없이 리스트에서만 제거. 활성 다운로드 워커가 살아 있으면
+          취소 시그널을 보내고 (워커가 자식 프로세스·잔여물을 정리), 그대로
+          목록에서 제거한다.
+        """
+        item = self.items.get(item_id)
+
+        delete_file = False
+        if (
+            item is not None
+            and item.status == DownloadStatus.DONE
+            and item.save_path
+            and Path(item.save_path).is_file()
+        ):
+            reply = QMessageBox.question(
+                self,
+                "항목 삭제",
+                f"이 항목을 목록에서 제거합니다.\n\n"
+                f"디스크의 파일도 함께 삭제하시겠습니까?\n{item.save_path}",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,  # 기본값 No
+            )
+            delete_file = (reply == QMessageBox.StandardButton.Yes)
+
         # 진행 중 썸네일 워커 무효화 — dict 타입 보장
         tw_dict = getattr(self, "_thumb_workers", None)
         if isinstance(tw_dict, dict):
@@ -417,6 +504,23 @@ class MainWindow(QMainWindow):
                     tw.cancel()
                 except Exception:
                     pass
+
+        # 활성 다운로드 워커가 있으면 취소 시그널 — 잔여물 정리는 워커가 함
+        dw = self.dl_workers.get(item_id)
+        if dw is not None and dw.isRunning():
+            try:
+                dw.cancel()
+            except Exception:
+                pass
+
+        # 디스크 파일 삭제는 위젯 제거 전에 (위젯 deleteLater 와 무관하게)
+        if delete_file and item is not None:
+            try:
+                Path(item.save_path).unlink(missing_ok=True)
+            except OSError:
+                # 권한 / 잠금 — 조용히 통과. 파일이 못 지워졌다고 항목 제거를
+                # 막지는 않는다 (사용자가 직접 탐색기에서 지울 수 있게).
+                pass
 
         widget = self.widgets.pop(item_id, None)
         if widget:

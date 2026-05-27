@@ -2,11 +2,17 @@
 # 다운로드를 백그라운드 스레드에서 실행하는 파일
 # UI가 멈추지 않도록 QThread로 분리
 
+import os
 import time
+from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
-from utils.file_utils import strip_ansi
+from utils.file_utils import (
+    strip_ansi,
+    snapshot_child_pids,
+    terminate_pids,
+)
 
 
 # yt-dlp 가 _eta_str 자리에 ETA 산정 불가의 의미로 박는 placeholder 들.
@@ -65,6 +71,17 @@ class DownloadWorker(QThread):
         # 붙여 사용자에게 추정임을 알린다.
         self._dl_start_ts: float = 0.0
 
+        # 잔여물 추적 — 두 후크가 알려주는 모든 경로를 누적.
+        # 취소/에러 시 이 집합 + 각 경로의 .part / .ytdl 형제를 삭제한다.
+        # 정상 완료 시에는 손대지 않는다 (산출물이므로).
+        self._touched_files: set[str] = set()
+
+        # 자식 PID 차분용 스냅샷.
+        # run() 진입 직후 — Downloader.download() 가 yt-dlp 를 부르기 직전 —
+        # 우리 프로세스의 자식 PID 집합을 박아두고, 취소 시 다시 찍어
+        # 새로 늘어난 자식(=내가 띄운 ffmpeg/node) 만 종료한다.
+        self._pre_pids: set[int] = set()
+
     def run(self):
         """
         스레드 실행 진입점
@@ -76,6 +93,14 @@ class DownloadWorker(QThread):
         except ImportError:
             DownloadCancelled = None
 
+        # 자식 PID 스냅샷 — Downloader.download() 가 자식을 띄우기 직전.
+        # 이 시점 이후에 새로 늘어난 자식만 "내 워커가 띄운 자식" 으로 본다.
+        self._pre_pids = snapshot_child_pids()
+
+        cancelled = False
+        errored   = False
+        error_msg = ""
+
         try:
             self._downloader.download(
                 url              = self.url,
@@ -86,15 +111,29 @@ class DownloadWorker(QThread):
                 postprocess_hook = self._on_postprocess,
             )
 
-            # 정상 완료
-            self.finished.emit(self._output_path)
-
         except Exception as e:
-            # 취소 예외는 타입으로 판별 (문자열 매칭은 언어/버전에 취약)
             if DownloadCancelled is not None and isinstance(e, DownloadCancelled):
-                self.cancelled.emit()
+                cancelled = True
             else:
-                self.error.emit(str(e))
+                errored   = True
+                error_msg = str(e)
+
+        # ── 자식 / 잔여물 정리 ─────────────────────────────
+        # 취소 · 에러로 끝났을 때는 yt-dlp 자식(ffmpeg/node)이 살아 있을 수
+        # 있고, .part / .ytdl 잔여 파일도 남는다. 자식을 먼저 끊어야 (Windows
+        # 파일 잠금 해제) 잔여물 삭제가 성공한다.
+        if cancelled or errored:
+            new_pids = snapshot_child_pids() - self._pre_pids
+            terminate_pids(new_pids)
+            self._cleanup_residue()
+
+        # ── 결과 시그널 발사 ────────────────────────────────
+        if cancelled:
+            self.cancelled.emit()
+        elif errored:
+            self.error.emit(error_msg)
+        else:
+            self.finished.emit(self._output_path)
 
     def cancel(self):
         """외부에서 취소 요청"""
@@ -106,6 +145,9 @@ class DownloadWorker(QThread):
         다운로드 진행 중 주기적으로 호출됨
         """
         status = d.get("status")
+
+        # 모든 진행률 후크에서 알려주는 경로를 누적 (취소 시 정리용)
+        self._collect_paths_from_hook(d)
 
         if status == "downloading":
             # 시작 시각 기록 (ETA 폴백 산정용)
@@ -139,7 +181,7 @@ class DownloadWorker(QThread):
 
         elif status == "finished":
             # 단일 스트림 완료 (병합 전)
-            self._output_path = d.get("filename", "")
+            self._output_path = d.get("filename", "") or self._output_path
             self.progress.emit(100.0)
             # 다음 스트림(예: 오디오) 다운로드를 위해 시작 시각 리셋
             self._dl_start_ts = 0.0
@@ -196,6 +238,9 @@ class DownloadWorker(QThread):
         status        = d.get("status")
         postprocessor = d.get("postprocessor", "")
 
+        # 후처리 단계에서도 경로 후보를 누적 (취소 시 정리용)
+        self._collect_paths_from_hook(d)
+
         if postprocessor == "Merger" and status == "started":
             # 진짜 머지 단계 — 사용자에게 "병합 중" 표시
             self.merging.emit()
@@ -207,3 +252,71 @@ class DownloadWorker(QThread):
                 "filepath",
                 self._output_path
             )
+
+    # ── 잔여물 추적·정리 ──────────────────────────────────────
+
+    def _collect_paths_from_hook(self, d: dict):
+        """
+        yt-dlp 후크 dict 에서 파일 경로 후보를 모두 추출해 _touched_files 에 누적.
+
+        경로 후보가 등장하는 키 (yt-dlp 2026.3.17 기준):
+        - progress_hook: d["filename"]
+        - postprocess_hook: d["info_dict"]["filepath"], d["info_dict"]["__files_to_move"]
+        - 양쪽 공통: d["info_dict"]["filename"], d["info_dict"]["_filename"]
+
+        prefix 매칭 같은 추측 경로는 쓰지 않는다 — yt-dlp 가 명시적으로 알려준
+        경로만 신뢰. 빈 문자열·None 은 자연스럽게 걸러진다.
+        """
+        # progress_hook 의 평탄한 키
+        fn = d.get("filename")
+        if fn:
+            self._touched_files.add(fn)
+
+        info = d.get("info_dict") or {}
+        if not isinstance(info, dict):
+            return
+
+        # postprocess_hook 의 info_dict 경로 키들
+        for key in ("filepath", "filename", "_filename"):
+            v = info.get(key)
+            if isinstance(v, str) and v:
+                self._touched_files.add(v)
+
+        # __files_to_move 는 {원본경로: 목적경로} 형태의 dict (yt-dlp 내부 키)
+        files_to_move = info.get("__files_to_move")
+        if isinstance(files_to_move, dict):
+            for src, dst in files_to_move.items():
+                if isinstance(src, str) and src:
+                    self._touched_files.add(src)
+                if isinstance(dst, str) and dst:
+                    self._touched_files.add(dst)
+
+    def _cleanup_residue(self):
+        """
+        취소·에러로 끝났을 때 누적된 파일들과 그 .part / .ytdl 형제를 삭제.
+
+        자식 프로세스 종료가 선행되어야 Windows 의 파일 잠금이 풀려 삭제가
+        성공한다. run() 의 정리 블록에서 terminate_pids 직후 호출된다.
+
+        삭제 실패(권한 / 이미 없음 / 잠금) 는 조용히 무시 — 일부라도 지우는 게
+        목적이고, 실패 자체를 사용자에게 보고하지 않는다 (취소 흐름의 무게를
+        가볍게 유지).
+        """
+        for path_str in list(self._touched_files):
+            base = Path(path_str)
+            # 본체
+            self._safe_unlink(base)
+            # yt-dlp 잔여 형제 — base.part, base.ytdl, base.part.ytdl 등
+            # base.with_suffix 가 아니라 문자열 결합. 멀티-suffix(.mp4.part)
+            # 가 정상 패턴이라 with_suffix 는 망가뜨릴 수 있다.
+            for ext in (".part", ".ytdl", ".part.ytdl"):
+                self._safe_unlink(Path(str(base) + ext))
+
+    @staticmethod
+    def _safe_unlink(path: Path):
+        """파일이 있으면 지우고, 없거나 권한 실패면 조용히 통과."""
+        try:
+            if path.is_file():
+                path.unlink()
+        except OSError:
+            pass

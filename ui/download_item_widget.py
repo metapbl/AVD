@@ -16,12 +16,14 @@ class DownloadItemWidget(QWidget):
     다운로드 항목 하나를 표시하는 위젯
 
     시그널:
-        cancel_requested  : 취소 버튼 클릭 시
+        cancel_requested  : 취소 버튼 클릭 시 (라벨이 "취소" 일 때)
+        retry_requested   : 재시도 버튼 클릭 시 (라벨이 "재시도" 일 때 — ERROR/CANCELLED)
         open_requested    : 폴더 열기 버튼 클릭 시
         remove_requested  : 항목 삭제 버튼 클릭 시
     """
 
     cancel_requested = Signal(str)  # item_id 전달
+    retry_requested  = Signal(str)  # item_id 전달 — ERROR / CANCELLED 상태에서 재시도
     open_requested   = Signal(str)  # item_id 전달
     remove_requested = Signal(str)  # item_id 전달
 
@@ -96,13 +98,13 @@ class DownloadItemWidget(QWidget):
         btn_layout = QVBoxLayout()
         btn_layout.setSpacing(4)
 
-        # 취소 버튼
+        # 취소/재시도 버튼 — 같은 버튼을 상태에 따라 라벨·동작 전환.
+        # 라우터 메서드(_on_cancel_or_retry) 가 item.status 를 보고
+        # cancel_requested / retry_requested 중 하나를 발사한다.
         self.btn_cancel = QPushButton("취소")
         self.btn_cancel.setObjectName("btnCancel")
         self.btn_cancel.setFixedWidth(60)
-        self.btn_cancel.clicked.connect(
-            lambda: self.cancel_requested.emit(self.item.item_id)
-        )
+        self.btn_cancel.clicked.connect(self._on_cancel_or_retry)
         btn_layout.addWidget(self.btn_cancel)
 
         # 폴더 열기 버튼 (완료 후 표시)
@@ -193,6 +195,21 @@ class DownloadItemWidget(QWidget):
         """
         return f"{uploader}  •  {format_duration(duration)}"
 
+    # ── 버튼 라우터 ───────────────────────────────────
+
+    def _on_cancel_or_retry(self):
+        """
+        btn_cancel 의 라우터.
+
+        같은 버튼을 라벨에 따라 두 가지 동작으로 쓴다 — "취소" / "재시도".
+        판단 기준은 라벨 텍스트가 아니라 self.item.status (단일 출처).
+        라벨은 표시일 뿐이며 update_status 에서 상태에 맞춰 갱신된다.
+        """
+        if self.item.status in (DownloadStatus.ERROR, DownloadStatus.CANCELLED):
+            self.retry_requested.emit(self.item.item_id)
+        else:
+            self.cancel_requested.emit(self.item.item_id)
+
     # ── 외부에서 호출하는 업데이트 메서드 ──
 
     def update_progress(self, pct: float):
@@ -215,14 +232,26 @@ class DownloadItemWidget(QWidget):
         self.lbl_eta.setText(f"남은시간 {eta}")
 
     def update_status(self, status: DownloadStatus):
-        """상태 레이블 업데이트"""
+        """
+        상태 레이블 + 버튼 라벨 업데이트.
+
+        버튼 전환 규약:
+        - DONE      : 취소/재시도 숨김, "열기" 노출
+        - ERROR     : "재시도" 라벨, 가시
+        - CANCELLED : "재시도" 라벨, 가시 (사용자 취소도 재시도 가능)
+        - 그 외(WAITING/FETCHING/DOWNLOADING/MERGING) : "취소" 라벨로 복원
+
+        status 라벨의 ERROR 시 빨간색은 활성 상태 (재)진입 시 원복한다.
+        """
         # 단일 출처 동기화 — 이후 update_progress 의 가드가 올바로 동작하도록
         self.item.status = status
 
         self.lbl_status.setText(status.value)
+        # 활성 상태로 (재)진입할 때 ERROR 시 적용된 빨간 색을 원복
+        self.lbl_status.setStyleSheet("")
 
         if status == DownloadStatus.DONE:
-            # 완료 시 버튼 전환
+            # 완료 시 — 취소/재시도 자리 숨기고 "열기" 노출
             self.btn_cancel.setVisible(False)
             self.btn_open.setVisible(True)
             self.progress_bar.setValue(100)
@@ -230,8 +259,21 @@ class DownloadItemWidget(QWidget):
             self.lbl_eta.setText("")
 
         elif status == DownloadStatus.ERROR:
-            self.btn_cancel.setVisible(False)
+            # 에러 — 버튼을 "재시도" 라벨로 전환 (숨기지 않음)
+            self.btn_cancel.setText("재시도")
+            self.btn_cancel.setVisible(True)
+            self.btn_open.setVisible(False)
             self.lbl_status.setStyleSheet("color: #e05555;")
+            self.lbl_speed.setText("")
+            self.lbl_eta.setText("")
+
+        elif status == DownloadStatus.CANCELLED:
+            # 사용자 취소 — 에러와 동일하게 재시도 가능
+            self.btn_cancel.setText("재시도")
+            self.btn_cancel.setVisible(True)
+            self.btn_open.setVisible(False)
+            self.lbl_speed.setText("")
+            self.lbl_eta.setText("")
 
         elif status == DownloadStatus.MERGING:
             # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA 자리는 비움.
@@ -239,6 +281,18 @@ class DownloadItemWidget(QWidget):
             self.lbl_status.setText("병합 중")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            # 활성 상태이므로 라벨은 "취소" 로 복원
+            self.btn_cancel.setText("취소")
+            self.btn_cancel.setVisible(True)
+            self.btn_open.setVisible(False)
+
+        else:
+            # WAITING / FETCHING / DOWNLOADING — 활성 상태로 진입.
+            # 이전에 ERROR/CANCELLED 였다가 재시도로 돌아온 경우를 위해
+            # "취소" 로 라벨 복원 + 열기 버튼 숨김.
+            self.btn_cancel.setText("취소")
+            self.btn_cancel.setVisible(True)
+            self.btn_open.setVisible(False)
 
     def update_title(self, title: str):
         """제목 레이블 업데이트"""

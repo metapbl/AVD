@@ -2,6 +2,7 @@
 # 파일 경로, 이름, 확장자 관련 유틸리티 함수 모음
 
 import os
+import logging
 import re
 import unicodedata
 from pathlib import Path
@@ -150,3 +151,86 @@ def open_folder(path: str):
     elif os.path.isdir(path):
         # 폴더면 그냥 열기
         subprocess.run(["explorer", path])
+
+
+# ── 자식 프로세스 추적 헬퍼 ─────────────────────────────────
+# yt-dlp 는 다운로드/후처리 과정에서 ffmpeg.exe 와 node.exe(EJS 챌린지) 를
+# 자식 프로세스로 띄운다. 사용자가 취소를 누른 직후에도 이 자식들이 살아
+# 있으면 Windows 의 파일 잠금 때문에 .part / .ytdl 잔여물 삭제가 실패한다.
+#
+# 동시 다운로드 환경에서 "내 워커가 띄운 자식만" 안전하게 잡으려면 ──
+# 다른 워커의 자식까지 죽이면 그쪽 다운로드가 망가지므로 ── 워커가
+# 시작 직전에 자기 부모(=앱) 프로세스의 자식 PID 를 스냅샷하고, 취소
+# 시점에 다시 스냅샷해서 "내가 도는 동안 새로 늘어난 PID" 만 종료한다.
+
+_psutil_logger = logging.getLogger(__name__)
+
+
+def snapshot_child_pids() -> set[int]:
+    """
+    현재 우리 파이썬 프로세스의 모든 자손 PID 집합을 반환.
+
+    psutil 이 설치되어 있지 않거나 (선택 의존성) 권한 문제로 조회가
+    실패하면 빈 집합을 반환한다. 호출자는 빈 집합을 "추적 불가" 의
+    의미로 받아들여 자식 종료 로직 자체를 우회한다.
+    """
+    try:
+        import psutil
+    except ImportError:
+        _psutil_logger.warning(
+            "psutil 이 설치되어 있지 않아 자식 프로세스 추적을 건너뜁니다."
+        )
+        return set()
+
+    try:
+        me = psutil.Process(os.getpid())
+        return {child.pid for child in me.children(recursive=True)}
+    except psutil.Error:
+        # NoSuchProcess / AccessDenied — 무시하고 빈 집합
+        return set()
+
+
+def terminate_pids(pids: set[int], grace_seconds: float = 5.0) -> None:
+    """
+    주어진 PID 집합의 프로세스들을 우아하게 종료시킨다.
+
+    먼저 terminate() 로 SIGTERM 상당의 신호를 보내고, grace_seconds 안에
+    종료되지 않으면 kill() 로 강제 종료한다. 동시에 여러 PID 를 처리하므로
+    개별 PID 의 wait 가 직렬로 누적되지 않도록 일괄 terminate 후 일괄 wait
+    하는 패턴을 쓴다.
+
+    psutil 미설치 / 빈 집합 / 이미 죽은 PID 는 조용히 통과한다.
+    """
+    if not pids:
+        return
+
+    try:
+        import psutil
+    except ImportError:
+        return
+
+    procs: list = []
+    for pid in pids:
+        try:
+            procs.append(psutil.Process(pid))
+        except psutil.NoSuchProcess:
+            continue
+        except psutil.Error:
+            continue
+
+    # 1단계: 일괄 terminate
+    for p in procs:
+        try:
+            p.terminate()
+        except psutil.Error:
+            pass
+
+    # 2단계: 일괄 대기
+    gone, alive = psutil.wait_procs(procs, timeout=grace_seconds)
+
+    # 3단계: 여전히 살아 있으면 강제 종료
+    for p in alive:
+        try:
+            p.kill()
+        except psutil.Error:
+            pass

@@ -134,7 +134,7 @@ class Downloader:
 
             # 콜백
             "progress_hooks"     : [self._wrap_hook(progress_hook)],
-            "postprocessor_hooks": [postprocess_hook],
+            "postprocessor_hooks": [self._wrap_hook(postprocess_hook)],
         }
 
         # MP3 한정: ID3v2.3 강제 (Windows 호환).
