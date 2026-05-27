@@ -3,7 +3,7 @@
 > 이 문서는 AV_Downloader 의 작업 진척, 결정 사항, 잔여 과제를 추적합니다.
 > 프로젝트의 변하지 않는 정보(기술 스택·폴더 구조·코딩 컨벤션 등)는 `CLAUDE.md` 에 별도로 관리하며, 이 파일은 시간과 함께 자라는 정보만 담습니다.
 
-**최종 업데이트**: 2026-05-18
+**최종 업데이트**: 2026-05-27
 
 ---
 
@@ -38,6 +38,22 @@
 ## 2. Changelog (시간 역순)
 
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
+
+### 2026-05-27
+
+- **`fix(ui)`**: 취소·에러 상태 진입 시 진행률 바를 0 으로 초기화.
+  - `ui/download_item_widget.py`: `update_status` 의 `ERROR` / `CANCELLED` 분기에 `progress_bar.setValue(0)` 한 줄씩 추가. 기존엔 마지막 퍼센트(예: 37%)에 그대로 멈춰 있어 "재시도" 라벨과 시각적 모순 — yt-dlp 는 재시도 시 처음부터 받으므로 멈춘 막대는 "이어받기" 같은 잘못된 신호를 줬음
+
+- **`feat(ux)`**: 취소·재시작·삭제 동선 정비 (잔여물 정리 + 자식 프로세스 종료 + 재시도 + 조건부 파일 삭제).
+  - `workers/download_worker.py`: yt-dlp 두 후크(`progress_hook` 의 `filename`, `postprocess_hook` 의 `info_dict["filepath"]`/`__files_to_move`/`_filename`)가 알려준 모든 경로를 `_touched_files: set[str]` 에 누적. 취소·에러 종료 시 그 집합 + 각 경로의 `.part`/`.ytdl`/`.part.ytdl` 형제를 일괄 삭제. prefix 매칭 같은 추측 경로는 쓰지 않음 — yt-dlp 가 명시적으로 알려준 경로만 신뢰
+  - `workers/download_worker.py`: 워커 `run()` 진입 직후 우리 프로세스의 자식 PID 집합을 `_pre_pids` 에 스냅샷. 취소·에러 종료 시 재스냅샷해 차분(=내가 도는 동안 새로 늘어난 PID) 만 `terminate()` → 5초 대기 → 남은 것 `kill()`. 동시 다운로드 환경에서 다른 워커의 자식까지 잡지 않도록 워커별 차분이 핵심. Windows 의 파일 잠금이 풀려야 잔여물 삭제가 성공하므로 자식 종료가 잔여물 삭제보다 선행
+  - `core/downloader.py`: `postprocessor_hooks` 도 `_wrap_hook` 으로 감싸 머지·임베드·MoveFiles 단계에서도 `DownloadCancelled` 가 전파되도록 함. 기존엔 `progress_hooks` 만 wrap 되어 후처리 중 취소가 안 됐음
+  - `ui/download_item_widget.py`: 신규 시그널 `retry_requested(item_id)`. `btn_cancel` 의 라벨·동작을 `item.status` 단일 출처로 전환(`_on_cancel_or_retry` 라우터). `ERROR` / `CANCELLED` 상태에서 버튼을 숨기지 않고 "재시도" 라벨로 노출. 활성 상태 (재)진입 시 "취소" 로 복원 + ERROR 시 빨간 글자 색 원복
+  - `ui/main_window.py`: 신규 `_on_retry` — 같은 `format_id` / `ext` / `save_dir` 로 새 `DownloadWorker` 기동 (화질 다이얼로그 안 띄움). `save_path` 가 완료 시점에 파일 경로로 덮어쓰일 수 있어 config 에서 디렉터리를 다시 읽어 사용. `_on_remove` 가 DONE + 디스크 파일 존재 시 "파일도 함께 삭제하시겠습니까?" 확인 (기본값 No), 활성 워커가 살아 있으면 cancel 시그널 송신 (워커가 잔여물 정리)
+  - `utils/file_utils.py`: 신규 헬퍼 `snapshot_child_pids()` / `terminate_pids(pids, grace_seconds=5.0)`. psutil 미설치 / 권한 실패 시 빈 집합 반환 → 자식 종료 로직 자체를 우회 (graceful degrade). `terminate_pids` 는 일괄 terminate → `wait_procs` 일괄 대기 → 잔존만 `kill()` 의 3 단계
+  - `requirements.txt`: `psutil==6.1.0` 추가. 동시에 UTF-16 LE BOM 으로 깨져 있던 인코딩을 UTF-8 (no BOM) 로 재작성 (CLAUDE.md "PowerShell `>` 리다이렉션 함정" 의 그 케이스)
+  - 검증: ① 정상 완료 후 ✕ — 파일 삭제 확인 다이얼로그 (Yes/No 양쪽 정상). ② 다운로드 중 취소 — `.part`/`.ytdl` 잔여 없음, 작업 관리자에 ffmpeg/node 좀비 없음. ③ 재시도 — 화질 다이얼로그 안 뜨고 같은 사양으로 처음부터 받음. ④ 머지 중 취소 — `postprocess_hook` wrap 덕에 즉시 끊김
+  - 관련: 부록 A "학습된 교훈" 의 `Python · PySide6` / `yt-dlp` 항목 갱신 권장 (이번 커밋엔 미포함)
 
 ### 2026-05-18
 
@@ -144,15 +160,22 @@
   - MP3 추출 시 ID3v2.3 태그가 Windows 탐색기에서 정상 표시되는지 확인
 - [x] **파일명·ID3 태그 유니코드 NFC 정규화** ✅ (2026-05-18 완료, `process_ie_result` 경로로 m4a/mp3 양쪽 데이터 NFC 확정)
 - [x] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화** ✅ (2026-05-18 완료, `core/downloader.py` 의 `_BASE_OPTS` 로 socket_timeout/retries/fragment_retries/file_access_retries/retry_sleep_functions 적용. `fragment_retries` 는 CLI 외 경로에선 `float('inf')` 필요 — 핫픽스 `93578c3`)
-- [ ] **취소·재시작·삭제 동선 정비** (사용자 사양, 2026-05-18 합의)
-  - **취소 시 잔여물 즉시 삭제**: yt-dlp 의 두 후크(`progress_hook` 의 `d["filename"]`, `postprocess_hook` 의 `d["info_dict"]["filepath"]` 와 `__files_to_move`)에서 받은 모든 파일 경로를 워커별 `_touched_files: set[str]` 에 누적. 취소 시 그 집합 + 각 경로의 `.part`/`.ytdl` 형제를 삭제. prefix 매칭 같은 추측 경로는 쓰지 않음 — yt-dlp 가 알려주는 경로만 신뢰
-  - **자식 프로세스 종료**: yt-dlp 가 띄우는 ffmpeg.exe / node.exe(EJS) 자식이 취소 직후에도 살아 있으면 잔여물 삭제가 Windows 파일 잠금으로 실패한다. 워커가 다운로드 시작 직전 우리 프로세스의 자식 PID 집합을 스냅샷하고, 취소 시 다시 스냅샷해 **차분(=새로 늘어난 자식) 만** `terminate()` (5초 후 미사망 시 `kill()`). 동시 다운로드 시 다른 워커의 자식까지 잡지 않도록 워커별 차분 방식이 핵심. 새 의존성 `psutil` 도입 — `requirements.txt` 갱신 잊지 말 것
-  - **postprocess 단계 취소 검사**: 현재 `progress_hook` 에만 `DownloadCancelled` 검사가 있어 머지·임베드 중 취소가 안 됨. `postprocess_hook` 에도 동일 검사 추가
-  - **버튼 라벨 전환**: `DownloadItemWidget.btn_cancel` 을 상태에 따라 "취소"/"재시도" 로 동적 전환. 신규 시그널 `retry_requested(item_id)`. `main_window._on_retry` 가 같은 `format_id`·`save_dir` 로 새 `DownloadWorker` 기동 (화질 다이얼로그 안 띄움). 잔여물이 이미 삭제됐으니 yt-dlp 는 깨끗한 상태에서 처음부터 다시 받음
-  - **✕ 의 분기**: `item.status == DONE` 이고 `Path(item.save_path).exists()` 가 True 일 때만 "파일도 함께 삭제하시겠습니까?" 확인 다이얼로그(기본값 No — `_on_cancel_all` 의 실수 방지 전례). 체크 시 디스크 파일까지 삭제. 그 외엔 확인 없이 리스트에서만 제거
-  - 변경 파일 예상: `workers/download_worker.py`, `core/downloader.py`, `ui/download_item_widget.py`, `ui/main_window.py`, `utils/file_utils.py`(자식 PID 스냅샷·삭제 헬퍼), `requirements.txt`
-  - 함정 주의: yt-dlp 라이브러리는 같은 프로세스 안에 여러 `YoutubeDL` 인스턴스를 평행하게 두는 사용 패턴을 공식 보장하지 않음. 동시 다운로드 다수 환경에서의 일부 전역 상태 충돌 가능성은 중기 항목 "다운로드 큐 동시성 제어" 와 결부됨 — 이번 항목 범위 밖
-  - 발견: 2026-05-18 (사용자 실사용 피드백)
+- [x] **취소·재시작·삭제 동선 정비** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ux)` 와 `fix(ui)` 두 커밋 참조)
+- [ ] **삭제·취소 확인 다이얼로그 통일** (사용자 사양, 2026-05-27 합의)
+  - **배경**: 진행 중 항목의 "취소" / "✕" 클릭이 확인 없이 즉발이라 마우스 미끄러짐 사고 위험. 한편 완료된 항목의 ✕ 는 이미 "파일도 함께 삭제하시겠습니까?" 다이얼로그가 있는데 — Yes/No 의 두 선택이 사실 서로 다른 두 질문(① 목록에서 지울지 ② 디스크 파일도 지울지)을 한 축에 욱여넣고 있어 의미적으로 어색
+  - **재정의 — 다이얼로그의 본질 질문은 "목록에서 제거" 하나로 통일**. 디스크 삭제는 다이얼로그 안의 옵셔널 체크박스로 분리. 개별·일괄이 같은 패턴 공유
+  - **"전체 취소" → "목록 비우기" 로 이름·동작 재정의**: 사용자가 "전체" 라는 단어에서 떠올리는 멘탈 모델은 "이 화면을 통째로 청소" 이며, 진행 중 작업만 멈추고 목록은 남기는 현재 동작은 그 모델과 어긋남. 또한 완료·실패·취소 항목이 잔뜩 쌓여 청소하고 싶은 흔한 케이스를 ✕ 클릭 N 회로만 처리하는 현재 동선은 비효율적
+  - **동작 매트릭스 (확정)**:
+    - 진행 중 "취소" → "이 다운로드를 취소하시겠습니까?" (Yes/No, 기본 No). 체크박스 없음
+    - 진행 중 "✕" → "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?" (제거/닫기, 기본 닫기). 체크박스 없음 — 산출물이 아직 없으므로
+    - 완료(DONE) "✕", 파일 존재 → "이 항목을 목록에서 제거하시겠습니까?" + 체크박스 **"다운로드된 파일 삭제"** (기본 해제)
+    - 완료(DONE) "✕", 파일 없음 / 에러·취소·대기 "✕" → "이 항목을 목록에서 제거하시겠습니까?". 체크박스 없음
+    - "목록 비우기" → "목록의 모든 항목을 제거하시겠습니까?\n진행 중인 다운로드 M개는 취소됩니다." + (완료 파일이 1개 이상이면) 체크박스 **"다운로드된 파일들 일괄 삭제"** (기본 해제). 본문의 M 은 진행 중 항목 개수
+  - **언어 선택 근거**: 체크박스 라벨에서 "디스크" 단어 제외 — "다운로드된 파일" 표현이 도메인 어휘에 충실하고, 사용자가 자연스럽게 디스크 실물 파일을 떠올림. 라벨 개수 표기(N) 도 제외 — 본문은 정보 중심, 라벨은 액션 중심으로 분리. 다이얼로그 버튼은 Yes/No 가 아닌 "제거" / "닫기" 로 동작 명시
+  - **기본값은 모두 "닫기" 에 포커스** — 엔터 잘못 눌러도 사고 방지 (`_on_cancel_all` 의 실수 방지 전례 계승)
+  - **구현**: 신규 `ui/confirm_remove_dialog.py` 한 파일 (메시지 + 옵셔널 체크박스 + 제거/닫기 버튼, `confirmed: bool` / `delete_disk_files: bool` 두 결과 반환). `ui/main_window.py` 의 `_on_cancel` / `_on_remove` / `_on_cancel_all → _on_clear_list` 재작성 + `_build_toolbar` 버튼 라벨·objectName 변경 (`btnCancelAll` → `btnClearList`) + 스타일시트 셀렉터 변경
+  - 변경 파일 예상: `ui/confirm_remove_dialog.py` (신규), `ui/main_window.py`
+  - 발견: 2026-05-27 (사용자 실사용 피드백)
 - [ ] **항목 레이아웃 단순화** (사용자 사양, 2026-05-18 합의)
   - **취소/✕ 버튼 잘림 수정**: 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내는 현상. `lbl_title` 의 size policy 를 `Ignored, Preferred` 로 두고 `QFontMetrics.elidedText` 로 직접 잘라 표시. 워드랩은 켜지 않음(항목 높이 들쭉날쭉 방지)
   - **진행률 바 폭 상한**: `progress_bar.setMaximumWidth(400)`. 사용자 요구 "현재 길이에서 200px 단축" 의 견고한 형태(큰 윈도우에서도 과확장 방지)
