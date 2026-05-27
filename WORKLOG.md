@@ -172,6 +172,14 @@
 - [x] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화** ✅ (2026-05-18 완료, `core/downloader.py` 의 `_BASE_OPTS` 로 socket_timeout/retries/fragment_retries/file_access_retries/retry_sleep_functions 적용. `fragment_retries` 는 CLI 외 경로에선 `float('inf')` 필요 — 핫픽스 `93578c3`)
 - [x] **취소·재시작·삭제 동선 정비** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ux)` 와 `fix(ui)` 두 커밋 참조)
 - [x] **삭제·취소 확인 다이얼로그 통일** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 커밋 참조)
+- [ ] **환경설정 다이얼로그 정비** (2026-05-27 합의, 우선순위 ⬆)
+  - **문제**: `ui/preferences_dialog.py` 의 "동시 다운로드 수" SpinBox 가 컨테이너를 벗어나 숫자와 ± 버튼이 겹쳐 보임. "기본 저장 형식" 설정은 URL 입력 후 `FormatSelectDialog` 와 의미가 중복되어 사용자 혼란 유발
+  - **변경 1 (UI)**: SpinBox → QSlider 로 교체. 범위 1~10, 기본값 2, 현재 값 라벨 동반 표시
+  - **변경 2 (색 구간)**: 슬라이더 위·아래에 3개 QLabel 띠 배치 — 녹색 1~3 (권장), 노랑 4~5 (주의), 빨강 6~10 (비권장). 툴팁에 "yt-dlp 는 단일 인스턴스 병렬 다운로드를 공식 지원하지 않음. 1~3 권장" 명시
+  - **변경 3 (저장 형식 제거)**: "기본 저장 형식" 콤보박스 삭제. 마지막 선택한 확장자를 `config.json` 의 hidden key `last_chosen_ext` 로 기억하여 `FormatSelectDialog` 의 기본값으로 사용
+  - **주의**: 이 단계의 슬라이더는 **placebo** — 실제 동시성 제어는 "동시성 제어 구현" 항목에서 처리. 저장만 되고 동작에는 반영되지 않음을 코드 주석으로 명시
+  - 영향 파일: `ui/preferences_dialog.py`, 설정 로드/저장 모듈, `ui/format_select_dialog.py`, `main_window.py`
+  - 발견: 2026-05-27 (사용자 스크린샷 피드백)
 - [ ] **항목 레이아웃 단순화** (사용자 사양, 2026-05-18 합의)
   - **취소/✕ 버튼 잘림 수정**: 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내는 현상. `lbl_title` 의 size policy 를 `Ignored, Preferred` 로 두고 `QFontMetrics.elidedText` 로 직접 잘라 표시. 워드랩은 켜지 않음(항목 높이 들쭉날쭉 방지)
   - **진행률 바 폭 상한**: `progress_bar.setMaximumWidth(400)`. 사용자 요구 "현재 길이에서 200px 단축" 의 견고한 형태(큰 윈도우에서도 과확장 방지)
@@ -179,6 +187,13 @@
   - 폰트 크기·spacing·margin 미세조정은 안 함 (이전 세션에서 사용자가 거부한 접근)
   - 변경 파일: `ui/download_item_widget.py` 한 파일
   - 발견: 2026-05-18 (사용자 실사용 피드백)
+- [ ] **동시성 제어 구현 (큐 매니저)** (2026-05-27 합의)
+  - 환경설정 슬라이더 값이 실제로 동작하도록 다운로드 큐 매니저 도입
+  - `main_window.py` 에서 active worker 수를 추적하고, 한도 초과 시 신규 워커를 `WAITING` 상태로 대기열에 보관. 워커 종료(`finished`/`error`/`cancelled`) 시그널을 받아 다음 대기 항목 dispatch
+  - `DownloadItem.status == WAITING` 표시를 UI 에서 "대기 중"으로 명확히
+  - **선행 조건**: "환경설정 다이얼로그 정비" 완료 후 착수 (UI placebo → 실제 제어로 승격)
+  - 영향 파일: `main_window.py`, `models/download_item.py`, `ui/download_item_widget.py`
+  - 발견: 2026-05-27 (동시 다운로드 수 UI 논의 중)
 - [ ] **`_pick_thumbnail` 흔적 정리**
   - `core/info_fetcher.py`에서 의미 없는 공백/정렬 변경분 검토 후 정리 커밋
 - [ ] **README.md 업데이트**
@@ -321,6 +336,7 @@
 - 기본 retry/timeout 은 짧다. 실서비스 GUI 에서는 `socket_timeout`, `retries`, `fragment_retries='infinite'`, `file_access_retries`, `retry_sleep_functions` 를 명시해 일시적 stall 을 내부에서 흡수시켜야 한다.
 - **`ydl.download([url])` 은 내부에서 `extract_info` 를 다시 돌린다.** 우리가 호출 전에 가공한 info dict 가 있어도 무시되고 원본 NFD 메타가 그대로 후처리 체인에 흘러간다. 사전 정규화한 dict 를 유지하려면 `ydl.process_ie_result(info, download=True)` 를 써야 한다. yt-dlp 내부에서도 광범위하게 쓰이는 경로라 안정적.
 - **`FFmpegMetadataPP` 는 info dict 의 `title`/`artist`/`description` 등을 직접 읽어 `-metadata` 인자로 변환한다.** 즉 메타 내용을 통제하려면 ffmpeg 인자를 우회로 박는 것보다 info dict 자체를 정규화한 뒤 `process_ie_result` 로 흘리는 것이 단순하고 견고하다. 사용자 정의 키는 `meta_<name>` 또는 `meta_<idx>_<name>` 형태로 info dict 에 박으면 우선 적용된다.
+- **yt-dlp 병렬 다운로드 제한**: yt-dlp는 단일 프로세스 내 병렬 다운로드를 공식 지원하지 않는다. 사실상 안전 구간은 1~3개, 상한은 약 5개. 슬라이더·SpinBox 등 UI에서 더 큰 값을 허용하더라도 위험 구간(노랑·빨강)을 시각적으로 명시해야 사용자가 IP 차단·rate limit 위험을 인지할 수 있다. metube 기본값 3, youtube-dl-gui 한 자리 수가 업계 관행. (출처: 2026-05-27 동시 다운로드 수 UI 논의)
 
 ### 유니코드·파일명
 
@@ -341,3 +357,5 @@
 - **용어가 같다고 대상도 같지는 않다.** "썸네일"처럼 일상어가 두 개 이상의 기술 객체를 가리킬 때, 먼저 어느 대상인지 확정한다.
 - 진단 코드(print, 임시 파일 저장)는 가설 검증 후 즉시 제거하고 커밋에 섞지 않는다.
 - 가설은 한 번에 하나씩 검증한다. 동시에 여러 패치를 적용하면 원인 추적이 어려워진다.
+- **단일 질문 원칙(다이얼로그 설계)**: 확인 다이얼로그는 "하나의 질문 + 부가 옵션(체크박스)" 구조가 사용자 인지 부담이 가장 낮다. 두 개의 결정을 Yes/No로 강제 묶으면 사용자가 "예"의 의미를 매번 재해석해야 한다. (출처: 2026-05-27 "삭제·취소 확인 다이얼로그 통일" 작업)
+- **버튼 라벨은 동작을 진실하게 묘사해야 한다**: "전체 취소"라는 라벨이 실제로는 "진행 중인 다운로드만 취소"였기 때문에 사용자가 "목록 전체 삭제"로 오해. 라벨과 동작이 어긋나면 UX 부채가 누적되므로, 새 동작을 추가하기 전에 라벨부터 재검토할 것. (출처: 2026-05-27 "전체 취소 → 목록 비우기" 리네이밍)
