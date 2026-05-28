@@ -41,6 +41,20 @@
 
 ### 2026-05-28
 
+### 2026-05-28
+
+- **`feat(ui)`**: 동시성 제어 큐 매니저 도입 + `MainWindow` 분할.
+  - 신규 `controllers/download_manager.py` (`DownloadManager`, `QObject` 서브클래스): `MainWindow` 가 보유하던 다운로드 워커 오케스트레이션을 통째로 이관. 공개 API 는 `enqueue` / `retry` / `cancel` / `cancel_all` / `is_active` / `active_count` / `forget` 일곱 개. 라이프사이클 시그널 3개 (`item_done` / `item_error` / `item_cancelled`) 만 매니저가 재발사하고, 진행률·속도·ETA·병합은 워커→위젯 직접 연결(매니저 미경유) 로 두어 시그널 비용 최소화. `items` / `widgets` dict 는 `MainWindow` 가 단일 소유자이고 매니저는 참조만 받아 읽기·순회.
+  - 신규 `controllers/__init__.py`: 패키지 마커. 한 줄 주석.
+  - `ui/main_window.py`: `_on_format_selected` / `_on_retry` 를 매니저 위임 진입점으로 축소. `_on_cancel` / `_on_remove` / `_on_clear_list` 는 매니저의 `cancel` / `cancel_all` 호출로 단순화. 워커 종료 콜백 3개(`_on_download_done` / `_on_download_error` / `_on_download_cancelled`) 는 매니저 시그널 슬롯으로 재정의 — 위젯 상태 갱신과 status_bar 메시지만 책임짐. dispatch 로직(`_dispatch_next` / `_refresh_waiting_labels` / `_start_worker`) 은 매니저로 이사. `_remove_item_quiet` 가 `download_manager.forget(item_id)` 한 줄로 워커 dict 정리 위임. `_on_remove` 끝의 `download_manager.enqueue(item_id)` 호출은 WAITING 항목 제거 시 뒤쪽 WAITING 들의 순번 라벨이 즉시 당겨지도록 dispatch 를 한 번 깨우는 용도(no-op + label refresh).
+  - 큐 매니저 정책: 환경설정 슬라이더의 `max_concurrent` 값이 실제 동시 다운로드 수의 한도로 동작. `_dispatch_next` 가 `self.items` 의 dict 순서(=삽입 순서) 를 큐로 보고 빈 슬롯만큼 WAITING 항목들을 차례로 출발시킴. 별도 큐 자료구조를 두지 않음 — `status == WAITING` 인 것이 곧 대기열이라는 단일 출처 원칙. 슬라이더 8 로 키운 채 한 번에 10 개를 추가하면 한 번의 dispatch 로 8 개가 한꺼번에 출발하는 흐름까지 같은 루프가 처리.
+  - WAITING 항목 표시 (정책 P): `lbl_status` 에 `"대기 중 (N번째)"` 형태로 순번 표시. N 은 WAITING 항목들 사이의 순번이며 진행 중 항목은 카운트하지 않음. dispatch 직후 `_refresh_waiting_labels` 가 모든 WAITING 위젯의 순번을 다시 그려 한 칸씩 당겨진 상태를 즉시 반영.
+  - WAITING 항목 버튼 (정책 Y): `ui/download_item_widget.py` 의 `update_status` 에 WAITING 명시 분기 추가 — 취소·열기 버튼 모두 숨김. "취소" 버튼은 "진행 중인 무언가를 멈춘다" 의 의미가 견고해야 하는데 WAITING 은 진행 중이 아니므로 버튼을 노출하면 거짓말이 됨. 큐에서 빼는 동작은 ✕ 단일 경로로 통일. 신규 `update_waiting_position(n: int)` 메서드 — `MainWindow` (정확히는 매니저) 가 N 을 계산해 위젯에 주입.
+  - 재시도 정책 (정책 A): 재시도도 큐 규칙을 준수. `_on_retry` 가 항목을 WAITING 으로 떨어뜨린 뒤 매니저 `retry` 호출 → 슬롯이 비어 있으면 즉시 출발(사용자에겐 즉시로 보임), 슬롯이 꽉 차 있으면 잠시 "대기 중 (N번째)" 로 떨어졌다가 자기 차례에 출발. 슬라이더의 약속("동시 N개")을 재시도가 우회로로 깨지 않는다는 정직함.
+  - 검증 시나리오 6개 모두 통과: ① 슬라이더 2, 영상 5개 추가 → 2개 출발 + 3개 "대기 중 (1·2·3번째)", 하나 완료 시 순번 당겨짐. ② WAITING ✕ → 다이얼로그 후 제거, 뒤쪽 순번 당겨짐. ③ 진행 중 취소 → 대기 항목 자동 출발 (매니저 `_on_worker_cancelled` 의 `_dispatch_next`). ④ 슬라이더 6→2 축소 → 이미 도는 6개 워커는 유지, 신규는 한도 2 안에서만 출발(=의도된 동작, 진행 중 워커를 죽이지 않음). ⑤ 재시도 → 슬롯 여유 따라 즉시 또는 잠시 WAITING. ⑥ 영상 1개 추가 → 분할 전과 동일하게 정보 추출 → 화질 선택 → 다운로드 → 완료까지 흐름. ⑥ 은 새 동작이 거의 개입하지 않는 통제군 시나리오로, 분할 자체의 회귀를 잡기 위한 별도 검증.
+  - 관련: ADR-003 (분할 구조 결정의 맥락과 대안 기록).
+  - 사용자 합의 과정: 1차 응답에서 부분 발췌가 일곱 함수에 흩어져 가독성이 떨어진다는 사용자 지적 → 분할 vs 전체 파일 두 선택지 제시 → 분할 채택. refactor + feat 두 커밋으로 끊을지(a), 한 커밋으로 갈지(b) 다시 합의 → 응답 비용을 고려해 (b) 단일 feat 커밋 채택. (커밋 `954152f`)
+
 - **`feat(ui)`**: 항목 레이아웃 단순화 — 80px 욱여넣기 + 제목 엘라이드.
   - `ui/download_item_widget.py`: 썸네일 80px 안에 우측 4행을 욱여넣는 결정론적 배치. 균등 분배(`stretch=1`) 대신 행별 `setFixedHeight` 로 결정: 제목 26 + 메타 16 + 진행률 16 + 상태행 16 = 74, `info_layout.setSpacing(2)` × 3 간격 = 6, 합 80px ✅. 위젯 전체는 `setFixedHeight(96)` 로 외곽 고정(썸네일 80 + 상하 마진 8+8). 진행률 바 두께를 6 → 16 으로 키워 행 높이와 일치시키고 별도 래퍼 레이아웃 없이 단순화 (사용자 한 줄 제안 "진행률 바의 너비를 넓히면 되지 않을까요" — 산수의 직관적 정답이 사양이 됨)
   - `ui/download_item_widget.py`: 긴 제목 엘라이드 — `lbl_title` 의 size policy `(Ignored, Preferred)` 로 가로 sizeHint 권리 포기 + `resizeEvent` 오버라이드에서 `QFontMetrics.elidedText(ElideRight)` 로 라벨 폭에 맞춰 직접 잘라 표시. 원본 제목은 `self.item.title` 단일 출처에서 매번 다시 가져옴. `update_title` 갱신 시에도 새 원본으로 재엘라이드. 워드랩은 안 켬(항목 높이 들쭉날쭉 방지)
@@ -197,13 +211,7 @@
 - [x] **삭제·취소 확인 다이얼로그 통일** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 커밋 참조)
 - [x] **환경설정 다이얼로그 정비** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 환경설정 항목 참조 — 최종 구현은 `cab59c5`)
 - [x] **항목 레이아웃 단순화** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-28 의 `feat(ui)` 항목 참조 — 커밋 `8074e43`)
-- [ ] **동시성 제어 구현 (큐 매니저)** (2026-05-27 합의)
-  - 환경설정 슬라이더 값이 실제로 동작하도록 다운로드 큐 매니저 도입
-  - `main_window.py` 에서 active worker 수를 추적하고, 한도 초과 시 신규 워커를 `WAITING` 상태로 대기열에 보관. 워커 종료(`finished`/`error`/`cancelled`) 시그널을 받아 다음 대기 항목 dispatch
-  - `DownloadItem.status == WAITING` 표시를 UI 에서 "대기 중"으로 명확히
-  - **선행 조건**: "환경설정 다이얼로그 정비" 완료 후 착수 (UI placebo → 실제 제어로 승격)
-  - 영향 파일: `main_window.py`, `models/download_item.py`, `ui/download_item_widget.py`
-  - 발견: 2026-05-27 (동시 다운로드 수 UI 논의 중)
+- [x] **동시성 제어 구현 (큐 매니저)** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-28 의 `feat(ui)` "동시성 제어 큐 매니저 도입 + MainWindow 분할" 항목 참조 — 커밋 `954152f`. 관련 ADR-003)
 - [ ] **`_pick_thumbnail` 흔적 정리**
   - `core/info_fetcher.py`에서 의미 없는 공백/정렬 변경분 검토 후 정리 커밋
 - [ ] **README.md 업데이트**
@@ -315,6 +323,51 @@
 - **날짜**: TBD
 
 현재 "최고 화질"은 yt‑dlp의 `bestvideo+bestaudio/best`로 동작하며, YouTube의 VP9/AV1 우선 정책에 따라 H.264 1080p보다 파일이 작아질 수 있음. 사용자 혼란 방지를 위해 "최고 화질 (자동 · 효율 우선)"과 "최고 호환 (MP4/H.264)"를 분리할지 결정 필요. 추후 작성.
+
+---
+
+### ADR-003: 다운로드 워커 오케스트레이션을 `DownloadManager` 로 분리
+
+- 상태: Accepted
+- 날짜: 2026-05-28
+- 관련 커밋: `feat(ui): 동시성 제어 큐 매니저 도입 + MainWindow 분할` (`954152f`)
+
+#### 맥락 (Context)
+
+환경설정 슬라이더의 `max_concurrent` 값을 실제 동시 다운로드 수 제어로 승격시키는 작업("동시성 제어 구현") 을 시작하며 `MainWindow` 의 현재 책임 부담을 확인. `MainWindow` 는 이미 ① UI 구성, ② 항목 라이프사이클(추가/제거/일괄정리), ③ 다운로드 워커 오케스트레이션, ④ 썸네일 워커 관리, ⑤ 앱 차원 부수 동작(업데이트 체크/환경설정) 다섯 책임을 짊어진 약 500 줄짜리 클래스였음. 큐 매니저 정책(`_dispatch_next` / `_refresh_waiting_labels` / `_start_worker`) 을 ③ 에 추가하면 ③ 의 무게가 한 단계 더 커지고, 다음 단기 항목인 "다운로드 항목 메타데이터 표시 결손" 이 ② 를 키울 예정이라 분할 시점을 더 늦추기 어려운 상황.
+
+사용자가 1차 코드 제시(부분 발췌)의 가독성 문제를 지적한 것이 직접적 계기. 변경이 일곱 함수에 흩어져 부분 발췌의 이점이 사라졌고, 변경 지점이 묻혀 보였음. 단순 형식 문제가 아니라 분할이 늦었다는 신호로 해석.
+
+#### 결정 (Decision)
+
+다섯 책임 중 ③ 만 떼어내는 **최소 분할** 채택. 신규 패키지 `controllers/` 디렉터리에 `DownloadManager` (`QObject` 서브클래스) 를 신설하고, `MainWindow` 는 매니저에 위임만 수행.
+
+**경계 (boundary):**
+- 매니저가 책임지는 것: `DownloadWorker` 의 생성·연결·종료, `dl_workers` dict 보유, 동시성 한도 적용 (`_dispatch_next`), WAITING 순번 라벨 갱신 (`_refresh_waiting_labels`).
+- 매니저가 책임지지 않는 것: `InfoWorker` (항목 라이프사이클에 묶임), `ThumbnailWorker` (큐 정책과 무관), 다이얼로그, 위젯 자체의 생성·파괴.
+- `items` / `widgets` dict 는 `MainWindow` 가 단일 소유자. 매니저는 참조만 받아 읽기·순회. `ItemRegistry` 같은 추가 추상은 도입하지 않음 (이 규모에 과설계).
+
+**시그널 정책:**
+- 진행률·속도·ETA·병합 (`progress` / `speed` / `eta` / `merging`): 워커→위젯 **직접 연결** (매니저 미경유). 라이프사이클이 아니라 흐름이므로 매니저가 중계해 비용을 N 배로 늘릴 이유가 없음.
+- 라이프사이클 (`finished` / `error` / `cancelled`): 워커→매니저→`MainWindow` 의 두 단 경로. 매니저가 받아 자체 시그널 (`item_done` / `item_error` / `item_cancelled`) 로 재발사. 이 경로에서 매니저가 `_dispatch_next` 를 호출해 슬롯 한 칸 풀림을 즉시 다음 항목 출발로 이어줌.
+
+**큐 자료구조 부재:**
+별도 `Queue` / `deque` 를 두지 않고 `self.items` 의 dict 순서(=삽입 순서) 를 큐로 사용. 대기 중 항목 = `status == WAITING` 인 항목. 단일 출처 원칙 유지 — 두 자료구조를 동기화하는 비용과 그 동기화가 어긋날 위험을 회피.
+
+#### 결과 (Consequences)
+
+- `MainWindow` 는 약 500 줄 → 약 400 줄로 감소. 워커 시그널 연결 잡음이 매니저로 이동하여 `MainWindow` 의 가독성 개선.
+- 매니저는 UI 에 직접 의존하지 않음 (`widgets` 를 호출할 때는 인터페이스 메서드만 사용). 향후 단위 테스트 가능성 열림 — `widgets` 자리에 mock 을 주입하면 큐 정책만 검증 가능.
+- `CLAUDE.md` 의 "폴더 구조" 섹션에 `controllers/` 디렉터리 추가 갱신 필요 (별도 `docs(claude)` 커밋으로 따라감).
+- 다음에 ② 항목 라이프사이클이 커지면 (예: 항목 메타데이터 표시 확장, 항목 정렬·필터링) `ItemRegistry` 같은 추가 분할이 자연스러운 후보. 지금은 미루지만, 매니저 분리가 그 분할의 패턴을 미리 만든 셈.
+- 분할이 한 커밋에 기능 추가 (`feat`) 와 묶인 점은 정직성 비용. 두 커밋으로 끊는 (a) 안과 한 커밋으로 가는 (b) 안 사이에서 응답 비용을 이유로 (b) 채택. 검증 시나리오에 "분할 회귀" (시나리오 ⑥, 새 동작이 거의 개입하지 않는 가장 단순한 시나리오 — 영상 1 개 추가 후 완료까지) 를 별도로 둬 분할 부분의 무죄 추정을 확보하는 절차로 부분 보완.
+
+#### 대안 (Alternatives considered)
+
+- **A. 전체 파일 통째 제시 + 분할 없음**: 변경 추적은 쉬워지지만 `MainWindow` 가 계속 비대해짐. 다음 작업에서 같은 고민을 한 번 더 하게 됨.
+- **B. 다섯 책임 모두 분할 (controllers/items/workers/ui 등 전면 재배치)**: 이 규모에 과분할. 매니저 외 책임들은 분량이 작아 빼낸 후 한 파일이 다섯 줄짜리 메서드 세 개만 갖는 식이 됨.
+- **C. 큐 매니저만 `MainWindow` 안의 별도 메서드 그룹으로 둠 (분할 없음)**: 1차 응답의 형태였음. 변경 가독성이 떨어지고 향후 단위 테스트 가능성이 닫힘.
+- **D. refactor 와 feat 두 커밋으로 분리**: 정직하지만 응답을 두 번 끊는 비용이 두 커밋의 청결함을 능가한다고 판단해 단일 feat 로 묶음. 시나리오 ⑥ 으로 분할 회귀 검증을 따로 둠으로써 부분 보완.
 
 ---
 
