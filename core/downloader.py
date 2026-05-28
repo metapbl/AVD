@@ -100,6 +100,11 @@ class Downloader:
                 "-id3v2_version", "3",
                 "-write_id3v1", "1",
             ]
+            ydl_opts["postprocessor_args"]["extractaudio"] = [
+                "-metadata", "major_brand=",
+                "-metadata", "minor_version=",
+                "-metadata", "compatible_brands=",
+            ]
 
         convert_pp = {
             "key"   : "FFmpegThumbnailsConvertor",
