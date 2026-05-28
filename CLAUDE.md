@@ -134,6 +134,7 @@
 - **"썸네일" 이라는 용어는 두 가지 다른 대상을 가리킬 수 있음**: ① 앱 UI 의 QLabel 미리보기, ② 다운로드된 파일에 임베드된 메타데이터 이미지(Windows 탐색기 아이콘·앨범 아트). 디버깅 시 어느 쪽인지 반드시 명시.
 - **yt-dlp 의 EJS (External JS Runtime) 의존**. YouTube 다운로드는 2025년부터 Node.js / Deno / Bun 중 하나 필수. `js_runtimes`, `remote_components` 옵션 사용. 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
 - **`.gitignore` 는 이미 추적 중인 파일에 효과 없음**. `git rm --cached <파일>` 로 인덱스에서 빼야 함.
+- **`crawler` raw 모드는 호출당 최대 10000 바이트** — 첫 청크 크기를 파일 전체 크기로 오인하지 말 것. 빈 응답이 나올 때까지 offset 을 10000 씩 늘려 끝까지 읽고, 빈 응답은 같은 offset 재호출로 교차 검증(일시적 빈 응답 사례 다수).
 
 ## 10. 현재 상태와 다음 작업
 
