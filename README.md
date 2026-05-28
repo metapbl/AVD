@@ -42,7 +42,6 @@ pip install -r requirements.txt
 python main.py
 ```
 
-또는 Windows에서는 `run.bat` 더블클릭.
 
 ## 설정
 

@@ -37,7 +37,6 @@
     ├── WORKLOG.md                  # 작업 로그 (Changelog + ADR)
     ├── README.md                   # 외부 사용자용 안내
     ├── requirements.txt
-    ├── run.bat
     ├── .gitignore
     ├── core/
     │   ├── downloader.py           # yt-dlp 다운로드 실행
