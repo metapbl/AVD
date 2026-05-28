@@ -56,11 +56,54 @@ class InfoFetcher:
         return VideoInfo(
             url       = url,
             title     = info.get("title", "제목 없음"),
-            thumbnail = info.get("thumbnail", ""),
+            thumbnail = self._pick_thumbnail(info),
             duration  = info.get("duration", 0),
             uploader  = info.get("uploader", ""),
             formats   = self._parse_formats(info),
         )
+    
+    def _pick_thumbnail(self, info: dict) -> str:
+        """
+        info dict 에서 가장 적절한 썸네일 URL 을 고른다.
+
+        yt-dlp 의 `info["thumbnail"]` 은 단일 best 후보 한 개만 들어 있고
+        YouTube 의 maxresdefault.jpg 처럼 실제로는 404 인 URL 이 들어오는
+        경우가 있다. 그래서 `info["thumbnails"]` 리스트(품질·preference 정보
+        포함)를 먼저 살펴 best 를 직접 고른다.
+
+        선정 규칙:
+            1. `thumbnails` 후보 중 url 이 문자열이고 http(s) 로 시작하는
+               항목만 추림.
+            2. 점수 = (preference, width*height, 원래 인덱스) 튜플로
+               내림차순 정렬해 1 위 채택. preference·해상도 정보가 없으면
+               0 으로 간주.
+            3. 후보가 비어 있으면 `info["thumbnail"]` 로 폴백.
+            4. 둘 다 없으면 빈 문자열.
+        """
+        thumbnails = info.get("thumbnails") or []
+
+        scored = []
+        for idx, t in enumerate(thumbnails):
+            if not isinstance(t, dict):
+                continue
+            url = t.get("url")
+            if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+                continue
+            preference = t.get("preference") or 0
+            width      = t.get("width")  or 0
+            height     = t.get("height") or 0
+            area       = width * height
+            scored.append((preference, area, idx, url))
+
+        if scored:
+            # preference → area → 원래 인덱스 순으로 내림차순. 정보가 전혀
+            # 없으면 (0, 0, idx) 가 되어 yt-dlp 가 마지막에 둔(보통 best)
+            # 후보가 채택된다.
+            scored.sort(reverse=True)
+            return scored[0][3]
+
+        fallback = info.get("thumbnail", "")
+        return fallback if isinstance(fallback, str) else ""
 
     def _parse_formats(self, info: dict) -> list[FormatInfo]:
         """
