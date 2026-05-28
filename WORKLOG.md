@@ -40,6 +40,15 @@
 
 ### 2.1. 2026-05-28
 
+- **`fix(downloader)`**: YouTube 토큰 만료 회귀 — `process_ie_result` 우회를 PostProcessor 정공법으로 대체.
+  - 2026-05-18 의 NFC 보존 결정(`ydl.download([url])` → `process_ie_result(probed, download=True)` 우회) 이 YouTube 의 토큰 정책 강화와 충돌해 `HTTP Error 403: Forbidden` 회귀를 일으킴. 같은 URL 을 CLI 단독으로 받으면 정상이지만 우리 앱은 실패하는 비대칭이 통제 실험(`test_ytdlp_api.py` 의 실험 1 단순 `ydl.download` 성공 / 실험 2 `process_ie_result` 실패) 으로 분리됨. probe 단계에서 받은 format URL 의 nsig/sig 토큰이 download 단계에서 더는 유효하지 않은 것으로 해석.
+  - `core/downloader.py`: probe 단계 통째 삭제. 본 다운로드를 `ydl.download([url])` 로 복귀. NFC 정규화는 모듈 최상위에 신설한 커스텀 `_NFCNormalizePP` (PostProcessor 서브클래스) 가 `when="pre_process"` 단계 — `extract_info` 직후, 파일명 결정·다운로드·메타 임베드 모두에 앞섬 — 에서 info dict 의 모든 문자열 값을 재귀적으로 NFC 화. yt-dlp 의 정상 토큰 흐름을 건드리지 않으면서 ID3 TIT2 / m4a `©nam` atom / 파일명까지 NFC 보장. `ydl.add_post_processor(_NFCNormalizePP(), when="pre_process")` 한 줄로 등록.
+  - `_NFCNormalizePP.run(info)` 는 같은 자리에서 `info["meta_comment"] = info.get("description") or ""` 사전 주입도 수행. `FFmpegMetadataPP._get_metadata_opts` 가 `add(('purl','comment'), 'webpage_url')` 로 박은 값을 그 다음 `meta_<key>` regex 루프가 우리 값으로 덮어쓰는 메커니즘 이용 (yt-dlp 소스 확인). SoundCloud 의 `comment` 자동 매핑 문제도 같은 커밋에서 함께 해소 — description 이 있으면 그것을, 없으면 빈 문자열. URL 보관은 별도로 박히는 `purl` 태그가 담당.
+  - `_BASE_OPTS` 에서 `js_runtimes` / `remote_components` 두 줄 제거. node 명시 고정이 deno/bun 자동 선택을 막던 점을 자동 탐지에 맡겨 해소. CLI 가 같은 영상에 `[jsc:deno] Solving JS challenges using deno` 로 동작 확인.
+  - 파일명 sanitize 는 우리 `sanitize_filename` 대신 yt-dlp 의 `windowsfilenames: True` + `trim_file_name: 200` 에 위임. `outtmpl` 의 title 자리에 `%(title)s` 사용 — `_NFCNormalizePP` 가 info dict 의 `title` 을 이미 NFC 화한 뒤 파일명 결정 단계가 도므로 NFC 파일명 보장. `utils.normalize_info_dict` / `sanitize_filename` 의 downloader 내 사용은 종료 (file_utils 자체에는 잔존 — 다른 호출자 위함).
+  - 검증: ① `https://www.youtube.com/watch?v=PPKuqgyzCXc` 우리 앱 mp3 다운로드 성공 (403 해소). ② 한글 영상 셋 (SoundCloud m4a/mp3, YouTube mp3) 의 TIT2 / `©nam` 코드포인트가 mutagen 확인 결과 모두 `0xac00`~`0xd7ff` 범위 NFC 단일 음절 — NFD 자모 흔적 없음. ③ ffprobe `format_tags=comment,purl` 확인 결과 `comment` 가 URL 이 아니며 (description 또는 빈 값), `purl` 에 원본 URL 별도 보존. ④ 일본식 슬래시(U+FF5C)·쉼표·괄호 포함 제목이 안전한 파일명으로 생성.
+  - 관련: ADR-004 (본 커밋이 ADR-001 의 후처리 체인을 보강하고 2026-05-18 의 `fix(downloader)` "NFC 메타데이터를 yt-dlp 의 정상 경로로 흘려보내는 구조로 재구성" 결정을 부분 번복함을 기록). 부록 A "학습된 교훈" 의 `yt-dlp` 항목 갱신. (커밋 `316c642`)
+
 - **`docs(claude/worklog)`**: 두 문서의 형식 규칙 재정의 — 헤더 번호 체계(1, 1.1 형식, 깊이 2까지), 코드 제시 규칙 2-bullet 단순화(함수 2개 이하면 함수 단위, 그 외 파일 전체 — 300줄 한도 폐지), 터미널 명령 규칙 압축 + `New-Item` 신규 파일 흐름 흡수, 마크다운 파일 전송 시 바깥 펜스는 안쪽보다 백틱 1개 더(``` → ````), 불릿 들여쓰기 2칸 통일. `CLAUDE.md` "알려진 함정" 섹션을 영구 제약만 남기고 yt-dlp 썸네일 검토 메모는 본 파일 섹션 3 으로 이관. WORKLOG 의 "최종 업데이트" 메타 줄 삭제(시간 역순 Changelog 가 이미 최신 시점을 명시). 섹션 3 단기 목록의 ✅ 누적 정책을 "완료 시 즉시 삭제" 로 변경하고 누적된 ✅ 8 개 항목 일괄 삭제(모두 본 Changelog 에 대응 항목 존재). 섹션 3 중기 목록에서 이미 완료된 3 개 항목 삭제(취소 시 부분 파일 정리·네트워크 재시도·다운로드 큐 동시성 제어). ADR-003 신설.
 
 - **`feat(ui)`**: 동시성 제어 큐 매니저 도입 + `MainWindow` 분할.
@@ -217,11 +226,6 @@
   - FFmpegMetadataPP 의 `meta_<key>` info dict 주입 경로 또는 후처리 후 별도 ffmpeg 호출로 `major_brand` / `minor_version` / `compatible_brands` 세 키만 표적 제거
   - 우선순위 낮음 (잔재는 디코더 동작에 무해, ffprobe 에서만 보이는 메타 노이즈)
   - 발견: 2026-05-18
-- **SoundCloud 출처의 `comment` 가 트랙 URL 로 자동 채워짐**
-  - yt-dlp 의 `FFmpegMetadataPP` 가 `webpage_url` 을 `comment` 로 매핑. 원본 트랙 설명을 잃음
-  - `parse_metadata` 또는 `info["comment"]` 사전 주입으로 회피 가능
-  - 우선순위 낮음
-  - 발견: 2026-05-18 (NFC 검증 중 부수 발견)
 
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
@@ -362,6 +366,74 @@
 
 ---
 
+### 4.4. ADR-004: `process_ie_result` 우회 폐기, NFC 보존을 PostProcessor 정공법으로
+
+- **상태**: Accepted
+- **날짜**: 2026-05-28
+- **관련 커밋**: `fix(downloader): YouTube 토큰 만료 회귀 …` (`316c642`)
+- **대체 관계**: 2026-05-18 의 `fix(downloader)` "NFC 메타데이터를 yt-dlp 의 정상 경로로 흘려보내는 구조로 재구성" 결정을 **부분 번복** (process_ie_result 사용 부분). ADR-001 의 후처리 체인 결정은 유효, 본 ADR 이 한 단계(`pre_process` 의 NFC PP) 를 추가하는 형태로 보강.
+
+#### 맥락 (Context)
+
+2026-05-18 에 NFC 메타 보존을 위해 본 다운로드 호출을 `ydl.download([url])` → `ydl.process_ie_result(probed, download=True)` 로 교체. probe 에서 받아 NFC 화한 info dict 를 재추출 없이 후처리 체인에 흘리는 우회로 사용. SoundCloud 의 NFD 한글 메타가 NFC 로 보존되는 것을 검증.
+
+2026-05-28 mp3 메타 정리 작업의 검증 단계에서 같은 코드가 YouTube 영상 다운로드 시 `HTTP Error 403: Forbidden` 으로 실패하는 회귀가 발견됨. 통제 실험:
+
+- yt-dlp CLI 단독 호출 (`yt-dlp -x --audio-format mp3 ...`) — 성공
+- 같은 venv 에서 Python API `ydl.download([url])` 단독 호출 — 성공
+- 같은 venv 에서 Python API `ydl.process_ie_result(probed, download=True)` — 실패 (403)
+
+원인 해석: probe 단계에서 yt-dlp 가 가져온 format URL(googlevideo 의 `videoplayback?...`) 의 nsig/sig 토큰에 만료 시점이 있고, 두 번째 `process_ie_result` 호출 시점에 그 토큰이 더는 유효하지 않거나, yt-dlp 가 download 단계에서 토큰을 새로 발급받는 흐름이 `process_ie_result` 경로에서는 우회됨. YouTube 의 토큰 정책이 5월 사이 더 엄격해진 것으로 보이며, SoundCloud · 다른 사이트는 같은 문제가 없어 약 열흘 동안 잠복.
+
+#### 결정 (Decision)
+
+`process_ie_result` 우회를 폐기하고 NFC 보존을 **`pre_process` 단계의 커스텀 PostProcessor** 로 달성.
+
+**구조:**
+
+- `core/downloader.py` 모듈 최상위에 `_NFCNormalizePP(PostProcessor)` 정의. `run(info)` 에서 info dict 의 모든 문자열 값을 재귀적으로 `unicodedata.normalize("NFC", ...)`. 동시에 `info["meta_comment"] = info.get("description") or ""` 사전 주입 — `FFmpegMetadataPP` 의 `webpage_url → comment` 자동 매핑 차단 (이전엔 별도 단기 항목이었으나 같은 PP 안에서 비용 0 으로 해결).
+- `ydl.add_post_processor(_NFCNormalizePP(), when="pre_process")` 로 등록. `pre_process` 의 정의는 yt-dlp README 의 "after video extraction" — `extract_info` 직후, 파일명 결정·다운로드·모든 일반 PP 보다 앞.
+- 본 다운로드는 `ydl.download([url])` 로 복귀. probe 단계 삭제.
+
+**경계 (boundary):**
+
+- NFC 정규화의 단일 출처는 `_NFCNormalizePP`. 호출자(워커·매니저) 는 NFC 를 신경 쓰지 않음.
+- `utils.file_utils` 의 `normalize_unicode` / `normalize_info_dict` / `sanitize_filename` 은 그대로 보존되지만 `core/downloader.py` 는 더 이상 사용하지 않음. 다른 호출자 (예: `core/info_fetcher.py` 의 InfoWorker 경로) 가 여전히 필요로 할 수 있어 file_utils 자체에는 유지.
+- 파일명 sanitize 는 yt-dlp 의 `windowsfilenames: True` + `trim_file_name: 200` 에 위임. Windows 금지 문자 처리와 길이 제한이 yt-dlp 의 outtmpl 처리 단계에서 일어남.
+
+**부수 결정:**
+
+- `_BASE_OPTS` 의 `js_runtimes: {"node": {}}` / `remote_components: ["ejs:github"]` 두 줄 제거. node 단일 고정이 deno/bun 자동 선택을 가로막던 점을 자동 탐지에 맡겨 해소. yt-dlp 가 사용 가능한 런타임을 알아서 고른다 (CLI 동작에서 deno 가 선택됨을 확인).
+
+#### 결과 (Consequences)
+
+**긍정**
+
+- YouTube 토큰 흐름이 yt-dlp 의 정상 경로를 따라 처리되어 403 회귀 해소.
+- NFC 보존은 한 PP 하나의 책임으로 응집. 메타 통제 관련 모든 가공이 같은 자리에서 일어나 추적 비용 감소.
+- SoundCloud `comment` 자동 매핑 문제도 같은 PP 가 `meta_comment` 사전 주입으로 해결 — 별도 코드 경로 불필요.
+- JS 런타임 환경 변화에 둔감 (node 만 박혀 있던 고정이 풀림).
+- 코드 라인 수가 줄어듦 (55 insertions / 111 deletions).
+
+**부정**
+
+- 2026-05-18 의 결정에 대한 신뢰가 약화됨. probe-then-process 패턴 자체가 일반적으로 안전하다고 가정했으나 YouTube 의 토큰 정책이 그 가정을 깨뜨릴 수 있음을 학습. 다른 사이트에서도 같은 가정이 깨질 가능성 — 후속 회귀 시 비슷한 진단을 빠르게 할 수 있도록 부록 A 에 함정 기록.
+- 파일명 sanitize 를 외부(yt-dlp) 에 위임하면서 `sanitize_filename` 의 엄밀한 동작 명세 (200자 제한, `download` fallback 등) 가 약간 다른 메커니즘으로 대체됨. yt-dlp 의 `windowsfilenames` 가 우리 sanitize 와 비트 단위로 같은 결과를 보장하지는 않으나, Windows 안전성은 동등.
+
+#### 대안 검토 (Alternatives considered)
+
+- **A. `process_ie_result` 유지하되 download 직전에 토큰만 새로 받기**: yt-dlp 의 사적 API 호출 필요. 깨지기 쉬운 길.
+- **B. `extract_info(url, download=True)` 한 번 호출 — probe 없이**: NFC 정규화할 틈이 사라짐. 길 C 보다 약함.
+- **C. `MetadataParserPP` 의 INTERPRET 액션으로 title NFC 강제**: 소스 검토 결과 INTERPRET 는 "info dict 의 기존 값을 정규식으로 파싱해 같거나 다른 키에 박는" 변환이지 "임의 외부 값을 info dict 에 박는" 도구가 아님. NFC 값을 외부에서 주입할 길이 없어 채택 불가.
+- **D(채택). `pre_process` 단계 커스텀 PostProcessor**: yt-dlp README 가 공식적으로 권장하는 임베딩 패턴 (`ydl.add_post_processor(MyCustomPP(), when='pre_process')`). 정공법.
+
+#### 관련 (See also)
+
+- ADR-001 (썸네일 처리 — 후처리 체인). 본 ADR 이 그 체인의 가장 앞 단계에 `_NFCNormalizePP` 를 추가.
+- 부록 A "학습된 교훈" 의 `yt-dlp` 항목 — `process_ie_result` 토큰 만료 함정과 `pre_process` 권장 패턴.
+
+---
+
 ## 5. 부록 A. 학습된 교훈 (Lessons)
 
 > 같은 실수를 반복하지 않기 위한 메모. `CLAUDE.md` "9. 알려진 함정" 이 영구 제약만 담는다면, 본 부록은 디버깅 사례에서 얻은 구체적 함정과 회피책을 주제별로 누적한다.
@@ -391,6 +463,8 @@
 - HLS 는 `total_bytes` / `total_bytes_estimate` 가 둘 다 없어 yt-dlp 내부 ETA 산식 (`(total - downloaded) / speed`) 이 성립하지 않는다. 진행률은 프래그먼트 기준으로 별도 산정돼 정상 표시되지만 ETA 만 공란·placeholder 가 된다. 우리는 `_eta_str` placeholder 감지 + `pct` × `elapsed` 추정으로 우회 (`~M:SS` 표기).
 - **`ydl.download([url])` 은 내부에서 `extract_info` 를 다시 돌린다.** 우리가 호출 전에 가공한 info dict 가 있어도 무시되고 원본 NFD 메타가 그대로 후처리 체인에 흘러간다. 사전 정규화한 dict 를 유지하려면 `ydl.process_ie_result(info, download=True)` 를 써야 한다. yt-dlp 내부에서도 광범위하게 쓰이는 경로라 안정적.
 - **`FFmpegMetadataPP` 는 info dict 의 `title` / `artist` / `description` 등을 직접 읽어 `-metadata` 인자로 변환한다.** 즉 메타 내용을 통제하려면 ffmpeg 인자를 우회로 박는 것보다 info dict 자체를 정규화한 뒤 `process_ie_result` 로 흘리는 것이 단순하고 견고하다. 사용자 정의 키는 `meta_<name>` 또는 `meta_<idx>_<name>` 형태로 info dict 에 박으면 우선 적용된다.
+- **`process_ie_result(probed, download=True)` 우회는 YouTube 에서 깨질 수 있다.** probe 단계에서 받은 format URL 의 nsig/sig 토큰이 download 시점에 만료된 상태로 사용되어 `HTTP Error 403: Forbidden` 이 난다. CLI 단독 호출과 `ydl.download([url])` 은 같은 환경에서 정상이지만 `process_ie_result` 경로만 실패하는 비대칭으로 진단. 다른 사이트(SoundCloud 등) 에서는 토큰 정책이 느슨해 같은 패턴이 동작하지만, YouTube 처럼 엄격한 사이트에선 깨진다. NFC 정규화·메타 가공 같은 사전 처리는 **`pre_process` 단계의 커스텀 PostProcessor 로 옮기는 것이 정공법** (아래 항목 참조). 위 두 줄("`ydl.download([url])` 은 내부에서 `extract_info` 를 다시 돌린다…", "`FFmpegMetadataPP` 는 info dict 의 `title` / `artist` …") 은 그 시점에 진실이었고 본 항목과 함께 읽으면 시간순 학습 경로가 됨. (출처: 2026-05-28 ADR-004)
+- **`pre_process` PostProcessor 가 info dict 사전 가공의 정공법.** yt-dlp README 의 임베딩 예시 그대로: `ydl.add_post_processor(MyCustomPP(), when="pre_process")`. `pre_process` 는 "after video extraction" — `extract_info` 직후, 파일명 결정·다운로드·일반 후처리 모두에 앞섬. NFC 정규화, `meta_<key>` 사전 주입, 사용자 정의 메타 가공은 이 단계에서 일어나는 것이 가장 깨끗. info dict 의 기존 키를 임의 외부 값으로 바꿔야 하는 작업은 `MetadataParserPP` 의 INTERPRET 액션으로는 불가 (INTERPRET 는 info dict 의 기존 값을 정규식으로 재해석할 뿐) — 커스텀 PP 가 정답. (출처: 2026-05-28 ADR-004)
 - **yt-dlp 병렬 다운로드 제한**: yt-dlp 는 단일 프로세스 내 병렬 다운로드를 공식 지원하지 않는다. 사실상 안전 구간은 1~3개, 상한은 약 5개. 슬라이더·SpinBox 등 UI 에서 더 큰 값을 허용하더라도 위험 구간(노랑·빨강) 을 시각적으로 명시해야 사용자가 IP 차단·rate limit 위험을 인지할 수 있다. metube 기본값 3, youtube-dl-gui 한 자리 수가 업계 관행. (출처: 2026-05-27 동시 다운로드 수 UI 논의)
 
 ### 5.4. 유니코드·파일명
