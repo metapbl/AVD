@@ -40,6 +40,11 @@
 
 ### 2.1. 2026-05-28
 
+- **fix(downloader): mp3 컨테이너 잔재 메타 선별 제거** (`1c06bfd`)
+  - ExtractAudio 단계의 `postprocessor_args["extractaudio"]` 에 `-metadata major_brand= / minor_version= / compatible_brands=` 빈 값을 주입해 ftyp 박스 잔재가 ID3 TXXX 프레임으로 복제되는 경로를 차단.
+  - 2026‑05‑18 에 `-map_metadata -1` 일괄 제거 시 TIT2 까지 같이 사라지던 부작용 없이 선별 제거 달성.
+  - 검증: ffprobe 로 세 키 모두 부재 확인, TIT2(NFC) · comment(description) · purl(원본 URL) 회귀 없음.
+
 - **`fix(downloader)`**: YouTube 토큰 만료 회귀 — `process_ie_result` 우회를 PostProcessor 정공법으로 대체.
   - 2026-05-18 의 NFC 보존 결정(`ydl.download([url])` → `process_ie_result(probed, download=True)` 우회) 이 YouTube 의 토큰 정책 강화와 충돌해 `HTTP Error 403: Forbidden` 회귀를 일으킴. 같은 URL 을 CLI 단독으로 받으면 정상이지만 우리 앱은 실패하는 비대칭이 통제 실험(`test_ytdlp_api.py` 의 실험 1 단순 `ydl.download` 성공 / 실험 2 `process_ie_result` 실패) 으로 분리됨. probe 단계에서 받은 format URL 의 nsig/sig 토큰이 download 단계에서 더는 유효하지 않은 것으로 해석.
   - `core/downloader.py`: probe 단계 통째 삭제. 본 다운로드를 `ydl.download([url])` 로 복귀. NFC 정규화는 모듈 최상위에 신설한 커스텀 `_NFCNormalizePP` (PostProcessor 서브클래스) 가 `when="pre_process"` 단계 — `extract_info` 직후, 파일명 결정·다운로드·메타 임베드 모두에 앞섬 — 에서 info dict 의 모든 문자열 값을 재귀적으로 NFC 화. yt-dlp 의 정상 토큰 흐름을 건드리지 않으면서 ID3 TIT2 / m4a `©nam` atom / 파일명까지 NFC 보장. `ydl.add_post_processor(_NFCNormalizePP(), when="pre_process")` 한 줄로 등록.
@@ -221,11 +226,6 @@
   - `DownloadWorker.file_size` 시그널은 정의돼 있으나 위젯 슬롯 연결이 없을 가능성 — `ui/main_window.py` 라우팅 확인 필요
   - 해상도·코덱·비트레이트는 `FormatInfo` 에 있을 가능성이 높으나 위젯이 받지 않음 — 데이터 흐름 설계 필요
   - 발견: 2026-05-17 검증 중
-- **MP3 컨테이너 잔재 메타의 *선별적* 제거 (`major_brand` 등)**
-  - 1차 시도(`-map_metadata -1`) 는 ID3 TIT2 까지 함께 날리는 부작용으로 철회됨
-  - FFmpegMetadataPP 의 `meta_<key>` info dict 주입 경로 또는 후처리 후 별도 ffmpeg 호출로 `major_brand` / `minor_version` / `compatible_brands` 세 키만 표적 제거
-  - 우선순위 낮음 (잔재는 디코더 동작에 무해, ffprobe 에서만 보이는 메타 노이즈)
-  - 발견: 2026-05-18
 
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
