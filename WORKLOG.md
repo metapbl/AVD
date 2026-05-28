@@ -232,11 +232,32 @@
   - CLAUDE.md 존재 및 사용법 한 줄 추가
   - WORKLOG.md 구조(섹션 1~5 + 부록 A) 변경 사실 한 줄 추가
   - `controllers/` 디렉터리 신설 한 줄 (폴더 구조 다이어그램에 반영)
-- **다운로드 항목 메타데이터 표시 결손**
-  - 파일 크기, 해상도, 비디오 코덱·포맷, 오디오 코덱·비트레이트가 UI 에 표시되지 않음
-  - `DownloadWorker.file_size` 시그널은 정의돼 있으나 위젯 슬롯 연결이 없을 가능성 — `ui/main_window.py` 라우팅 확인 필요
-  - 해상도·코덱·비트레이트는 `FormatInfo` 에 있을 가능성이 높으나 위젯이 받지 않음 — 데이터 흐름 설계 필요
-  - 발견: 2026-05-17 검증 중
+- **메타 행에 코덱·포맷·비트레이트 추가**
+    - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`
+    - 현재 `"업로더 • 재생시간"` 한 줄 → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"` 형태로 확장. 오디오 전용 항목은 `"아티스트 • 3:42 • MP3 320kbps"`.
+    - `FormatInfo` 에 `vcodec` / `acodec` / `abr` / `tbr` 필드 추가 — yt-dlp raw format dict 에서 그대로 가져옴.
+    - 표시 시점: 위젯 생성 직후에는 업로더·재생시간만, 사용자가 `FormatSelectDialog` 에서 화질 확정한 직후(`_on_format_selected`) 코덱·비트레이트까지 채워 메타 라벨 재갱신.
+    - 통합 포맷(`bestvideo+bestaudio/best`) 정책: 선택 시점에 어떤 코덱이 채택될지 미확정이라 코덱 자리는 빈 값 또는 `"자동"`. ffprobe 호출 같은 추가 비용은 도입하지 않음 (이번 단기 과제 범위 밖).
+    - 코덱 표기 정규화: yt-dlp 의 `vcodec` 은 `"avc1.640028"` 같은 raw 코덱 문자열이라 사람 친화 이름(`H.264`, `VP9`, `AV1`, `AAC`, `Opus`, `MP3` 등) 으로 매핑하는 작은 헬퍼 필요. 매핑 출처: yt-dlp wiki / MDN.
+
+- **ETA 안정화 (속도 출렁임에 따른 라벨 출렁임 완화)**
+    - 위치: `ui/download_item_widget.py` `update_eta` (한 곳)
+    - 현상: yt-dlp 의 `_eta_str` 은 매 progress 콜백마다 순간 속도 기반으로 재계산되어, 속도가 출렁이면 ETA 라벨도 그대로 출렁임. HLS 폴백 경로(`_emit_eta` 의 직접 계산) 도 동일.
+    - 정책: 워커는 그대로 두고 위젯 측에서 두 가드를 적용.
+        - (i) 스로틀: 직전 갱신 시각 대비 0.5 초 이내면 무시.
+        - (ii) 변화 임계치: 직전 표시값 대비 변화량이 작으면 무시. 임계치는 비례식 — `max(3초, min(현재 ETA 의 5%, 30초))`. 예: ETA 10분 → 30초 이내 변동 무시, ETA 30초 → 3초 이내 변동 무시, ETA 1시간 → 30초 이내 변동 무시(상한 적용).
+    - 상태(MERGING / DONE / 등) 진입 시에는 임계치 가드를 우회하고 즉시 비움(현 동작 유지). 직전 표시값 저장은 라벨 텍스트가 아니라 위젯 인스턴스 변수에 초 단위 숫자로.
+    - ETA 문자열 파싱: 워커가 emit 하는 형식은 `"M:SS"` / `"H:MM:SS"` / `"~M:SS"` 셋. 비례식 적용을 위해 초 단위 정수로 환원하는 작은 파서 필요. `~` 접두사 유무는 무시.
+
+- **파일명 확장자를 제목 라벨에 표시**
+    - 위치: `ui/download_item_widget.py` `_apply_title_elide` · `update_title` · 새 `update_ext`, `ui/main_window.py` `_on_format_selected`
+    - 표시 형식: 제목 끝에 확장자 — 폭이 넉넉할 때 `"긴 영상 제목.mp4"`, 폭이 좁아 제목이 잘릴 때 `"긴 영상 제… .mp4"` (확장자는 절대 잘리지 않음).
+    - elide 정책:
+        - 모드는 `ElideRight` 이지만 Qt 의 기본 줄임표 `…` (U+2026 단일 문자) 사용 + 줄임표와 `.` 사이에 공백 1칸 — 즉 `"… .mp4"`. 점 4개(`....`) 가 연달아 보이는 시각 충돌 회피.
+        - 직접 elide: 확장자 + 구분 공백의 폭만큼 가용 폭에서 미리 빼고, 제목만 `QFontMetrics.elidedText(ElideRight)` 로 자른 뒤, 결과 뒤에 `" .mp4"` 를 다시 붙임. 잘림이 발생하지 않으면 공백 없이 `".mp4"` 만 붙임 (자연스러운 케이스).
+    - 확장자 스타일: HTML rich text 로 부분 색만 다르게 — 확장자 색 `#ffd060`, 굵기는 제목과 동일(이미 bold). `lbl_title.setText("<span>...</span>")` 사용. 제목에 `<` / `>` / `&` 가 포함된 경우 대비 `html.escape` 로 escape.
+    - 표시 시점(가드): 화질 선택 전에는 확장자 비표시. 위젯 인스턴스에 `_ext_known: bool` 플래그를 두고, `update_ext` 가 한 번이라도 호출되어야 elide 결과에 확장자를 끼움. `MainWindow._on_format_selected` 가 `item.ext = fmt.ext` 직후 `widget.update_ext(fmt.ext)` 호출.
+    - `update_ext` 는 내부적으로 `_apply_title_elide` 를 재호출하여 라벨을 다시 그림. 폭 변경(resize) 시에도 기존 `resizeEvent` 경로가 그대로 elide 를 다시 적용하므로 별도 작업 없음.
 
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
