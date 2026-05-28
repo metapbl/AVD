@@ -3,10 +3,10 @@
 
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QProgressBar, QPushButton
+    QLabel, QProgressBar, QPushButton, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QFontMetrics
 from models.download_item import DownloadItem, DownloadStatus
 from utils.file_utils import format_duration, open_folder
 
@@ -20,6 +20,16 @@ class DownloadItemWidget(QWidget):
         retry_requested   : 재시도 버튼 클릭 시 (라벨이 "재시도" 일 때 — ERROR/CANCELLED)
         open_requested    : 폴더 열기 버튼 클릭 시
         remove_requested  : 항목 삭제 버튼 클릭 시
+
+    레이아웃 사양 (2026-05-28 합의):
+        - 썸네일 120×80
+        - 위젯 전체 fixed height 96 (썸네일 80 + 상하 마진 8+8)
+        - 우측 4행은 썸네일 80px 안에 욱여넣음:
+            제목 26 + 메타 16 + 진행률 16 + 상태행 16 = 74
+            + info_layout.spacing 2 × 3 = 6
+            = 80 ✅
+        - 진행률 바 두께 16 (행 높이와 동일 — 별도 래퍼 불필요)
+        - 균등 분배(stretch=1)는 쓰지 않음. 행별 setFixedHeight 로 결정론적 배치.
     """
 
     cancel_requested = Signal(str)  # item_id 전달
@@ -30,6 +40,7 @@ class DownloadItemWidget(QWidget):
     def __init__(self, item: DownloadItem, parent=None):
         super().__init__(parent)
         self.item = item
+        self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
         self._apply_style()
 
@@ -43,7 +54,7 @@ class DownloadItemWidget(QWidget):
 
         # ── 썸네일 영역 ──
         self.lbl_thumb = QLabel()
-        self.lbl_thumb.setFixedSize(120, 68)
+        self.lbl_thumb.setFixedSize(120, 80)
         self.lbl_thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_thumb.setStyleSheet(
             "background:#1e1e1e; border-radius:4px;"
@@ -52,13 +63,23 @@ class DownloadItemWidget(QWidget):
         root.addWidget(self.lbl_thumb)
 
         # ── 정보 + 진행률 영역 ──
+        # 4행 행별 고정 높이로 썸네일 80px 안에 욱여넣는다.
+        # spacing 2 × 3 간격 = 6px, 라벨 예산 80-6=74px,
+        # 제목 26 + 메타 16 + 진행률 16 + 상태행 16 = 74 ✅
         info_layout = QVBoxLayout()
-        info_layout.setSpacing(4)
+        info_layout.setSpacing(2)
 
-        # 제목
+        # 제목 — 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내지 않도록
+        # 가로 sizeHint 권리를 포기시킨다(Ignored). 실제 텍스트 잘라내기는
+        # resizeEvent → _apply_title_elide 에서 QFontMetrics 로 처리.
+        # 원본 제목은 self.item.title 단일 출처에서 항상 다시 가져온다.
         self.lbl_title = QLabel(self.item.title)
         self.lbl_title.setObjectName("itemTitle")
         self.lbl_title.setWordWrap(False)
+        self.lbl_title.setSizePolicy(
+            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
+        )
+        self.lbl_title.setFixedHeight(26)
         info_layout.addWidget(self.lbl_title)
 
         # 업로더 + 재생시간 — 위젯 생성 시점엔 둘 다 비어 있을 수 있다.
@@ -67,24 +88,30 @@ class DownloadItemWidget(QWidget):
             self._format_meta(self.item.uploader, self.item.duration)
         )
         self.lbl_meta.setObjectName("itemMeta")
+        self.lbl_meta.setFixedHeight(16)
         info_layout.addWidget(self.lbl_meta)
 
-        # 진행률 바
+        # 진행률 바 — 두께 16 으로 행 자체의 높이와 동일하게.
+        # 별도 래퍼 레이아웃 없이 바 자체가 행이 된다.
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        self.progress_bar.setFixedHeight(6)
+        self.progress_bar.setFixedHeight(16)
         self.progress_bar.setTextVisible(False)
         info_layout.addWidget(self.progress_bar)
 
         # 상태 + 속도 + 남은시간
         status_row = QHBoxLayout()
+        status_row.setContentsMargins(0, 0, 0, 0)
         self.lbl_status = QLabel(self.item.status.value)
         self.lbl_status.setObjectName("itemStatus")
+        self.lbl_status.setFixedHeight(16)
         self.lbl_speed  = QLabel("")
         self.lbl_speed.setObjectName("itemMeta")
+        self.lbl_speed.setFixedHeight(16)
         self.lbl_eta    = QLabel("")
         self.lbl_eta.setObjectName("itemMeta")
+        self.lbl_eta.setFixedHeight(16)
         status_row.addWidget(self.lbl_status)
         status_row.addStretch()
         status_row.addWidget(self.lbl_speed)
@@ -195,6 +222,37 @@ class DownloadItemWidget(QWidget):
         """
         return f"{uploader}  •  {format_duration(duration)}"
 
+    # ── 제목 엘라이드 ─────────────────────────────────
+
+    def _apply_title_elide(self):
+        """
+        lbl_title 의 현재 폭에 맞춰 self.item.title 을 ElideRight 로 잘라
+        라벨에 다시 박는다. setText 가 잘린 문자열로 라벨을 덮으므로
+        원본 제목은 self.item.title 단일 출처에서 매번 다시 가져온다.
+
+        호출 지점은 두 곳:
+        - resizeEvent: 항목 폭이 바뀔 때마다 다시 잘라 박는다
+        - update_title: 제목 자체가 갱신되어 단일 출처가 바뀌었을 때
+        """
+        fm = QFontMetrics(self.lbl_title.font())
+        # 라벨 폭이 아직 0 일 수 있는 첫 paint 직전 케이스 — 그땐 원본 그대로.
+        # 이후 resizeEvent 가 진짜 폭으로 다시 호출한다.
+        avail = self.lbl_title.width()
+        if avail <= 0:
+            self.lbl_title.setText(self.item.title)
+            return
+        self.lbl_title.setText(
+            fm.elidedText(self.item.title, Qt.TextElideMode.ElideRight, avail)
+        )
+
+    def resizeEvent(self, event):
+        """
+        항목 폭이 바뀌면 제목 엘라이드를 다시 적용.
+        Qt 의 QLabel 은 자동 엘라이드를 제공하지 않으므로 직접 처리.
+        """
+        super().resizeEvent(event)
+        self._apply_title_elide()
+
     # ── 버튼 라우터 ───────────────────────────────────
 
     def _on_cancel_or_retry(self):
@@ -302,6 +360,7 @@ class DownloadItemWidget(QWidget):
         """제목 레이블 업데이트"""
         self.lbl_title.setText(title)
         self.item.title = title
+        self._apply_title_elide()
 
     def update_meta(self, uploader: str, duration: int):
         """
@@ -335,7 +394,7 @@ class DownloadItemWidget(QWidget):
 
         # 라벨의 실제 크기 사용. 초기 0x0 회피용으로 fixed size fallback.
         target_w = self.lbl_thumb.width()  or 120
-        target_h = self.lbl_thumb.height() or 68
+        target_h = self.lbl_thumb.height() or 80
 
         scaled = pixmap.scaled(
             target_w, target_h,
