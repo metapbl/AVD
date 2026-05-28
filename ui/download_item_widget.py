@@ -294,14 +294,16 @@ class DownloadItemWidget(QWidget):
         상태 레이블 + 버튼 라벨 업데이트.
 
         버튼 전환 규약:
+        - WAITING   : 취소·열기 모두 숨김. ✕ 만 노출 — 큐 대기 중에는 취소할
+                      워커가 없으므로 "취소" 버튼은 거짓말이 된다. 큐에서 빼는
+                      동작은 ✕ 단일 경로로 통일.
         - DONE      : 취소/재시도 숨김, "열기" 노출
         - ERROR     : "재시도" 라벨, 가시
         - CANCELLED : "재시도" 라벨, 가시 (사용자 취소도 재시도 가능)
-        - 그 외(WAITING/FETCHING/DOWNLOADING/MERGING) : "취소" 라벨로 복원
+        - 그 외(FETCHING/DOWNLOADING/MERGING) : "취소" 라벨로 복원
 
         status 라벨의 ERROR 시 빨간색은 활성 상태 (재)진입 시 원복한다.
-        ERROR / CANCELLED 시에는 진행률 바도 0 으로 초기화한다 —
-        재시도는 yt-dlp 가 처음부터 받으므로 멈춰 있는 막대는 시각적 모순.
+        ERROR / CANCELLED 시에는 진행률 바도 0 으로 초기화.
         """
         # 단일 출처 동기화 — 이후 update_progress 의 가드가 올바로 동작하도록
         self.item.status = status
@@ -310,7 +312,18 @@ class DownloadItemWidget(QWidget):
         # 활성 상태로 (재)진입할 때 ERROR 시 적용된 빨간 색을 원복
         self.lbl_status.setStyleSheet("")
 
-        if status == DownloadStatus.DONE:
+        if status == DownloadStatus.WAITING:
+            # 큐 대기 — 취소·열기 모두 숨김, ✕ 만 노출.
+            # 순번 라벨("대기 중 (N번째)") 은 MainWindow 가 dispatch 직후
+            # update_waiting_position 으로 주입한다. 그때까지는 enum 의
+            # 기본 라벨("대기중") 이 표시된다.
+            self.btn_cancel.setVisible(False)
+            self.btn_open.setVisible(False)
+            self.progress_bar.setValue(0)
+            self.lbl_speed.setText("")
+            self.lbl_eta.setText("")
+
+        elif status == DownloadStatus.DONE:
             # 완료 시 — 취소/재시도 자리 숨기고 "열기" 노출
             self.btn_cancel.setVisible(False)
             self.btn_open.setVisible(True)
@@ -339,7 +352,6 @@ class DownloadItemWidget(QWidget):
 
         elif status == DownloadStatus.MERGING:
             # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA 자리는 비움.
-            # yt-dlp 의 postprocess 후크는 퍼센트를 제공하지 않으므로 텍스트만.
             self.lbl_status.setText("병합 중")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
@@ -349,12 +361,27 @@ class DownloadItemWidget(QWidget):
             self.btn_open.setVisible(False)
 
         else:
-            # WAITING / FETCHING / DOWNLOADING — 활성 상태로 진입.
+            # FETCHING / DOWNLOADING — 활성 상태.
             # 이전에 ERROR/CANCELLED 였다가 재시도로 돌아온 경우를 위해
             # "취소" 로 라벨 복원 + 열기 버튼 숨김.
             self.btn_cancel.setText("취소")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
+
+    def update_waiting_position(self, n: int):
+        """
+        큐 대기 순번 갱신.
+
+        MainWindow._refresh_waiting_labels 가 dispatch 직후 호출.
+        N 은 WAITING 항목들 사이의 순번(진행 중 항목은 카운트하지 않음).
+        N == 1 이면 "다음에 출발할 항목" 의 의미.
+
+        상태가 WAITING 이 아닐 때 호출되면 무시한다 — 경계 케이스 방어
+        (dispatch 와 status 전이 사이의 짧은 시간 차).
+        """
+        if self.item.status != DownloadStatus.WAITING:
+            return
+        self.lbl_status.setText(f"대기 중 ({n}번째)")
 
     def update_title(self, title: str):
         """제목 레이블 업데이트"""
