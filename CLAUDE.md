@@ -1,7 +1,7 @@
 # AV_Downloader — Claude 컨텍스트 파일
 
 > 이 파일은 새 세션 시작 시 Claude 에게 프로젝트 맥락을 즉시 제공하기 위한 컨텍스트 파일입니다.
-> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub raw URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "9. 새 세션 시작 방법" 참조).
+> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub blob URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "11. 새 세션 시작 방법" 참조).
 
 ---
 
@@ -135,6 +135,7 @@
 - **yt-dlp 의 EJS (External JS Runtime) 의존**. YouTube 다운로드는 2025년부터 Node.js / Deno / Bun 중 하나 필수. `js_runtimes`, `remote_components` 옵션 사용. 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
 - **`.gitignore` 는 이미 추적 중인 파일에 효과 없음**. `git rm --cached <파일>` 로 인덱스에서 빼야 함.
 - **`crawler` raw 모드는 호출당 최대 10000 바이트** — 첫 청크 크기를 파일 전체 크기로 오인하지 말 것. 빈 응답이 나올 때까지 offset 을 10000 씩 늘려 끝까지 읽고, 빈 응답은 같은 offset 재호출로 교차 검증(일시적 빈 응답 사례 다수).
+- **`crawler` raw 모드는 같은 호스트·URL 시퀀스 안에서 누적 출력이 약 28KB 를 넘으면 "끝"으로 잘못 보고함**. 60KB 짜리 `WORKLOG.md` 를 raw 로 읽다가 28KB 부근에서 "Offset N is at or beyond end of body" 가 떠도 실제 끝이 아닐 수 있음. 호스트를 갈아타면(`raw.githubusercontent.com` → `github.com/.../raw/...` 또는 `cdn.jsdelivr.net/gh/...`) 새 누적 윈도가 열림. GitHub API 의 `contents` 엔드포인트로 `size` 필드를 먼저 확인하면 진짜 끝을 알 수 있음. 한국어 산문이 결정적으로 필요하지 않다면 raw 대신 blob (markdown 변환) 경로가 한 호출로 끝남 — 11.1 참조.
 
 ## 10. 현재 상태와 다음 작업
 
@@ -146,13 +147,15 @@
 
 ### 11.1. claude.ai 웹 채팅 (현재 주력)
 
-새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 raw URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
+새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub **blob** URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
 
-> 프로젝트 컨텍스트: https://raw.githubusercontent.com/metapbl/AVD/main/CLAUDE.md
+> 프로젝트 컨텍스트: https://github.com/metapbl/AVD/blob/main/CLAUDE.md
 >
-> 최신 작업 로그: https://raw.githubusercontent.com/metapbl/AVD/main/WORKLOG.md
+> 최신 작업 로그: https://github.com/metapbl/AVD/blob/main/WORKLOG.md
 >
 > 위 두 문서를 먼저 읽어주십시오.
+
+URL 선택 근거: blob 경로는 GitHub 의 HTML 페이지를 도구가 markdown 으로 변환해 한 호출에 파일 전체를 반환한다. `WORKLOG.md` 가 60KB 를 넘어도 한 번에 끝난다. 트레이드오프: blob → markdown 변환 과정에서 **한국어 산문이 상당 부분 빠질 수 있음** — 다만 헤더·번호 체계·코드 블록·식별자·커밋 해시·영문 키워드·ADR 번호는 모두 보존되므로 구조 파악과 키워드 검색에는 충분하다. 산문의 뉘앙스가 결정적으로 필요한 특정 섹션이 생기면 그때만 `https://github.com/metapbl/AVD/raw/main/WORKLOG.md` (또는 `raw.githubusercontent.com` 동일 경로) 에서 해당 offset 청크를 raw 로 가져오면 된다 (9 의 raw 모드 28KB 함정 주의).
 
 그 뒤 작업 지시는 다음 셋 중 하나로:
 
@@ -160,7 +163,7 @@
 - "ADR-NNN 의 후속 작업을 진행해 주세요" — 특정 결정의 후속
 - "[구체적 작업 지시]" — 명확한 작업이 있는 경우
 
-로컬에 push 하지 않은 변경분이 있다면 그 사실을 첫 메시지에 같이 알린다 (Claude 가 GitHub raw 에서 가져오는 것은 main 시점이므로).
+로컬에 push 하지 않은 변경분이 있다면 그 사실을 첫 메시지에 같이 알린다 (Claude 가 GitHub 에서 가져오는 것은 main 시점이므로).
 
 ### 11.2. Claude Code (터미널 도구)
 
