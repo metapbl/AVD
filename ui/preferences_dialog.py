@@ -8,7 +8,60 @@ from PySide6.QtWidgets import (
     QFileDialog, QGroupBox
 )
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPainter, QColor
 from utils.config_manager import ConfigManager
+
+
+class ConcurrentSlider(QSlider):
+    """
+    동시 다운로드 수 슬라이더.
+
+    표준 QSlider 위에 위치 안내용 점 8 개(값 2~9)를 트랙 내부에 그린다.
+    값 1·10 의 끝점에는 점을 두지 않는다 — 끝은 트랙 자체로 표현되며
+    핸들 위치로 충분히 식별 가능하기 때문.
+
+    핸들 색의 동적 변경은 상위 다이얼로그가 dynamic property + style.polish
+    로 처리하므로 본 클래스는 점 그리기만 책임진다.
+    """
+
+    DOT_COLOR    = QColor("#cccccc")
+    DOT_DIAMETER = 3
+
+    def paintEvent(self, event):
+        # 1) 기본 슬라이더(트랙·핸들) 먼저 그린다
+        super().paintEvent(event)
+
+        # 2) 점 8 개를 트랙 위에 덮어 그린다 — 값 2~9
+        painter = QPainter(self)
+        try:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(self.DOT_COLOR)
+
+            min_v = self.minimum()        # 1
+            max_v = self.maximum()        # 10
+            span  = max_v - min_v         # 9
+
+            # 핸들 절반 폭만큼 좌우 여백이 있다 — 그 안에서 점 위치를 잡는다.
+            # 스타일시트에서 핸들 width 16px 로 잡았으므로 여백 ≈ 8px.
+            # QStyle 로 정확히 구할 수도 있지만 본 케이스에선 고정값으로 충분.
+            margin = 8
+            usable = self.width() - margin * 2
+            if usable <= 0 or span <= 0:
+                return
+
+            cy = self.height() // 2
+            r  = self.DOT_DIAMETER / 2
+
+            for v in range(min_v + 1, max_v):     # 2 ~ 9
+                ratio = (v - min_v) / span
+                cx    = margin + ratio * usable
+                painter.drawEllipse(
+                    int(cx - r), int(cy - r),
+                    self.DOT_DIAMETER, self.DOT_DIAMETER,
+                )
+        finally:
+            painter.end()
 
 
 class PreferencesDialog(QDialog):
@@ -64,7 +117,7 @@ class PreferencesDialog(QDialog):
         dl_layout = QVBoxLayout(grp_dl)
         dl_layout.setSpacing(8)
 
-        # 동시 다운로드 수 — 슬라이더 + 큰 숫자 + 컬러 바
+        # 동시 다운로드 수 — 슬라이더 + 큰 숫자 + 그라데이션 컬러 바 + 라벨
         # 본 단계의 슬라이더는 placebo: 값은 config 에 저장되지만 실제 동시성
         # 제어는 후속 항목 "동시성 제어 구현 (큐 매니저)" 에서 처리한다.
         # WORKLOG 단기 섹션 참조.
@@ -80,30 +133,45 @@ class PreferencesDialog(QDialog):
         top_row.addWidget(self.lbl_concurrent_value)
         dl_layout.addLayout(top_row)
 
-        # 컬러 바 (3:3:4 — 녹 1~3 / 노 4~6 / 빨 7~10)
-        color_bar = QHBoxLayout()
-        color_bar.setSpacing(0)
-        color_bar.setContentsMargins(0, 0, 0, 0)
+        # 컬러 바 — 그라데이션 단일 띠
+        # stop 위치는 점(값 1~10) 과 정합:
+        #   0.000 (1) ~ 0.222 (3)  : 녹 단색
+        #   0.222 (3) ~ 0.333 (4)  : 녹 → 노 전환
+        #   0.333 (4) ~ 0.556 (6)  : 노 단색
+        #   0.556 (6) ~ 0.667 (7)  : 노 → 빨 전환
+        #   0.667 (7) ~ 1.000 (10) : 빨 단색
+        self.color_bar = QLabel()
+        self.color_bar.setObjectName("zoneGradientBar")
+        self.color_bar.setFixedHeight(14)
+        dl_layout.addWidget(self.color_bar)
+
+        # 띠 아래 라벨 행 — "권장 / 주의 / 비권장"
+        # 각 라벨이 해당 단색 구간의 중앙 부근에 떠 있도록 stretch 배분.
+        # 녹 단색 1~3 의 중앙 ≈ 2, 노 단색 4~6 의 중앙 = 5, 빨 단색 7~10 의
+        # 중앙 ≈ 8.5. 트랙 너비 기준 % 로 환산: 11.1% / 44.4% / 83.3%.
+        zone_label_row = QHBoxLayout()
+        zone_label_row.setSpacing(0)
+        zone_label_row.setContentsMargins(0, 0, 0, 0)
 
         lbl_green = QLabel("권장")
-        lbl_green.setObjectName("zoneGreen")
+        lbl_green.setObjectName("zoneLabelGreen")
         lbl_green.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        color_bar.addWidget(lbl_green, stretch=3)
+        zone_label_row.addWidget(lbl_green, stretch=2)   # 좌측 약 22%
 
         lbl_yellow = QLabel("주의")
-        lbl_yellow.setObjectName("zoneYellow")
+        lbl_yellow.setObjectName("zoneLabelYellow")
         lbl_yellow.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        color_bar.addWidget(lbl_yellow, stretch=3)
+        zone_label_row.addWidget(lbl_yellow, stretch=4)  # 중앙 약 44%
 
         lbl_red = QLabel("비권장")
-        lbl_red.setObjectName("zoneRed")
+        lbl_red.setObjectName("zoneLabelRed")
         lbl_red.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        color_bar.addWidget(lbl_red, stretch=4)
+        zone_label_row.addWidget(lbl_red, stretch=3)     # 우측 약 33%
 
-        dl_layout.addLayout(color_bar)
+        dl_layout.addLayout(zone_label_row)
 
-        # 슬라이더
-        self.slider_concurrent = QSlider(Qt.Orientation.Horizontal)
+        # 슬라이더 — 점 8 개를 그리는 커스텀 서브클래스
+        self.slider_concurrent = ConcurrentSlider(Qt.Orientation.Horizontal)
         self.slider_concurrent.setObjectName("concurrentSlider")
         self.slider_concurrent.setMinimum(1)
         self.slider_concurrent.setMaximum(10)
@@ -156,10 +224,14 @@ class PreferencesDialog(QDialog):
         """
         슬라이더 값 변경 — 우측 큰 숫자 갱신 + 위험 구간 색상 동기화.
 
-        구간 정책 (컬러 바와 일치):
+        구간 정책 (그라데이션의 단색 구간과 일치):
             1~3 → green  (권장)
             4~6 → yellow (주의)
             7~10 → red   (비권장)
+
+        전환 구간(3~4, 6~7)에서는 컬러 바가 그라데이션으로 매끄럽게
+        넘어가지만, 핸들·큰 숫자의 색은 이산 구간 정책을 따른다 —
+        값이 정수이므로 양가성이 발생하지 않는다.
         """
         self.lbl_concurrent_value.setText(str(value))
 
@@ -180,7 +252,7 @@ class PreferencesDialog(QDialog):
             w.style().polish(w)
 
     def _load_values(self):
-        """현재 설정값을 UI에 반영"""
+        """현재 설정값을 UI 에 반영"""
         self.input_path.setText(
             self.config.get("save_path", "")
         )
@@ -270,31 +342,28 @@ class PreferencesDialog(QDialog):
             QLabel#concurrentValue[zone="yellow"] { color: #e6b800; }
             QLabel#concurrentValue[zone="red"]    { color: #e05555; }
 
-            /* 컬러 바 띠 */
-            QLabel#zoneGreen {
-                background: #2e7d32;
-                color: #ffffff;
-                font-size: 10px;
-                font-weight: bold;
-                padding: 3px 0;
-                border-top-left-radius: 3px;
-                border-bottom-left-radius: 3px;
+            /* 컬러 바 — 그라데이션 단일 띠 */
+            QLabel#zoneGradientBar {
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0.000 #2e7d32,
+                    stop:0.222 #2e7d32,
+                    stop:0.333 #c9a227,
+                    stop:0.556 #c9a227,
+                    stop:0.667 #b03030,
+                    stop:1.000 #b03030
+                );
+                border-radius: 3px;
             }
-            QLabel#zoneYellow {
-                background: #c9a227;
-                color: #1e1e1e;
+
+            /* 띠 아래 구간 라벨 — 다이얼로그 배경 위에서 가독성 확보 */
+            QLabel#zoneLabelGreen,
+            QLabel#zoneLabelYellow,
+            QLabel#zoneLabelRed {
+                color: #cccccc;
                 font-size: 10px;
                 font-weight: bold;
-                padding: 3px 0;
-            }
-            QLabel#zoneRed {
-                background: #b03030;
-                color: #ffffff;
-                font-size: 10px;
-                font-weight: bold;
-                padding: 3px 0;
-                border-top-right-radius: 3px;
-                border-bottom-right-radius: 3px;
+                padding: 2px 0 0 0;
             }
 
             /* 슬라이더 — 핸들 색은 zone property 로 동적 변경 */
