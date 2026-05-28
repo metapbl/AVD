@@ -232,25 +232,28 @@
   - CLAUDE.md 존재 및 사용법 한 줄 추가
   - WORKLOG.md 구조(섹션 1~5 + 부록 A) 변경 사실 한 줄 추가
   - `controllers/` 디렉터리 신설 한 줄 (폴더 구조 다이어그램에 반영)
-- **메타 행에 코덱·포맷·비트레이트 추가**
-    - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`
-    - 현재 `"업로더 • 재생시간"` 한 줄 → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"` 형태로 확장. 오디오 전용 항목은 `"아티스트 • 3:42 • MP3 320kbps"`.
-    - `FormatInfo` 에 `vcodec` / `acodec` / `abr` / `tbr` 필드 추가 — yt-dlp raw format dict 에서 그대로 가져옴.
-    - 표시 시점: 위젯 생성 직후에는 업로더·재생시간만, 사용자가 `FormatSelectDialog` 에서 화질 확정한 직후(`_on_format_selected`) 코덱·비트레이트까지 채워 메타 라벨 재갱신.
-    - 통합 포맷(`bestvideo+bestaudio/best`) 정책: 선택 시점에 어떤 코덱이 채택될지 미확정이라 코덱 자리는 빈 값 또는 `"자동"`. ffprobe 호출 같은 추가 비용은 도입하지 않음 (이번 단기 과제 범위 밖).
-    - 코덱 표기 정규화: yt-dlp 의 `vcodec` 은 `"avc1.640028"` 같은 raw 코덱 문자열이라 사람 친화 이름(`H.264`, `VP9`, `AV1`, `AAC`, `Opus`, `MP3` 등) 으로 매핑하는 작은 헬퍼 필요. 매핑 출처: yt-dlp wiki / MDN.
+
+- **체크박스 시각 개선 (체크 시 ✓ 마크가 보이도록)**
+    - 위치: `ui/preferences_dialog.py`, `ui/confirm_remove_dialog.py` 의 `QCheckBox` 들.
+    - 진단 (2026-05-28 사전 확인):
+        - 두 다이얼로그의 스타일시트는 `QCheckBox::indicator` 를 직접 손대고 있지 않음 — 라벨의 색·폰트만 지정.
+        - `main.py` 도 `setStyle` / `setPalette` / `setStyleSheet` 호출이 없어 Qt 가 OS 기본 스타일로 그림(Windows 11Style).
+        - 그럼에도 ✓ 가 직관적이지 않은 이유는 (a) 다이얼로그 배경(`#2b2b2b`) 과 OS 가 그리는 라이트 톤 체크박스 indicator 의 부조화, (b) Windows 11 다크 모드에서 Qt 의 부분 적응으로 ✓ 색이 배경과 대비가 약한 경우의 조합으로 추정.
+    - 정책: 가장 단순한 방향 — 두 다이얼로그의 스타일시트에 `QCheckBox::indicator` 의 `width` / `height` 만 키워(예: 18×18) ✓ 가 잘 보이게 하고, 색·배경은 손대지 않음. ✓ 마크는 Qt 기본 렌더 그대로 둠.
+    - 그래도 부족하면 두 번째 단계: `QApplication.setStyle("Fusion")` 을 `main.py` 에서 호출 — Fusion 은 OS 와 무관하게 일관된 위젯 렌더링을 보장하고, 다크 팔레트와 잘 어울린다는 평가가 보편적. 단, 다른 위젯(버튼·진행률 바)의 외양이 미세하게 달라질 수 있어 회귀 점검 필요. macOS 호환성 과제와 시너지 — Fusion 으로 통일하면 두 OS 의 렌더 차이도 줄어듦.
+    - 라디오 버튼은 현재 코드베이스에 없음(확인됨) — 같이 다룰 필요 없음.
 
 - **ETA 안정화 (속도 출렁임에 따른 라벨 출렁임 완화)**
-    - 위치: `ui/download_item_widget.py` `update_eta` (한 곳)
-    - 현상: yt-dlp 의 `_eta_str` 은 매 progress 콜백마다 순간 속도 기반으로 재계산되어, 속도가 출렁이면 ETA 라벨도 그대로 출렁임. HLS 폴백 경로(`_emit_eta` 의 직접 계산) 도 동일.
+    - 위치: `ui/download_item_widget.py` `update_eta` (한 곳).
+    - 현상: yt-dlp 의 `_eta_str` 은 매 progress 콜백마다 순간 속도 기반으로 재계산되어, 속도가 출렁이면 ETA 라벨도 그대로 출렁임. HLS 폴백 경로(`workers/download_worker.py` `_emit_eta` 의 직접 계산) 도 동일.
     - 정책: 워커는 그대로 두고 위젯 측에서 두 가드를 적용.
         - (i) 스로틀: 직전 갱신 시각 대비 0.5 초 이내면 무시.
         - (ii) 변화 임계치: 직전 표시값 대비 변화량이 작으면 무시. 임계치는 비례식 — `max(3초, min(현재 ETA 의 5%, 30초))`. 예: ETA 10분 → 30초 이내 변동 무시, ETA 30초 → 3초 이내 변동 무시, ETA 1시간 → 30초 이내 변동 무시(상한 적용).
-    - 상태(MERGING / DONE / 등) 진입 시에는 임계치 가드를 우회하고 즉시 비움(현 동작 유지). 직전 표시값 저장은 라벨 텍스트가 아니라 위젯 인스턴스 변수에 초 단위 숫자로.
+    - 상태(MERGING / DONE 등) 진입 시에는 임계치 가드를 우회하고 즉시 비움(현 동작 유지). 직전 표시값 저장은 라벨 텍스트가 아니라 위젯 인스턴스 변수에 초 단위 숫자로.
     - ETA 문자열 파싱: 워커가 emit 하는 형식은 `"M:SS"` / `"H:MM:SS"` / `"~M:SS"` 셋. 비례식 적용을 위해 초 단위 정수로 환원하는 작은 파서 필요. `~` 접두사 유무는 무시.
 
 - **파일명 확장자를 제목 라벨에 표시**
-    - 위치: `ui/download_item_widget.py` `_apply_title_elide` · `update_title` · 새 `update_ext`, `ui/main_window.py` `_on_format_selected`
+    - 위치: `ui/download_item_widget.py` `_apply_title_elide` · `update_title` · 새 `update_ext`, `ui/main_window.py` `_on_format_selected`.
     - 표시 형식: 제목 끝에 확장자 — 폭이 넉넉할 때 `"긴 영상 제목.mp4"`, 폭이 좁아 제목이 잘릴 때 `"긴 영상 제… .mp4"` (확장자는 절대 잘리지 않음).
     - elide 정책:
         - 모드는 `ElideRight` 이지만 Qt 의 기본 줄임표 `…` (U+2026 단일 문자) 사용 + 줄임표와 `.` 사이에 공백 1칸 — 즉 `"… .mp4"`. 점 4개(`....`) 가 연달아 보이는 시각 충돌 회피.
@@ -258,6 +261,32 @@
     - 확장자 스타일: HTML rich text 로 부분 색만 다르게 — 확장자 색 `#ffd060`, 굵기는 제목과 동일(이미 bold). `lbl_title.setText("<span>...</span>")` 사용. 제목에 `<` / `>` / `&` 가 포함된 경우 대비 `html.escape` 로 escape.
     - 표시 시점(가드): 화질 선택 전에는 확장자 비표시. 위젯 인스턴스에 `_ext_known: bool` 플래그를 두고, `update_ext` 가 한 번이라도 호출되어야 elide 결과에 확장자를 끼움. `MainWindow._on_format_selected` 가 `item.ext = fmt.ext` 직후 `widget.update_ext(fmt.ext)` 호출.
     - `update_ext` 는 내부적으로 `_apply_title_elide` 를 재호출하여 라벨을 다시 그림. 폭 변경(resize) 시에도 기존 `resizeEvent` 경로가 그대로 elide 를 다시 적용하므로 별도 작업 없음.
+
+- **메타 행에 코덱·포맷·비트레이트 추가**
+    - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`.
+    - 현재 `"업로더 • 재생시간"` 한 줄 → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"` 형태로 확장. 오디오 전용 항목은 `"아티스트 • 3:42 • MP3 320kbps"`.
+    - `FormatInfo` 에 `vcodec` / `acodec` / `abr` / `tbr` 필드 추가 — yt-dlp raw format dict 에서 그대로 가져옴.
+    - 표시 시점: 위젯 생성 직후에는 업로더·재생시간만, 사용자가 `FormatSelectDialog` 에서 화질 확정한 직후(`_on_format_selected`) 코덱·비트레이트까지 채워 메타 라벨 재갱신.
+    - 통합 포맷(`bestvideo+bestaudio/best`) 정책: 선택 시점에 어떤 코덱이 채택될지 미확정이라 코덱 자리는 빈 값 또는 `"자동"`. ffprobe 호출 같은 추가 비용은 도입하지 않음 (이번 단기 과제 범위 밖).
+    - 코덱 표기 정규화: yt-dlp 의 `vcodec` 은 `"avc1.640028"` 같은 raw 코덱 문자열이라 사람 친화 이름(`H.264`, `VP9`, `AV1`, `AAC`, `Opus`, `MP3` 등) 으로 매핑하는 작은 헬퍼 필요. 매핑 출처: yt-dlp wiki / MDN.
+
+- **macOS 지원 정식화 (실행 환경만)**
+    - 동기: 사용자가 Windows 에서 개발하고, macOS 에서는 실행만 함. README/CLAUDE 에 명시되어 있던 "Windows 우선, macOS 일부 기능 미동작" 정책을 "Windows 개발 / macOS 실행 양쪽 정식 지원" 으로 격상. macOS 작업/문서 환경(zsh 등) 보강은 불필요.
+    - 진단 (2026-05-28 사전 확인):
+        - `utils/file_utils.py` `open_folder()`: `subprocess.run(["explorer", ...])` 가 Windows 전용. macOS 에서 `FileNotFoundError` 로 "📂 열기" 버튼이 깨짐. 가장 큰 회귀 지점.
+        - `main.py` 의 폰트 `QFont("맑은 고딕", 10)`: macOS 에 해당 폰트가 없어 시스템 폴백으로 그려짐. 의도된 모양이 아닐 수 있음.
+        - `requirements.txt` 의 `psutil` 은 크로스플랫폼 — 문제 없음.
+        - yt-dlp + ffmpeg + Node.js 는 macOS 도 정식 지원 (Homebrew 로 설치 가능).
+        - `core/downloader.py` 의 `windowsfilenames: True` 는 macOS 에서도 동작 — 다소 보수적이지만 의도된 정책으로 유지.
+    - 정책:
+        1. `open_folder()` 플랫폼 분기. `sys.platform` 으로 `"win32"` / `"darwin"` / 기타(linux) 갈래. macOS: `subprocess.run(["open", "-R", path])` (파일 선택) / `subprocess.run(["open", path])` (폴더). Linux: `subprocess.run(["xdg-open", path])` — 부수효과 없이 같이 처리.
+        2. `main.py` 폰트 fallback 체인. `QFont("맑은 고딕, Apple SD Gothic Neo, sans-serif", 10)` — Qt 가 매칭 가능한 첫 폰트로 그림. macOS 는 Apple SD Gothic Neo 로 자동 fallback.
+        3. README.md 의 "요구 사항" 절에서 "Windows 환경에서 검증 / macOS·Linux 는 일부 기능이 동작하지 않을 수 있다" 라는 단서 제거. macOS 실행 가이드(`brew install ffmpeg node`) 한 줄 추가.
+        4. **개발 환경 관련 문서(CLAUDE.md "5. 개발 환경", "8.4. 터미널 명령")는 손대지 않음** — 사용자가 macOS 에서 개발하지 않으므로 Windows + PowerShell 규약을 그대로 유지.
+    - 검증 절차: Windows 에서 위 1~3 수정 → push → macOS 에서 pull → `python main.py` 로 실행 → "📂 열기" 버튼, 한글 폰트, 다운로드 정상 동작 확인. 사용자가 macOS 결과를 알려주는 식으로 한 사이클 돌림.
+    - 보류 (이번 과제 범위 밖):
+        - NFC 정규화 vs macOS APFS 의 fs-level NFD 반환 — 앱 내부는 `normalize_info_dict` 로 NFC 통일이라 OK 추정. 실측 후 문제 있으면 추가 과제.
+        - `.gitattributes` (LF/CRLF) — 단일 OS 작업이라 불필요.
 
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
