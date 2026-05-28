@@ -26,7 +26,7 @@ yt-dlp 기반의 영상·오디오 다운로더. YouTube를 비롯해 yt-dlp가 
 ## 설치
 
 ```bash
-git clone https://github.com/ggoyong2-ctrl/AV_Downloader.git
+git clone https://github.com/metapbl/AVD.git AV_Downloader
 cd AV_Downloader
 
 python -m venv venv

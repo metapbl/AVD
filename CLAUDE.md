@@ -9,8 +9,8 @@
 
 - **이름**: AV_Downloader
 - **성격**: yt-dlp 기반 영상·오디오 다운로더 (PySide6 GUI, 다크 테마)
-- **리포지토리**: https://github.com/ggoyong2-ctrl/AV_Downloader
-- **로컬 경로**: `C:\Users\ggoyo_zhxlvdr\AV_Downloader`
+- **리포지토리**: https://github.com/metapbl/AVD
+- **로컬 경로**: `C:\Users\ggoyo_zhxlvdr\AVD`
 - **라이선스**: MIT
 
 ## 협업 모델
@@ -115,9 +115,9 @@
 
 새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 raw URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
 
-> 프로젝트 컨텍스트: https://raw.githubusercontent.com/ggoyong2-ctrl/AV_Downloader/main/CLAUDE.md
+> 프로젝트 컨텍스트: https://raw.githubusercontent.com/metapbl/AVD/main/CLAUDE.md
 >
-> 최신 작업 로그: https://raw.githubusercontent.com/ggoyong2-ctrl/AV_Downloader/main/WORKLOG.md
+> 최신 작업 로그: https://raw.githubusercontent.com/metapbl/AVD/main/WORKLOG.md
 >
 > 위 두 문서를 먼저 읽어주십시오.
 
