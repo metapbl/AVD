@@ -40,6 +40,11 @@
 
 ### 2.1. 2026-05-28
 
+- **`docs(readme)`**: CLAUDE.md / WORKLOG.md 링크와 `controllers/` 구조, 최신 기능 요약 추가.
+    - 기존 README는 초기 설치 가이드 위주였고, `controllers/download_manager.py` 도입(ADR-003) 이후의 새 디렉터리 구조와 동시 다운로드·ETA·NFC 정규화 같은 최근 기능이 반영되어 있지 않았다. `CLAUDE.md` "11. 협업 진입점" 규칙상 협업 문서들이 저장소 루트에서 바로 보여야 하는데, README에 진입 링크가 없어 처음 보는 사람이 협업 규칙·작업 로그를 찾기 어려웠다. `controllers/` 신규 구조 다이어그램, `CLAUDE.md` / `WORKLOG.md` 본문 링크, `WORKLOG.md` 1~5 구성과 부록 A 안내를 추가했다.
+    - 결정: Python 버전 표기는 `CLAUDE.md` "3. 의존성"과 맞추기 위해 "3.10 이상" → "3.10 이상 (3.13/3.14 권장)"으로 갱신. 운영체제 표기는 "Windows에서 검증"에서 "Windows 11에서 개발·검증, macOS/Linux는 일부 경로가 아직 분기 처리되지 않아 제한적"으로 명시 (3.2 단기 과제의 macOS 호환성 항목과 일관성 유지).
+    - 보류: ADR-003에 대한 deep link는 `WORKLOG.md`의 한글 헤더 앵커 안정성이 확인되지 않아 파일 링크만 걸어 두었다. 추후 ADR 인덱스를 안정 앵커(`#adr-003`)로 정비할 때 함께 손볼 항목. (커밋 `fa3beb3`)
+
 - **`feat(ui)`**: 다운로드 항목에 "현재 / 전체 크기" 표시.
     - `ui/download_item_widget.py`: `status_row` 끝자리에 `lbl_size` 추가, `update_file_size(size: str)` 슬롯 신설. 비활성 상태(WAITING/DONE/ERROR/CANCELLED/MERGING) 진입 시 다른 보조 라벨처럼 빈 문자열로 초기화. `_build_ui` 의 4행 80px 배치(`status_row` 높이 16) 는 그대로 유지 — 가로 한 칸만 추가됨.
     - `controllers/download_manager.py` `_start_worker`: `worker.file_size.connect(widget.update_file_size)` 한 줄 추가. 워커는 이전부터 시그널을 emit 하고 있었지만 받는 슬롯이 없어 무시되던 상태였음.
