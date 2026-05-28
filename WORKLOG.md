@@ -40,6 +40,10 @@
 
 ### 2.1. 2026-05-28
 
+- **`fix(info_fetcher)`**: 썸네일 URL 선정 로직 안전화.
+    - `InfoFetcher._pick_thumbnail(info)` 추가. yt-dlp 의 `info["thumbnail"]` 단일 필드 대신 `info["thumbnails"]` 배열에서 `(preference, width*height, 원래 인덱스)` 점수로 best 를 직접 선택. 배열이 비어 있거나 없으면 기존 `info["thumbnail"]` 로 폴백, 둘 다 없으면 빈 문자열. URL 은 문자열이고 `http(s)://` 로 시작하는 것만 후보로 인정.
+    - 배경: yt-dlp 가 `info["thumbnail"]` 에 YouTube `maxresdefault.jpg` 같은 "존재하지 않을 수 있는" URL 을 채워 넣어 `ThumbnailWorker` 가 404 로 실패하고 위젯이 회색 박스로 남는 회귀 사례가 있었음. 단일 필드 대신 yt-dlp 가 같은 dict 안에 같이 넣어주는 후보 배열을 쓰면 사이트별 정렬·preference 정보로 안전한 best 가 잡힘. 채택된 URL 이 실제 200 인지는 이번 패치에서 검증하지 않음 — 그 단계는 필요해지면 `ThumbnailWorker` 에 후보 fallback 체인을 추가하는 식으로 확장 예정.
+
 - **`chore`**: `run.bat` 제거.
     - 단순히 venv 활성화 후 `python main.py` 를 실행하는 4줄짜리 배치 파일이었고, 실제 워크플로(VS Code 통합 터미널에서 venv 활성화된 상태로 `python main.py`)와 중복이라 제거. 외부 참조는 `README.md` "## 실행" 안내 한 줄과 `CLAUDE.md` "## 4. 폴더 구조" 트리 한 줄뿐이었으며 함께 제거.
     - 메모: 더블클릭 실행이 필요해지면 `run.bat` 대신 (a) 바탕화면 바로가기 + `venv\Scripts\pythonw.exe main.py` 대상 지정, (b) PyInstaller `onefile` 빌드 중 하나로 대체할 것. `.bat` 은 콘솔 창이 같이 떠 GUI 앱 UX 와 어울리지 않음.
@@ -218,9 +222,6 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
-- **`_pick_thumbnail` 흔적 정리**
-  - `core/info_fetcher.py` 에서 의미 없는 공백·정렬 변경분 검토 후 정리 커밋
-  - 동시에 yt-dlp 의 `info["thumbnail"]` 이 maxresdefault 가 아닌 경우가 재현되는지 가벼운 검증(현재는 정상 동작 중이지만, `_pick_thumbnail` 같은 안전망의 부활 필요성 판단)
 - **README.md 업데이트**
   - CLAUDE.md 존재 및 사용법 한 줄 추가
   - WORKLOG.md 구조(섹션 1~5 + 부록 A) 변경 사실 한 줄 추가
