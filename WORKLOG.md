@@ -41,6 +41,13 @@
 
 ### 2026-05-28
 
+- **`feat(ui)`**: 항목 레이아웃 단순화 — 80px 욱여넣기 + 제목 엘라이드.
+  - `ui/download_item_widget.py`: 썸네일 80px 안에 우측 4행을 욱여넣는 결정론적 배치. 균등 분배(`stretch=1`) 대신 행별 `setFixedHeight` 로 결정: 제목 26 + 메타 16 + 진행률 16 + 상태행 16 = 74, `info_layout.setSpacing(2)` × 3 간격 = 6, 합 80px ✅. 위젯 전체는 `setFixedHeight(96)` 로 외곽 고정(썸네일 80 + 상하 마진 8+8). 진행률 바 두께를 6 → 16 으로 키워 행 높이와 일치시키고 별도 래퍼 레이아웃 없이 단순화 (사용자 한 줄 제안 "진행률 바의 너비를 넓히면 되지 않을까요" — 산수의 직관적 정답이 사양이 됨)
+  - `ui/download_item_widget.py`: 긴 제목 엘라이드 — `lbl_title` 의 size policy `(Ignored, Preferred)` 로 가로 sizeHint 권리 포기 + `resizeEvent` 오버라이드에서 `QFontMetrics.elidedText(ElideRight)` 로 라벨 폭에 맞춰 직접 잘라 표시. 원본 제목은 `self.item.title` 단일 출처에서 매번 다시 가져옴. `update_title` 갱신 시에도 새 원본으로 재엘라이드. 워드랩은 안 켬(항목 높이 들쭉날쭉 방지)
+  - 시행착오 한 라운드: 첫 사양은 `progress_bar.setMaximumWidth(400)` + 4행 `stretch=1` 균등 분배였으나 (a) 진행률 바가 부모 폭 가운데에 외롭게 떠 보이는 부작용 (QProgressBar 의 기본 가로 size policy 가 `Expanding` 이라 maxWidth 가 천장 역할만 하고 남은 공간이 좌우로 갈라짐), (b) `stretch=1` 이 QLabel 의 sizeHint 를 넘어선 세로 점유를 강제하지 못해 4행이 위쪽으로 몰리는 현상 — 두 문제가 함께 드러남. 사용자 재합의로 "썸네일 80px 안에 완전히 욱여넣기" 사양 채택, `setMaximumWidth(400)` 제거, 균등 분배 포기. `stretch` 약속은 폰트·환경에 따라 결과가 흔들리므로 행별 `setFixedHeight` 의 결정론이 더 정직하다는 결론
+  - 검증: 좁은 윈도우와 넓은 윈도우 양쪽에서 4행이 80px 안에 정확히 들어감 (스크린샷 확인). 진행률 바가 부모 폭을 자연스럽게 따라 변하고 가운데 정렬 부작용 없음. 긴 제목(50자 이상)이 부드럽게 엘라이드되며 ✕/취소 버튼이 잘리지 않음. 항목 두 개 이상이 섞여 있을 때 모든 항목의 높이가 96px 로 일정
+  - git 정리 메모: 직전 미푸시 작업분과 합쳐 한 커밋으로 만들기 위해 `--amend` 사용. amend 후 push 가 거부됐는데, 원격에 그 사이 docs(worklog) 커밋(`acd1d4d`) 이 들어와 형제 분기가 형성된 상태였음. `git pull --rebase` 로 선형화 (두 커밋의 파일 교집합이 0 이라 conflict 없음). 1인 개발 환경에서 `--force-with-lease` 의 유혹이 있을 수 있지만, 원격 docs 커밋이 살아 있던 케이스라 force 가 손실을 일으켰을 것 — 분기 의심 시 `git log --oneline --graph --all` 로 진실 먼저 확인하는 절차의 가치를 재확인 (최종 커밋 `8074e43`)
+
 - **`chore`**: GitHub 저장소 이전 (`ggoyong2-ctrl/AV_Downloader` → `metapbl/AVD`). 로컬 폴더명도 `AV_Downloader` → `AVD` 로 변경. `utils/updater.py` 의 `GITHUB_REPO`, `README.md` clone URL, `CLAUDE.md` 의 리포지토리·로컬 경로·raw URL 까지 모두 새 주소로 갱신. 기능 변경 없음. (커밋 `019a420`)
 
 - **`docs(worklog)`**: 2026-05-27 의 `feat(ui)` 환경설정 항목을 실제 최종 구현(`cab59c5`)에 맞춰 정정. 첫 합의의 "3:3:4 단색 컬러 바" 사양은 협의 과정에서 그라데이션 바 + `ConcurrentSlider` (QSlider 서브클래스, `paintEvent` 오버라이드로 트랙 내 위치 안내 점 8개 묘사) 로 재설계되어 대체됨. 같은 제목의 두 커밋(`dd1113d` → `cab59c5`) 의 관계도 명기. 섹션 3 단기 목록의 "환경설정 다이얼로그 정비" 항목은 본 정정과 함께 Changelog 로 이관됨.
@@ -189,13 +196,7 @@
 - [x] **취소·재시작·삭제 동선 정비** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ux)` 와 `fix(ui)` 두 커밋 참조)
 - [x] **삭제·취소 확인 다이얼로그 통일** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 커밋 참조)
 - [x] **환경설정 다이얼로그 정비** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 환경설정 항목 참조 — 최종 구현은 `cab59c5`)
-- [ ] **항목 레이아웃 단순화** (사용자 사양, 2026-05-18 합의)
-  - **취소/✕ 버튼 잘림 수정**: 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내는 현상. `lbl_title` 의 size policy 를 `Ignored, Preferred` 로 두고 `QFontMetrics.elidedText` 로 직접 잘라 표시. 워드랩은 켜지 않음(항목 높이 들쭉날쭉 방지)
-  - **진행률 바 폭 상한**: `progress_bar.setMaximumWidth(400)`. 사용자 요구 "현재 길이에서 200px 단축" 의 견고한 형태(큰 윈도우에서도 과확장 방지)
-  - **4행 균등 분배**: `info_layout` 안 네 자식(제목 / 메타 / 진행률 / 상태행) 모두 `stretch=1` 부여. 부모 높이(=썸네일 높이) 안에서 균등 분배되어 항목 전체 높이가 썸네일 높이로 결정됨. 사용자 요구 "썸네일 세로 폭 안에 모두 들어가게" 의 정직한 해법
-  - 폰트 크기·spacing·margin 미세조정은 안 함 (이전 세션에서 사용자가 거부한 접근)
-  - 변경 파일: `ui/download_item_widget.py` 한 파일
-  - 발견: 2026-05-18 (사용자 실사용 피드백)
+- [x] **항목 레이아웃 단순화** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-28 의 `feat(ui)` 항목 참조 — 커밋 `8074e43`)
 - [ ] **동시성 제어 구현 (큐 매니저)** (2026-05-27 합의)
   - 환경설정 슬라이더 값이 실제로 동작하도록 다운로드 큐 매니저 도입
   - `main_window.py` 에서 active worker 수를 추적하고, 한도 초과 시 신규 워커를 `WAITING` 상태로 대기열에 보관. 워커 종료(`finished`/`error`/`cancelled`) 시그널을 받아 다음 대기 항목 dispatch
