@@ -44,6 +44,8 @@
     │   └── info_fetcher.py         # 영상 정보 추출
     ├── models/
     │   └── download_item.py        # 데이터 클래스, 상태 Enum
+    ├── controllers/
+    │   └── download_manager.py     # 다운로드 워커 오케스트레이션 + 동시성 제어 큐
     ├── ui/
     │   ├── main_window.py          # 메인 윈도우
     │   ├── download_item_widget.py # 목록 항목 위젯
