@@ -41,6 +41,15 @@
 
 ### 2026-05-27
 
+- **`feat(ui)`**: 환경설정 다이얼로그 정비 — 동시 다운로드 슬라이더 + last_chosen_ext.
+  - `ui/preferences_dialog.py`: SpinBox → QSlider (1~10, 기본 2, 자연수 step). 슬라이더 위에 3:3:4 비율의 컬러 바(녹 "권장" 1~3 / 노 "주의" 4~6 / 빨 "비권장" 7~10). 우측 상단에 현재 값 큰 숫자, 핸들·숫자 색은 dynamic property + `style().unpolish/polish` 로 구간별 동기화. 툴팁에 "yt-dlp 단일 인스턴스 병렬 미지원, 1~3 권장, 높은 값은 IP 차단 위험" 명시. "기본 저장 형식" 콤보 제거 — 동일 기능은 FormatSelectDialog 의 `last_chosen_ext` 로 흡수
+  - `ui/format_select_dialog.py`: `__init__` 에 `config` 인자 추가. 포맷 목록 채운 직후 `last_chosen_ext` 키와 일치하는 첫 행을 기본 선택. `_on_confirm` 에서 사용자가 확정한 포맷의 `ext` 를 `config.last_chosen_ext` 로 저장 — 같은 확장자를 반복 선택하는 사용자 패턴을 무비용으로 기억
+  - `utils/config_manager.py`: `DEFAULT_CONFIG` 에 `"last_chosen_ext": ""` 추가. 빈 문자열이면 "기억 없음" 으로 보고 첫 행 기본. 기존 `default_ext` 키는 잔존(다른 모듈 영향 미확인 — 정리는 별도 chore 커밋으로)
+  - `ui/main_window.py`: `_on_info_fetched` 의 `FormatSelectDialog(info, self)` → `FormatSelectDialog(info, self.config, self)` 한 줄 변경
+  - placebo 명시: 본 단계의 슬라이더 값은 `config.max_concurrent` 에 저장되지만 실제 동시성 제어는 후속 "동시성 제어 구현 (큐 매니저)" 에서 도입. `_on_save` 와 `_on_concurrent_changed` 양쪽에 주석으로 명시
+  - 사양 근거 (요약): SpinBox ± 버튼이 28px 고정 높이를 벗어나 겹쳐 보이던 UI 버그 + "기본 저장 형식" 콤보가 `FormatSelectDialog` 와 의미 중복이던 점 해소. 컬러 바 3:3:4 비율은 4K Video Downloader+ 의 1·2·4·6·8 라벨 정책(Safe/Stable/Optimal/Risky)을 참고하되, "Optimal" 같은 마케팅 단어를 피하고 보수적 워딩 채택 (4K Downloader 의 "Stable=4" 가 한국어 "주의" 와 의미 충돌하던 점도 회피)
+  - 검증: 슬라이더 1·3·4·6·7·10 의 핸들·숫자 색 전환, 컬러 바 정렬, `last_chosen_ext` 기억 동작(같은 영상 두 번 추가 시 직전 선택 ext 의 행이 자동 선택), 환경설정에서 저장 후 재진입 시 슬라이더 값 복원
+
 - **`feat(ui)`**: 삭제·취소 확인 다이얼로그 통일 + "전체 취소" → "목록 비우기" 재정의.
   - 신규 `ui/confirm_remove_dialog.py`: 개별 ✕ 와 일괄 "목록 비우기" 가 공유하는 단일 다이얼로그. 본질 질문은 "목록에서 제거" 하나로 고정, 디스크 삭제는 옵셔널 체크박스로 분리. 기본 포커스는 "닫기" — 엔터 잘못 눌러도 안전. 결과 두 개 노출: `confirmed` / `delete_disk_files`
   - `ui/main_window.py` 의 `_on_cancel`: 워커가 실제로 running 일 때만 "이 다운로드를 취소하시겠습니까?" 확인 (기본 No). 비활성 상태에서의 누름은 무시 — 버튼 라벨이 "재시도" 가 됐을 경계 케이스 방어
