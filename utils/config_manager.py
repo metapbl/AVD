@@ -10,11 +10,13 @@ from pathlib import Path
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
 
 # 기본 설정값
+# 기본 설정값
 DEFAULT_CONFIG = {
     "save_path"         : str(Path.home() / "Downloads"),  # 기본 저장 경로
     "max_concurrent"    : 2,       # 동시 다운로드 최대 개수
     "default_format"    : "bestvideo+bestaudio/best",  # 기본 화질
-    "default_ext"       : "mp4",   # 기본 확장자
+    "default_ext"       : "mp4",   # 기본 확장자 (UI 노출 안 함, 잔존 키)
+    "last_chosen_ext"   : "",      # FormatSelectDialog 가 기억하는 직전 선택 확장자
     "auto_update_ytdlp" : True,    # yt-dlp 자동 업데이트 여부
     "theme"             : "dark",  # UI 테마 (dark / light)
     "language"          : "ko",    # 언어 설정

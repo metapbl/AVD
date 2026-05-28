@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 from core.info_fetcher import VideoInfo, FormatInfo
+from utils.config_manager import ConfigManager
 from utils.file_utils import format_duration, format_file_size
 
 
@@ -17,13 +18,18 @@ class FormatSelectDialog(QDialog):
 
     시그널:
         format_selected : 확인 버튼 클릭 시 FormatInfo 전달
+
+    config 의존:
+        - 읽기: last_chosen_ext (직전 선택 확장자 → 기본 선택 행 결정)
+        - 쓰기: last_chosen_ext (사용자가 확정한 포맷의 ext 기억)
     """
 
     format_selected = Signal(object)  # FormatInfo 전달
 
-    def __init__(self, video_info: VideoInfo, parent=None):
+    def __init__(self, video_info: VideoInfo, config: ConfigManager, parent=None):
         super().__init__(parent)
         self.video_info = video_info
+        self.config = config
         self.selected_format: FormatInfo | None = None
 
         self.setWindowTitle("화질 선택")
@@ -94,9 +100,11 @@ class FormatSelectDialog(QDialog):
             )
             self.list_formats.addItem(item)
 
-        # 첫 번째 항목 기본 선택
+        # 기본 선택 행 결정 — last_chosen_ext 가 있으면 같은 ext 의 첫 행,
+        # 없거나 매칭 실패 시 첫 행.
+        default_row = self._find_default_row()
         if self.list_formats.count() > 0:
-            self.list_formats.setCurrentRow(0)
+            self.list_formats.setCurrentRow(default_row)
 
         # ── 버튼 행 ──
         btn_row = QHBoxLayout()
@@ -117,6 +125,22 @@ class FormatSelectDialog(QDialog):
 
         root.addLayout(btn_row)
 
+    def _find_default_row(self) -> int:
+        """
+        config.last_chosen_ext 와 일치하는 첫 포맷의 행 번호를 반환.
+        키가 비어 있거나 매칭되는 항목이 없으면 0 (첫 행).
+        """
+        last_ext = (self.config.get("last_chosen_ext", "") or "").strip().lower()
+        if not last_ext:
+            return 0
+
+        for row in range(self.list_formats.count()):
+            item = self.list_formats.item(row)
+            fmt: FormatInfo = item.data(Qt.ItemDataRole.UserRole)
+            if fmt is not None and (fmt.ext or "").lower() == last_ext:
+                return row
+        return 0
+
     def _on_confirm(self):
         """다운로드 버튼 처리"""
         current = self.list_formats.currentItem()
@@ -124,6 +148,15 @@ class FormatSelectDialog(QDialog):
             return
 
         fmt: FormatInfo = current.data(Qt.ItemDataRole.UserRole)
+
+        # 다음 호출 시 기본 선택을 위해 ext 를 기억
+        if fmt is not None and fmt.ext:
+            try:
+                self.config.set("last_chosen_ext", fmt.ext)
+            except Exception:
+                # config 저장 실패는 본 흐름을 막지 않는다 (UX 우선)
+                pass
+
         self.format_selected.emit(fmt)
         self.accept()
 

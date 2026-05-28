@@ -241,7 +241,7 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
 
         # 화질 선택 다이얼로그 표시
-        dialog = FormatSelectDialog(info, self)
+        dialog = FormatSelectDialog(info, self.config, self)
         dialog.format_selected.connect(
             lambda fmt: self._on_format_selected(item_id, fmt)
         )
