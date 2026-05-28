@@ -3,7 +3,7 @@
 > 이 문서는 AV_Downloader 의 작업 진척, 결정 사항, 잔여 과제를 추적합니다.
 > 프로젝트의 변하지 않는 정보(기술 스택·폴더 구조·코딩 컨벤션 등)는 `CLAUDE.md` 에 별도로 관리하며, 이 파일은 시간과 함께 자라는 정보만 담습니다.
 
-**최종 업데이트**: 2026-05-27
+**최종 업데이트**: 2026-05-28
 
 ---
 
@@ -39,16 +39,23 @@
 
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
 
+### 2026-05-28
+
+- **`chore`**: GitHub 저장소 이전 (`ggoyong2-ctrl/AV_Downloader` → `metapbl/AVD`). 로컬 폴더명도 `AV_Downloader` → `AVD` 로 변경. `utils/updater.py` 의 `GITHUB_REPO`, `README.md` clone URL, `CLAUDE.md` 의 리포지토리·로컬 경로·raw URL 까지 모두 새 주소로 갱신. 기능 변경 없음. (커밋 `019a420`)
+
+- **`docs(worklog)`**: 2026-05-27 의 `feat(ui)` 환경설정 항목을 실제 최종 구현(`cab59c5`)에 맞춰 정정. 첫 합의의 "3:3:4 단색 컬러 바" 사양은 협의 과정에서 그라데이션 바 + `ConcurrentSlider` (QSlider 서브클래스, `paintEvent` 오버라이드로 트랙 내 위치 안내 점 8개 묘사) 로 재설계되어 대체됨. 같은 제목의 두 커밋(`dd1113d` → `cab59c5`) 의 관계도 명기. 섹션 3 단기 목록의 "환경설정 다이얼로그 정비" 항목은 본 정정과 함께 Changelog 로 이관됨.
+
 ### 2026-05-27
 
 - **`feat(ui)`**: 환경설정 다이얼로그 정비 — 동시 다운로드 슬라이더 + last_chosen_ext.
-  - `ui/preferences_dialog.py`: SpinBox → QSlider (1~10, 기본 2, 자연수 step). 슬라이더 위에 3:3:4 비율의 컬러 바(녹 "권장" 1~3 / 노 "주의" 4~6 / 빨 "비권장" 7~10). 우측 상단에 현재 값 큰 숫자, 핸들·숫자 색은 dynamic property + `style().unpolish/polish` 로 구간별 동기화. 툴팁에 "yt-dlp 단일 인스턴스 병렬 미지원, 1~3 권장, 높은 값은 IP 차단 위험" 명시. "기본 저장 형식" 콤보 제거 — 동일 기능은 FormatSelectDialog 의 `last_chosen_ext` 로 흡수
+  - `ui/preferences_dialog.py`: SpinBox → 신규 `ConcurrentSlider` (QSlider 서브클래스, `paintEvent` 오버라이드로 트랙 내부에 위치 안내용 점 8개(값 2~9, `#cccccc`, 직경 3px) 묘사. 양 끝값 1·10 은 핸들 자체가 위치 신호). 범위 1~10, 기본 2, 자연수 step. 슬라이더 위에 단일 가로 **그라데이션 바** (stop 0.0/0.22 녹 `#2e7d32`, 0.33/0.55 노 `#c9a227`, 0.66/1.0 빨 `#b03030` — 1·3 / 3·4 그라데이션 / 4·6 / 6·7 그라데이션 / 7·10 구간을 자연스럽게 잇는 5-stop 정의). 그 아래 "권장 / 주의 / 비권장" 라벨 행을 stretch 2/4/3 으로 배치(녹·노·빨 폭과 시각 정합). 우측 상단에 현재 값 큰 숫자, 핸들·숫자 색은 dynamic property + `style().unpolish/polish` 로 1~3 녹 / 4~6 노 / 7~10 빨 구간 동기화. 툴팁에 "yt-dlp 단일 인스턴스 병렬 미지원, 1~3 권장, 높은 값은 IP 차단 위험" 명시. "기본 저장 형식" 콤보 제거 — 동일 기능은 FormatSelectDialog 의 `last_chosen_ext` 로 흡수
   - `ui/format_select_dialog.py`: `__init__` 에 `config` 인자 추가. 포맷 목록 채운 직후 `last_chosen_ext` 키와 일치하는 첫 행을 기본 선택. `_on_confirm` 에서 사용자가 확정한 포맷의 `ext` 를 `config.last_chosen_ext` 로 저장 — 같은 확장자를 반복 선택하는 사용자 패턴을 무비용으로 기억
   - `utils/config_manager.py`: `DEFAULT_CONFIG` 에 `"last_chosen_ext": ""` 추가. 빈 문자열이면 "기억 없음" 으로 보고 첫 행 기본. 기존 `default_ext` 키는 잔존(다른 모듈 영향 미확인 — 정리는 별도 chore 커밋으로)
   - `ui/main_window.py`: `_on_info_fetched` 의 `FormatSelectDialog(info, self)` → `FormatSelectDialog(info, self.config, self)` 한 줄 변경
   - placebo 명시: 본 단계의 슬라이더 값은 `config.max_concurrent` 에 저장되지만 실제 동시성 제어는 후속 "동시성 제어 구현 (큐 매니저)" 에서 도입. `_on_save` 와 `_on_concurrent_changed` 양쪽에 주석으로 명시
-  - 사양 근거 (요약): SpinBox ± 버튼이 28px 고정 높이를 벗어나 겹쳐 보이던 UI 버그 + "기본 저장 형식" 콤보가 `FormatSelectDialog` 와 의미 중복이던 점 해소. 컬러 바 3:3:4 비율은 4K Video Downloader+ 의 1·2·4·6·8 라벨 정책(Safe/Stable/Optimal/Risky)을 참고하되, "Optimal" 같은 마케팅 단어를 피하고 보수적 워딩 채택 (4K Downloader 의 "Stable=4" 가 한국어 "주의" 와 의미 충돌하던 점도 회피)
-  - 검증: 슬라이더 1·3·4·6·7·10 의 핸들·숫자 색 전환, 컬러 바 정렬, `last_chosen_ext` 기억 동작(같은 영상 두 번 추가 시 직전 선택 ext 의 행이 자동 선택), 환경설정에서 저장 후 재진입 시 슬라이더 값 복원
+  - 사양 근거 (요약): SpinBox ± 버튼이 28px 고정 높이를 벗어나 겹쳐 보이던 UI 버그 + "기본 저장 형식" 콤보가 `FormatSelectDialog` 와 의미 중복이던 점 해소. 컬러 영역 비율은 4K Video Downloader+ 의 1·2·4·6·8 라벨 정책(Safe/Stable/Optimal/Risky)을 참고하되, "Optimal" 같은 마케팅 단어를 피하고 보수적 워딩("권장/주의/비권장") 채택 (4K Downloader 의 "Stable=4" 가 한국어 "주의" 와 의미 충돌하던 점도 회피). 첫 합의의 단색 3-band 컬러 바 대신 그라데이션을 택한 이유는 "구간 경계가 절대선이 아니라 점진적 위험 증가" 라는 메시지를 더 정직하게 전달하기 위함. 위치 안내 점은 사용자의 "숫자 없어도 위치 표시는 필요" 요청에 응답
+  - 커밋 분기: 첫 사양(SpinBox→QSlider + 단색 3:3:4 컬러 바) 으로 `dd1113d` 푸시 후, 같은 세션 안에서 그라데이션 + `ConcurrentSlider` (점 8개) 로 재설계해 `cab59c5` 로 재푸시. 두 커밋의 제목이 동일하므로 본 항목이 양자의 관계와 최종 구현(`cab59c5`) 위치를 명시. 중간의 `5e7d73b` 는 본 항목의 1차 워크로그 기록 (이후 본 `docs(worklog)` 2026-05-28 커밋으로 정정됨)
+  - 검증: 슬라이더 1·3·4·6·7·10 의 핸들·숫자 색 전환, 그라데이션 바 정렬, 점 8개 가시성, `last_chosen_ext` 기억 동작(같은 영상 두 번 추가 시 직전 선택 ext 의 행이 자동 선택), 환경설정에서 저장 후 재진입 시 슬라이더 값 복원
 
 - **`feat(ui)`**: 삭제·취소 확인 다이얼로그 통일 + "전체 취소" → "목록 비우기" 재정의.
   - 신규 `ui/confirm_remove_dialog.py`: 개별 ✕ 와 일괄 "목록 비우기" 가 공유하는 단일 다이얼로그. 본질 질문은 "목록에서 제거" 하나로 고정, 디스크 삭제는 옵셔널 체크박스로 분리. 기본 포커스는 "닫기" — 엔터 잘못 눌러도 안전. 결과 두 개 노출: `confirmed` / `delete_disk_files`
@@ -181,14 +188,7 @@
 - [x] **`Read timed out` 회복력 — yt-dlp 재시도/타임아웃 옵션 강화** ✅ (2026-05-18 완료, `core/downloader.py` 의 `_BASE_OPTS` 로 socket_timeout/retries/fragment_retries/file_access_retries/retry_sleep_functions 적용. `fragment_retries` 는 CLI 외 경로에선 `float('inf')` 필요 — 핫픽스 `93578c3`)
 - [x] **취소·재시작·삭제 동선 정비** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ux)` 와 `fix(ui)` 두 커밋 참조)
 - [x] **삭제·취소 확인 다이얼로그 통일** ✅ (2026-05-27 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 커밋 참조)
-- [ ] **환경설정 다이얼로그 정비** (2026-05-27 합의, 우선순위 ⬆)
-  - **문제**: `ui/preferences_dialog.py` 의 "동시 다운로드 수" SpinBox 가 컨테이너를 벗어나 숫자와 ± 버튼이 겹쳐 보임. "기본 저장 형식" 설정은 URL 입력 후 `FormatSelectDialog` 와 의미가 중복되어 사용자 혼란 유발
-  - **변경 1 (UI)**: SpinBox → QSlider 로 교체. 범위 1~10, 기본값 2, 현재 값 라벨 동반 표시
-  - **변경 2 (색 구간)**: 슬라이더 위·아래에 3개 QLabel 띠 배치 — 녹색 1~3 (권장), 노랑 4~5 (주의), 빨강 6~10 (비권장). 툴팁에 "yt-dlp 는 단일 인스턴스 병렬 다운로드를 공식 지원하지 않음. 1~3 권장" 명시
-  - **변경 3 (저장 형식 제거)**: "기본 저장 형식" 콤보박스 삭제. 마지막 선택한 확장자를 `config.json` 의 hidden key `last_chosen_ext` 로 기억하여 `FormatSelectDialog` 의 기본값으로 사용
-  - **주의**: 이 단계의 슬라이더는 **placebo** — 실제 동시성 제어는 "동시성 제어 구현" 항목에서 처리. 저장만 되고 동작에는 반영되지 않음을 코드 주석으로 명시
-  - 영향 파일: `ui/preferences_dialog.py`, 설정 로드/저장 모듈, `ui/format_select_dialog.py`, `main_window.py`
-  - 발견: 2026-05-27 (사용자 스크린샷 피드백)
+- [x] **환경설정 다이얼로그 정비** ✅ (2026-05-28 완료, 코드는 Changelog 2026-05-27 의 `feat(ui)` 환경설정 항목 참조 — 최종 구현은 `cab59c5`)
 - [ ] **항목 레이아웃 단순화** (사용자 사양, 2026-05-18 합의)
   - **취소/✕ 버튼 잘림 수정**: 긴 제목이 우측 버튼 컬럼을 윈도우 밖으로 밀어내는 현상. `lbl_title` 의 size policy 를 `Ignored, Preferred` 로 두고 `QFontMetrics.elidedText` 로 직접 잘라 표시. 워드랩은 켜지 않음(항목 높이 들쭉날쭉 방지)
   - **진행률 바 폭 상한**: `progress_bar.setMaximumWidth(400)`. 사용자 요구 "현재 길이에서 200px 단축" 의 견고한 형태(큰 윈도우에서도 과확장 방지)
