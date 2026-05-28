@@ -207,10 +207,11 @@ class DownloadManager(QObject):
             ext       = item.ext,
             save_dir  = save_dir,
         )
-        # 진행률·속도·ETA·병합은 워커→위젯 직접 연결 (매니저 미경유)
+        # 진행률·속도·ETA·크기·병합은 워커→위젯 직접 연결 (매니저 미경유)
         worker.progress.connect(widget.update_progress)
         worker.speed.connect(widget.update_speed)
         worker.eta.connect(widget.update_eta)
+        worker.file_size.connect(widget.update_file_size)
         worker.merging.connect(
             lambda: widget.update_status(DownloadStatus.MERGING)
         )

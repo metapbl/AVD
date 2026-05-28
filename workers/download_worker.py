@@ -25,6 +25,34 @@ _ETA_UNKNOWN_TOKENS = frozenset({
 })
 
 
+def _split_size_str(s: str) -> tuple[str, str]:
+    """
+    yt-dlp 사람 친화 크기 문자열을 (숫자부, 단위부) 로 분리.
+    예: "48.20MiB" -> ("48.20", "MiB"),  "1.25GiB" -> ("1.25", "GiB")
+    단위가 식별되지 않으면 (원문, "") 반환.
+    """
+    s = s.strip()
+    if not s:
+        return ("", "")
+    # 뒤에서부터 알파벳을 모은다 — yt-dlp 단위는 항상 알파벳만(KiB/MiB/GiB/TiB/B)
+    i = len(s)
+    while i > 0 and s[i - 1].isalpha():
+        i -= 1
+    if i == len(s) or i == 0:
+        return (s, "")
+    return (s[:i].strip(), s[i:].strip())
+
+
+def _normalize_size_str(s: str) -> str:
+    """
+    "48.20MiB" -> "48.20 MiB" 처럼 숫자와 단위 사이에 공백을 한 칸 끼운다.
+    단위 분리 실패 시 원문 그대로 반환.
+    """
+    num, unit = _split_size_str(s)
+    if not unit:
+        return s.strip()
+    return f"{num} {unit}"
+
 class DownloadWorker(QThread):
     """
     다운로드를 백그라운드로 실행하는 워커 스레드
@@ -171,13 +199,19 @@ class DownloadWorker(QThread):
             # 남은 시간 — yt-dlp 값 우선, unknown 류면 폴백 계산
             self._emit_eta(d, pct)
 
-            # 파일 크기
-            size = strip_ansi(
+            # 파일 크기 — "현재 / 전체" 형태로 합쳐서 emit.
+            # yt-dlp 가 두 문자열을 각각 사람 친화 단위로 포맷해서 준다
+            # (예: "48.20MiB", "128.50MiB"). 둘 다 같은 단위면 뒤쪽 단위만 남기고
+            # 다르면(드묾) 양쪽 단위 모두 표기. 전체가 없으면 현재만, 현재도 없으면
+            # emit 생략.
+            downloaded = strip_ansi(d.get("_downloaded_bytes_str", "")).strip()
+            total      = strip_ansi(
                 d.get("_total_bytes_str", "")
                 or d.get("_total_bytes_estimate_str", "")
             ).strip()
-            if size:
-                self.file_size.emit(size)
+            size_text = self._compose_size_text(downloaded, total)
+            if size_text:
+                self.file_size.emit(size_text)
 
         elif status == "finished":
             # 단일 스트림 완료 (병합 전)
@@ -220,6 +254,42 @@ class DownloadWorker(QThread):
         else:
             text = f"~{secs // 60}:{secs % 60:02d}"
         self.eta.emit(text)
+
+    @staticmethod
+    def _compose_size_text(downloaded: str, total: str) -> str:
+        """
+        yt-dlp 의 `_downloaded_bytes_str` 와 `_total_bytes_str` 두 문자열을
+        UI 표시용 한 문자열로 합친다.
+
+        규칙:
+            - 둘 다 있고 단위가 같으면      → "48.20 / 128.50 MiB"  (앞 단위 생략)
+            - 둘 다 있고 단위가 다르면      → "48.20MiB / 1.25GiB"   (각자 단위)
+            - 전체만 있으면                  → "128.50 MiB"
+            - 현재만 있으면                  → "48.20 MiB"
+            - 둘 다 비면                     → ""  (emit 생략 의미)
+
+        yt-dlp 의 사람 친화 단위는 "숫자+공백없음+단위" 패턴(예: "48.20MiB").
+        간단한 분리 로직으로 단위 부분만 추출해 비교한다.
+        """
+        d = (downloaded or "").strip()
+        t = (total      or "").strip()
+
+        if not d and not t:
+            return ""
+        if d and not t:
+            return _normalize_size_str(d)
+        if t and not d:
+            return _normalize_size_str(t)
+
+        # 둘 다 있음 — 단위 비교
+        d_num, d_unit = _split_size_str(d)
+        t_num, t_unit = _split_size_str(t)
+
+        if d_unit and t_unit and d_unit == t_unit:
+            # 단위 같음 — 앞 단위 생략, 사이에 공백·슬래시
+            return f"{d_num} / {t_num} {t_unit}"
+        # 단위 다르거나 분리 실패 — 원형 그대로 슬래시로 묶음
+        return f"{_normalize_size_str(d)} / {_normalize_size_str(t)}"
 
     def _on_postprocess(self, d: dict):
         """

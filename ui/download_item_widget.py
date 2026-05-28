@@ -100,7 +100,7 @@ class DownloadItemWidget(QWidget):
         self.progress_bar.setTextVisible(False)
         info_layout.addWidget(self.progress_bar)
 
-        # 상태 + 속도 + 남은시간
+        # 상태 + 속도 + 남은시간 + 크기
         status_row = QHBoxLayout()
         status_row.setContentsMargins(0, 0, 0, 0)
         self.lbl_status = QLabel(self.item.status.value)
@@ -112,11 +112,18 @@ class DownloadItemWidget(QWidget):
         self.lbl_eta    = QLabel("")
         self.lbl_eta.setObjectName("itemMeta")
         self.lbl_eta.setFixedHeight(16)
+        # 크기 라벨 — "48.20 / 128.50 MiB" 형식. DownloadWorker.file_size 가
+        # 매니저를 경유해 update_file_size 로 들어온다.
+        self.lbl_size   = QLabel("")
+        self.lbl_size.setObjectName("itemMeta")
+        self.lbl_size.setFixedHeight(16)
         status_row.addWidget(self.lbl_status)
         status_row.addStretch()
         status_row.addWidget(self.lbl_speed)
         status_row.addSpacing(12)
         status_row.addWidget(self.lbl_eta)
+        status_row.addSpacing(12)
+        status_row.addWidget(self.lbl_size)
         info_layout.addLayout(status_row)
 
         root.addLayout(info_layout, stretch=1)
@@ -289,6 +296,16 @@ class DownloadItemWidget(QWidget):
         """남은 시간 레이블 업데이트"""
         self.lbl_eta.setText(f"남은시간 {eta}")
 
+    def update_file_size(self, size: str):
+        """
+        파일 크기 라벨 업데이트.
+
+        DownloadWorker 가 "48.20 / 128.50 MiB" 또는 "128.50 MiB" 같은 합성
+        문자열로 emit. 빈 문자열이면 라벨을 지운다 (초기 한 틱이나 HLS 같이
+        크기 정보가 없는 경우).
+        """
+        self.lbl_size.setText(size or "")
+
     def update_status(self, status: DownloadStatus):
         """
         상태 레이블 + 버튼 라벨 업데이트.
@@ -322,6 +339,7 @@ class DownloadItemWidget(QWidget):
             self.progress_bar.setValue(0)
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.lbl_size.setText("")
 
         elif status == DownloadStatus.DONE:
             # 완료 시 — 취소/재시도 자리 숨기고 "열기" 노출
@@ -330,6 +348,7 @@ class DownloadItemWidget(QWidget):
             self.progress_bar.setValue(100)
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.lbl_size.setText("")
 
         elif status == DownloadStatus.ERROR:
             # 에러 — 버튼을 "재시도" 라벨로 전환 (숨기지 않음)
@@ -339,6 +358,7 @@ class DownloadItemWidget(QWidget):
             self.lbl_status.setStyleSheet("color: #e05555;")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.lbl_size.setText("")
             self.progress_bar.setValue(0)
 
         elif status == DownloadStatus.CANCELLED:
@@ -348,13 +368,15 @@ class DownloadItemWidget(QWidget):
             self.btn_open.setVisible(False)
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.lbl_size.setText("")
             self.progress_bar.setValue(0)
 
         elif status == DownloadStatus.MERGING:
-            # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA 자리는 비움.
+            # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA/크기 자리는 비움.
             self.lbl_status.setText("병합 중")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
+            self.lbl_size.setText("")
             # 활성 상태이므로 라벨은 "취소" 로 복원
             self.btn_cancel.setText("취소")
             self.btn_cancel.setVisible(True)
