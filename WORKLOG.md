@@ -40,6 +40,10 @@
 
 ### 2.1. 2026-05-28
 
+- **`chore`**: `run.bat` 제거.
+    - 단순히 venv 활성화 후 `python main.py` 를 실행하는 4줄짜리 배치 파일이었고, 실제 워크플로(VS Code 통합 터미널에서 venv 활성화된 상태로 `python main.py`)와 중복이라 제거. 외부 참조는 `README.md` "## 실행" 안내 한 줄과 `CLAUDE.md` "## 4. 폴더 구조" 트리 한 줄뿐이었으며 함께 제거.
+    - 메모: 더블클릭 실행이 필요해지면 `run.bat` 대신 (a) 바탕화면 바로가기 + `venv\Scripts\pythonw.exe main.py` 대상 지정, (b) PyInstaller `onefile` 빌드 중 하나로 대체할 것. `.bat` 은 콘솔 창이 같이 떠 GUI 앱 UX 와 어울리지 않음.
+
 - **fix(downloader): mp3 컨테이너 잔재 메타 선별 제거** (`1c06bfd`)
   - ExtractAudio 단계의 `postprocessor_args["extractaudio"]` 에 `-metadata major_brand= / minor_version= / compatible_brands=` 빈 값을 주입해 ftyp 박스 잔재가 ID3 TXXX 프레임으로 복제되는 경로를 차단.
   - 2026‑05‑18 에 `-map_metadata -1` 일괄 제거 시 TIT2 까지 같이 사라지던 부작용 없이 선별 제거 달성.
