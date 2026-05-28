@@ -40,6 +40,12 @@
 
 ### 2.1. 2026-05-28
 
+- **`feat(ui)`**: 다운로드 항목에 "현재 / 전체 크기" 표시.
+    - `ui/download_item_widget.py`: `status_row` 끝자리에 `lbl_size` 추가, `update_file_size(size: str)` 슬롯 신설. 비활성 상태(WAITING/DONE/ERROR/CANCELLED/MERGING) 진입 시 다른 보조 라벨처럼 빈 문자열로 초기화. `_build_ui` 의 4행 80px 배치(`status_row` 높이 16) 는 그대로 유지 — 가로 한 칸만 추가됨.
+    - `controllers/download_manager.py` `_start_worker`: `worker.file_size.connect(widget.update_file_size)` 한 줄 추가. 워커는 이전부터 시그널을 emit 하고 있었지만 받는 슬롯이 없어 무시되던 상태였음.
+    - `workers/download_worker.py` `_on_progress`: yt-dlp 의 `_downloaded_bytes_str` 와 `_total_bytes_str` / `_total_bytes_estimate_str` 를 `_compose_size_text` 헬퍼로 합쳐 한 문자열로 emit. 같은 단위면 "48.20 / 128.50 MiB" 처럼 앞 단위를 생략, 단위가 다르면 양쪽 단위 모두 표기, 한쪽만 있으면 그 값만, 둘 다 없으면 emit 생략. 워커 모듈 최상위에 `_split_size_str` / `_normalize_size_str` 자유 함수 두 개 추가.
+    - 메모: 향후 yt-dlp 가 통합 포맷("bestvideo+bestaudio/best") 의 전체 크기를 알려주지 않는 케이스를 더 정밀히 다루려면, `FormatInfo.filesize` 추정치를 워커에 주입해 fallback 으로 쓰는 방향이 가능 — 이번 작업 범위 밖.
+
 - **`fix(info_fetcher)`**: 썸네일 URL 선정 로직 안전화.
     - `InfoFetcher._pick_thumbnail(info)` 추가. yt-dlp 의 `info["thumbnail"]` 단일 필드 대신 `info["thumbnails"]` 배열에서 `(preference, width*height, 원래 인덱스)` 점수로 best 를 직접 선택. 배열이 비어 있거나 없으면 기존 `info["thumbnail"]` 로 폴백, 둘 다 없으면 빈 문자열. URL 은 문자열이고 `http(s)://` 로 시작하는 것만 후보로 인정.
     - 배경: yt-dlp 가 `info["thumbnail"]` 에 YouTube `maxresdefault.jpg` 같은 "존재하지 않을 수 있는" URL 을 채워 넣어 `ThumbnailWorker` 가 404 로 실패하고 위젯이 회색 박스로 남는 회귀 사례가 있었음. 단일 필드 대신 yt-dlp 가 같은 dict 안에 같이 넣어주는 후보 배열을 쓰면 사이트별 정렬·preference 정보로 안전한 best 가 잡힘. 채택된 URL 이 실제 200 인지는 이번 패치에서 검증하지 않음 — 그 단계는 필요해지면 `ThumbnailWorker` 에 후보 fallback 체인을 추가하는 식으로 확장 예정.
