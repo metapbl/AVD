@@ -36,6 +36,8 @@
     ├── main.py                     # 진입점
     ├── CLAUDE.md                   # 이 파일
     ├── WORKLOG.md                  # 작업 로그 (로드맵 + ADR + 학습된 교훈)
+    ├── ADR.md                      # 아키텍처 결정 기록 본문\
+    ├── LESSONS.md                  # 학습된 교훈 본문
     ├── CHANGELOG.md                # 시간 역순 변경 이력
     ├── README.md                   # 외부 사용자용 안내
     ├── requirements.txt
@@ -151,7 +153,7 @@
 
 ### 11.1. claude.ai 웹 채팅 (현재 주력)
 
-새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 `raw.githubusercontent.com` URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
+새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 `raw.githubusercontent.com` URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다.
 
 > 프로젝트 컨텍스트: https://raw.githubusercontent.com/metapbl/AVD/main/CLAUDE.md
 >
@@ -159,9 +161,15 @@
 >
 > 위 두 문서를 먼저 읽어주십시오.
 
-평소엔 위 두 URL 만 던지면 충분하다. 과거 변경 이력을 참조해야 하는 작업(특정 회귀 추적·예전 결정 확인 등) 일 때만 셋째 URL 을 함께 던진다: `https://raw.githubusercontent.com/metapbl/AVD/main/CHANGELOG.md`. Changelog 는 과거 기록이라 모든 세션에서 로드할 필요가 없다.
+평소엔 위 두 URL 만 던지면 충분하다. WORKLOG 의 섹션 4·5 가 인덱스만 담고 본문은 `ADR.md` / `LESSONS.md` 로 분리되어 있으므로, 작업 종류에 따라 다음 URL 을 추가로 던진다.
 
-URL 선택 근거: `raw.githubusercontent.com` 경로는 응답 Content-Type 이 `text/plain` 이라 `crawler` 가 기본 모드(`raw=false`)로 호출되어도 HTML→markdown 변환을 거치지 않고 본문을 그대로 통과시킨다. 결과로 (a) 한국어 산문이 100% 보존되고, (b) 한 호출에 파일 전체가 들어오며, (c) `raw=true` 모드의 28KB 누적 함정도 적용되지 않는다. `WORKLOG.md` 가 60KB·100KB 로 커져도 한 번에 끝난다. 대안으로 `https://cdn.jsdelivr.net/gh/metapbl/AVD@main/CLAUDE.md` 형태도 동일하게 동작하나 CDN 캐싱이 push 직후 수 분 지연될 수 있어 `raw.githubusercontent.com` 을 기본으로 둔다. `github.com/.../blob/...` URL 은 사용하지 않는다 — 9 의 blob 한국어 누락 항목 참조.
+- 특정 ADR 의 후속이거나 같은 종류의 결정을 다룰 때 → `https://raw.githubusercontent.com/metapbl/AVD/main/ADR.md`
+- 같은 함정의 재방문이 예상되거나 도구·라이브러리 깊은 디버깅 시 → `https://raw.githubusercontent.com/metapbl/AVD/main/LESSONS.md`
+- 과거 변경 이력 추적이 필요할 때 → `https://raw.githubusercontent.com/metapbl/AVD/main/CHANGELOG.md`
+
+**자동 펼침 규칙**: 사용자가 작업을 지시한 시점에 WORKLOG 인덱스 한 줄 요약만으로 ADR / 교훈의 맥락이 부족하다고 Claude 가 판단하면, 사용자가 URL 을 추가로 주지 않았더라도 해당 raw URL 을 `crawler` 로 즉시 가져온다. 가져오기 전 사용자에게 알리지는 않으나, 무엇을 펼쳤는지는 응답 안에서 자연스럽게 명시.
+
+URL 선택 근거: `raw.githubusercontent.com` 경로는 응답 Content-Type 이 `text/plain` 이라 `crawler` 가 기본 모드(`raw=false`)로 호출되어도 HTML→markdown 변환을 거치지 않고 본문을 그대로 통과시킨다. 결과로 (a) 한국어 산문이 100% 보존되고, (b) 한 호출에 파일 전체가 들어오며, (c) `raw=true` 모드의 28KB 누적 함정도 적용되지 않는다. 대안으로 `https://cdn.jsdelivr.net/gh/metapbl/AVD@main/...` 형태도 동일하게 동작하나 CDN 캐싱 지연이 있어 `raw.githubusercontent.com` 을 기본으로 둔다. `github.com/.../blob/...` URL 은 사용하지 않는다 — 9 의 blob 한국어 누락 항목 참조.
 
 사람이 브라우저로 문서를 열어볼 때는 평소처럼 `https://github.com/metapbl/AVD/blob/main/...` URL 을 쓰면 된다 — 위 raw URL 은 Claude 의 도구 호출 전용이다.
 
