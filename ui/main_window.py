@@ -307,6 +307,18 @@ class MainWindow(QMainWindow):
         # 제목 라벨 우측에 ".ext" 표시 — 확장자가 확정된 이 시점에 알린다.
         widget.update_ext(fmt.ext)
 
+        # 메타 라벨에 코덱·포맷·비트레이트 세그먼트 추가.
+        # 통합 포맷(format_id == AUTO_FORMAT_ID) 은 위젯 측에서 "자동" 으로 표시.
+        widget.update_format_meta(
+            format_id = fmt.format_id,
+            vcodec    = fmt.vcodec,
+            acodec    = fmt.acodec,
+            ext       = fmt.ext,
+            abr       = fmt.abr,
+            tbr       = fmt.tbr,
+            is_audio  = fmt.is_audio,
+        )
+
         widget.update_status(DownloadStatus.WAITING)
         self.status_bar.showMessage(f"대기열에 추가: {item.title}")
 

@@ -13,6 +13,137 @@ from models.download_item import DownloadItem, DownloadStatus
 from utils.file_utils import format_duration, open_folder
 
 
+# ── 자동 선택 포맷 식별자 ────────────────────────────
+# core/info_fetcher.py 의 _parse_formats 가 통합 포맷에 박는 format_id.
+# 메타 라벨·다이얼로그가 이 값을 보면 코덱/비트레이트 대신 "자동" 으로 표시.
+# 단일 출처 — 여기 값이 바뀌면 info_fetcher 의 통합 포맷 진입 부분도 같이 바꿀 것.
+AUTO_FORMAT_ID = "bestvideo+bestaudio/best"
+
+
+# ── 코덱 정규화 매핑 ─────────────────────────────────
+# yt-dlp 의 raw vcodec/acodec 문자열을 사람 친화 이름으로 옮기는 매핑.
+# 모듈 최상위에 두어 FormatSelectDialog 등 다른 위젯에서도 재사용 가능.
+# 매칭 규칙: raw 문자열을 소문자화한 뒤 (a) 정확 일치, (b) 접두사 일치 순으로
+# 검사한다. avc1.640028 / vp09.00.40.08 / mp4a.40.2 같은 점 포함 식별자를
+# 접두사 매칭으로 한 번에 처리.
+
+_VCODEC_PREFIX_MAP = {
+    "avc1": "H.264",
+    "h264": "H.264",
+    "vp09": "VP9",
+    "vp9" : "VP9",
+    "av01": "AV1",
+    "av1" : "AV1",
+    "hev1": "H.265",
+    "hvc1": "H.265",
+    "h265": "H.265",
+    "hevc": "H.265",
+}
+
+_ACODEC_PREFIX_MAP = {
+    "mp4a"  : "AAC",
+    "aac"   : "AAC",
+    "opus"  : "Opus",
+    "mp3"   : "MP3",
+    "vorbis": "Vorbis",
+    "flac"  : "FLAC",
+    "ec-3"  : "EAC3",
+    "eac3"  : "EAC3",
+    "ac-3"  : "AC3",
+    "ac3"   : "AC3",
+}
+
+
+def humanize_codec(raw: str, kind: str) -> str:
+    """
+    raw vcodec/acodec 문자열을 사람 친화 이름으로 정규화.
+
+    kind: "video" 또는 "audio". 빈값/"none"/미매칭이면 빈 문자열을 돌려
+    표시 단계에서 해당 세그먼트를 통째로 생략하게 한다.
+
+    매칭 규칙: 소문자화 → 접두사 우선 일치. avc1.640028 같은 점 포함
+    문자열도 "avc1" 접두사로 잡힌다.
+    """
+    if not raw:
+        return ""
+    s = raw.strip().lower()
+    if not s or s == "none":
+        return ""
+
+    mapping = _VCODEC_PREFIX_MAP if kind == "video" else _ACODEC_PREFIX_MAP
+    for prefix, name in mapping.items():
+        if s == prefix or s.startswith(prefix):
+            return name
+    return ""
+
+
+def format_bitrate(abr: float, tbr: float) -> str:
+    """
+    오디오 비트레이트를 "192kbps" 형식 문자열로 만든다.
+    abr 우선, 없으면 tbr 사용. 둘 다 0/없음이면 빈 문자열.
+    소수점은 반올림해 정수 kbps 로 표기 — 사용자에게 보일 정밀도가 아니다.
+    """
+    rate = abr if abr and abr > 0 else (tbr if tbr and tbr > 0 else 0.0)
+    if rate <= 0:
+        return ""
+    return f"{int(round(rate))}kbps"
+
+
+def format_codec_segment(
+    vcodec: str, acodec: str, ext: str,
+    abr: float, tbr: float,
+    is_audio: bool,
+) -> str:
+    """
+    메타 라벨·다이얼로그 행에 들어갈 코덱·포맷·비트레이트 세그먼트를 만든다.
+
+    반환 형식:
+    - 영상 (is_audio=False):
+        "H.264 MP4 • AAC 192kbps"  (모두 있을 때)
+        "H.264 MP4 • AAC"          (비트레이트 없음)
+        "H.264 MP4"                (오디오 정보 없음)
+        "MP4"                      (vcodec 도 미확정 — 거의 없음)
+        ""                         (전부 미확정 — 호출 측이 "자동" 폴백)
+    - 오디오 (is_audio=True):
+        "MP3 320kbps"  /  "MP3"  /  ""
+
+    빈 문자열을 반환하는 경우 호출 측에서 "자동" 등 폴백을 결정한다.
+    """
+    v_name = humanize_codec(vcodec, "video")
+    a_name = humanize_codec(acodec, "audio")
+    ext_up = (ext or "").upper()
+    bitrate = format_bitrate(abr, tbr)
+
+    if is_audio:
+        # 오디오 전용: "MP3 320kbps" 또는 "MP3"
+        # acodec 이 없으면 ext 로 폴백 (MP3 항목의 acodec="mp3" 가 누락된 경우)
+        name = a_name or ext_up
+        if not name:
+            return ""
+        if bitrate:
+            return f"{name} {bitrate}"
+        return name
+
+    # 영상: "H.264 MP4 • AAC 192kbps"
+    # 비디오 세그먼트
+    video_seg = ""
+    if v_name and ext_up:
+        video_seg = f"{v_name} {ext_up}"
+    elif v_name:
+        video_seg = v_name
+    elif ext_up:
+        video_seg = ext_up
+
+    # 오디오 세그먼트 (acodec 가 있을 때만 — 미확정이면 통째로 생략)
+    audio_seg = ""
+    if a_name:
+        audio_seg = f"{a_name} {bitrate}" if bitrate else a_name
+
+    if video_seg and audio_seg:
+        return f"{video_seg}  •  {audio_seg}"
+    return video_seg or audio_seg
+
+
 class DownloadItemWidget(QWidget):
     """
     다운로드 항목 하나를 표시하는 위젯
@@ -47,6 +178,22 @@ class DownloadItemWidget(QWidget):
         # MainWindow._on_format_selected 가 update_ext 를 부른 뒤에야 True 가 된다.
         self._ext_known: bool = False
         self._ext: str = ""
+
+        # 메타 라벨의 코덱·비트레이트 세그먼트 단일 출처.
+        # 화질 선택 전엔 모두 빈 값/0 → _format_meta 가 코덱 세그먼트를 생략.
+        # _on_format_selected 가 update_format_meta 로 채운 뒤부터 표시된다.
+        # _fmt_chosen 은 "사용자가 한 번이라도 포맷을 골랐는가" 의 표식.
+        # _fmt_format_id 는 통합 포맷("자동 선택") 판별 단일 출처 — 코덱이
+        # 빈 값이어도 이 값이 AUTO_FORMAT_ID 면 "자동" 으로 표시.
+        self._fmt_chosen    : bool  = False
+        self._fmt_format_id : str   = ""
+        self._fmt_vcodec    : str   = ""
+        self._fmt_acodec    : str   = ""
+        self._fmt_ext       : str   = ""
+        self._fmt_abr       : float = 0.0
+        self._fmt_tbr       : float = 0.0
+        self._fmt_is_audio  : bool  = False
+
         self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
         self._apply_style()
@@ -91,11 +238,10 @@ class DownloadItemWidget(QWidget):
         self.lbl_title.setFixedHeight(26)
         info_layout.addWidget(self.lbl_title)
 
-        # 업로더 + 재생시간 — 위젯 생성 시점엔 둘 다 비어 있을 수 있다.
-        # InfoWorker 완료 후 update_meta 가 같은 헬퍼로 다시 그린다.
-        self.lbl_meta = QLabel(
-            self._format_meta(self.item.uploader, self.item.duration)
-        )
+        # 업로더 + 재생시간 (+ 코덱·포맷·비트레이트) — 위젯 생성 시점엔
+        # 업로더/재생시간만 들어가고, _on_format_selected 가 update_format_meta
+        # 를 부른 뒤부터 코덱 세그먼트가 추가된다.
+        self.lbl_meta = QLabel(self._build_meta_text())
         self.lbl_meta.setObjectName("itemMeta")
         self.lbl_meta.setFixedHeight(16)
         info_layout.addWidget(self.lbl_meta)
@@ -229,14 +375,46 @@ class DownloadItemWidget(QWidget):
 
     # ── 사적 포맷 헬퍼 ───────────────────────────────
 
-    @staticmethod
-    def _format_meta(uploader: str, duration: int) -> str:
+    def _build_meta_text(self) -> str:
         """
-        lbl_meta 라벨에 들어갈 "업로더 • 재생시간" 문자열을 만든다.
-        _build_ui 의 초기 표시와 update_meta 의 갱신이 동일 포맷을 쓰도록
-        단일 출처화한 헬퍼. 한 곳만 고치면 양쪽이 함께 따라온다.
+        lbl_meta 라벨에 들어갈 전체 문자열을 만든다.
+
+        구성 단위는 두 단계:
+        1. "업로더  •  재생시간"      — 항상 표시 (위젯 생성 직후부터)
+        2. " • 코덱·포맷·비트레이트"  — 화질 선택 이후만 표시.
+           통합 포맷(AUTO_FORMAT_ID) 은 코덱이 미확정이므로 "자동" 으로 표시.
+
+        update_meta / update_format_meta 가 단일 출처
+        (self.item.uploader/duration, self._fmt_*) 를 갱신한 뒤 이 헬퍼를
+        호출해 라벨을 다시 박는다.
         """
-        return f"{uploader}  •  {format_duration(duration)}"
+        base = (
+            f"{self.item.uploader}  •  {format_duration(self.item.duration)}"
+        )
+
+        # 화질 선택 전 — 코덱 세그먼트 없음
+        if not self._fmt_chosen:
+            return base
+
+        # 통합 포맷("최고 화질 자동 선택") — 코덱 미확정. 무조건 "자동".
+        # 이 분기를 segment 폴백보다 앞에 두는 이유: 통합 포맷은 ext="mp4"
+        # 가 박혀 있어 segment 가 "MP4" 를 반환하는데, 그러면 "자동" 폴백이
+        # 작동하지 않기 때문. format_id 단일 출처로 명확히 식별한다.
+        if self._fmt_format_id == AUTO_FORMAT_ID:
+            return f"{base}  •  자동"
+
+        seg = format_codec_segment(
+            vcodec   = self._fmt_vcodec,
+            acodec   = self._fmt_acodec,
+            ext      = self._fmt_ext,
+            abr      = self._fmt_abr,
+            tbr      = self._fmt_tbr,
+            is_audio = self._fmt_is_audio,
+        )
+        if not seg:
+            # 코덱이 모두 비어 있는 비통합 포맷 — 거의 없겠지만 안전망.
+            seg = "자동"
+        return f"{base}  •  {seg}"
 
     # ── 제목 엘라이드 ─────────────────────────────────
 
@@ -537,10 +715,44 @@ class DownloadItemWidget(QWidget):
         이 빈 값이거나 0 이다. _build_ui 가 박은 초기 "  •  0:00" 라벨을
         InfoWorker 완료 후 이 메서드로 덮어쓴다. update_title 과 같은 패턴
         — 라벨 갱신 + 단일 출처(self.item) 동기화.
+
+        코덱 세그먼트(self._fmt_*) 는 update_format_meta 가 별도로 관리하며
+        여기서는 건드리지 않는다. _build_meta_text 가 두 출처를 합쳐 라벨을
+        조립한다.
         """
         self.item.uploader = uploader
         self.item.duration = duration
-        self.lbl_meta.setText(self._format_meta(uploader, duration))
+        self.lbl_meta.setText(self._build_meta_text())
+
+    def update_format_meta(
+        self,
+        format_id: str,
+        vcodec: str,
+        acodec: str,
+        ext: str,
+        abr: float,
+        tbr: float,
+        is_audio: bool,
+    ):
+        """
+        화질 선택 후 코덱·포맷·비트레이트 정보를 메타 라벨에 반영.
+
+        MainWindow._on_format_selected 가 FormatInfo 의 raw 필드를 그대로
+        넘긴다. 정규화·생략 판정은 _build_meta_text → format_codec_segment
+        에서 일괄 처리.
+
+        format_id 는 통합 포맷("자동 선택") 식별 단일 출처. AUTO_FORMAT_ID
+        와 일치하면 _build_meta_text 가 코덱 세그먼트 대신 "자동" 으로 표시.
+        """
+        self._fmt_chosen    = True
+        self._fmt_format_id = format_id or ""
+        self._fmt_vcodec    = vcodec or ""
+        self._fmt_acodec    = acodec or ""
+        self._fmt_ext       = ext or ""
+        self._fmt_abr       = abr or 0.0
+        self._fmt_tbr       = tbr or 0.0
+        self._fmt_is_audio  = bool(is_audio)
+        self.lbl_meta.setText(self._build_meta_text())
 
     def update_thumbnail(self, data: bytes):
         """
