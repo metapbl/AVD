@@ -246,11 +246,6 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
-- **README.md 업데이트**
-  - CLAUDE.md 존재 및 사용법 한 줄 추가
-  - WORKLOG.md 구조(섹션 1~5 + 부록 A) 변경 사실 한 줄 추가
-  - `controllers/` 디렉터리 신설 한 줄 (폴더 구조 다이어그램에 반영)
-
 - **체크박스 시각 개선 (체크 시 ✓ 마크가 보이도록)**
     - 위치: `ui/preferences_dialog.py`, `ui/confirm_remove_dialog.py` 의 `QCheckBox` 들.
     - 진단 (2026-05-28 사전 확인):
