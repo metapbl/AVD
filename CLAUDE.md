@@ -128,6 +128,7 @@
 
 > 이 섹션은 새 세션에서 즉시 알아야 할 **영구적 제약** 만 요약한다. 디버깅 맥락과 사례별 함정(NFC 판정·콘솔 렌더링 함정·yt-dlp 후처리 체인 등)은 `WORKLOG.md` 부록 A "학습된 교훈" 에 누적한다.
 
+- **CLAUDE.md 의 모든 규칙을 답변마다 의식적으로 점검하고 철저히 준수한다.**
 - **PowerShell `>` 리다이렉션은 UTF-16 LE BOM 으로 파일을 씀**. `pip freeze > requirements.txt` 시 git 이 "Binary files differ" 로 인식. 대안: `pip freeze | Out-File -Encoding utf8 requirements.txt`.
 - **PySide6 의 QPixmap 은 GUI 스레드 전용**. 워커 스레드에서 만들면 `isNull()=False` 로 모든 검사를 통과하지만 paint engine 에서 빈 텍스처로 렌더링됨. 워커는 bytes 까지만, 변환은 GUI 스레드에서.
 - **"썸네일" 이라는 용어는 두 가지 다른 대상을 가리킬 수 있음**: ① 앱 UI 의 QLabel 미리보기, ② 다운로드된 파일에 임베드된 메타데이터 이미지(Windows 탐색기 아이콘·앨범 아트). 디버깅 시 어느 쪽인지 반드시 명시.
