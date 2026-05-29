@@ -38,6 +38,19 @@
 
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
 
+### 2.1. 2026-05-29
+
+- **`fix(worker)`**: ETA 라벨 출렁임 안정화 — 소스 고정 + 시간 기반 EMA.
+    - `workers/download_worker.py`: `_decide_eta_source` 신설 — yt-dlp 가 의미 있는 `_eta_str` 을 한 번이라도 주면 그 다운로드가 끝날 때까지 그 소스로 고정, 그 외(단일 progressive 에서 `tot=N/A` 로 yt-dlp ETA 가 5초마다 Unknown 으로 리셋되는 케이스) 는 폴백 추정으로 고정. 두 소스가 progress 콜백마다 번갈아 들어오며 라벨이 분 단위로 튀던 현상을 차단.
+    - `workers/download_worker.py`: 시간 기반 EMA — 콜백 빈도가 환경마다 달라(`frag=/` 단일 progressive 는 초당 수십~수백 회, `frag=N/M` 프래그먼트는 청크당 1회) 호출 횟수 기반 EMA 가 평활 강도를 보장하지 못함. `effective_alpha = 1 - exp(-dt / tau)` 로 시정수 기반 갱신. 폴백은 `_ETA_EMA_TAU_FALLBACK = 10.0`, yt-dlp 직 소스는 `_ETA_EMA_TAU_YTDLP = 5.0`.
+    - `workers/download_worker.py`: 비례 throttle (`max(2, min(secs * 0.05, 30))`) + 큰 변화 패스스루(변화량 ≥ max(15초, 30% × 직전값) 이면 즉시 emit). 토큰 정규화 (`_UNKNOWN_TOKENS`, 공백·대소문자 무시) 와 `_compose_size_text` 의 `N/A` 억제로 사이즈 라벨의 `N / A` 표기 제거도 함께.
+    - 검증: 8K 최고화질(단일 progressive) `~M:SS` 부드럽게 감소, 8K 1080p(DASH 프래그먼트) 기존 안정성 유지, `lbl_size` 의 `N / A` 잔재 사라짐.
+    - 잔여: 8K 단일 progressive 종료 후 `~0:07` 잔존 — 섹션 3.2 신규 항목 참조. (커밋 `d6168fd`)
+
+- **`fix(ui)`**: 진행률·속도·ETA·크기 라벨 갱신을 DOWNLOADING 상태로 제한.
+    - `ui/download_item_widget.py`: `update_progress` / `update_speed` / `update_eta` / `update_file_size` 네 슬롯에 상태 가드 추가. DOWNLOADING 이 아닐 때(WAITING / MERGING / DONE / ERROR / CANCELLED) 진입한 시그널은 무시. 워커가 종료 직전 마지막으로 발사한 progress·speed 가 DONE 라벨 위에 잠시 덧씌워지던 미세 깜빡임 해소.
+    - 검증: 정상 완료 후 상태 라벨이 "완료" 로 유지되며 진행률 표기 덮어쓰기 없음. (커밋 `2c5ac0b`)
+
 ### 2.1. 2026-05-28
 
 - **`docs(readme)`**: CLAUDE.md / WORKLOG.md 링크와 `controllers/` 구조, 최신 기능 요약 추가.
@@ -248,14 +261,11 @@
     - 그래도 부족하면 두 번째 단계: `QApplication.setStyle("Fusion")` 을 `main.py` 에서 호출 — Fusion 은 OS 와 무관하게 일관된 위젯 렌더링을 보장하고, 다크 팔레트와 잘 어울린다는 평가가 보편적. 단, 다른 위젯(버튼·진행률 바)의 외양이 미세하게 달라질 수 있어 회귀 점검 필요. macOS 호환성 과제와 시너지 — Fusion 으로 통일하면 두 OS 의 렌더 차이도 줄어듦.
     - 라디오 버튼은 현재 코드베이스에 없음(확인됨) — 같이 다룰 필요 없음.
 
-- **ETA 안정화 (속도 출렁임에 따른 라벨 출렁임 완화)**
-    - 위치: `ui/download_item_widget.py` `update_eta` (한 곳).
-    - 현상: yt-dlp 의 `_eta_str` 은 매 progress 콜백마다 순간 속도 기반으로 재계산되어, 속도가 출렁이면 ETA 라벨도 그대로 출렁임. HLS 폴백 경로(`workers/download_worker.py` `_emit_eta` 의 직접 계산) 도 동일.
-    - 정책: 워커는 그대로 두고 위젯 측에서 두 가드를 적용.
-        - (i) 스로틀: 직전 갱신 시각 대비 0.5 초 이내면 무시.
-        - (ii) 변화 임계치: 직전 표시값 대비 변화량이 작으면 무시. 임계치는 비례식 — `max(3초, min(현재 ETA 의 5%, 30초))`. 예: ETA 10분 → 30초 이내 변동 무시, ETA 30초 → 3초 이내 변동 무시, ETA 1시간 → 30초 이내 변동 무시(상한 적용).
-    - 상태(MERGING / DONE 등) 진입 시에는 임계치 가드를 우회하고 즉시 비움(현 동작 유지). 직전 표시값 저장은 라벨 텍스트가 아니라 위젯 인스턴스 변수에 초 단위 숫자로.
-    - ETA 문자열 파싱: 워커가 emit 하는 형식은 `"M:SS"` / `"H:MM:SS"` / `"~M:SS"` 셋. 비례식 적용을 위해 초 단위 정수로 환원하는 작은 파서 필요. `~` 접두사 유무는 무시.
+- **단일 progressive 종료 후 ETA 라벨 잔존**
+    - 위치: `workers/download_worker.py` `_on_progress` 의 `status == "finished"` 분기 + `ui/download_item_widget.py` `update_status` 의 DONE 분기.
+    - 현상: 8K 최고화질(yt-dlp 단일 progressive 스트림) 다운로드가 100% 로 끝났는데 라벨에 `~0:07` 같은 값이 잠시 남아 있다가 다음 상태 갱신에서야 사라짐. 폴백 ETA 의 EMA 평활값(`_eta_smoothed`) 이 종료 순간 0 까지 수렴하지 못한 채 마지막으로 emit 된 잔여값이 라벨에 박혀 있는 것이 원인으로 추정.
+    - 정책: `status == "finished"` 진입 시 `self.eta.emit("")` 명시 호출로 라벨을 즉시 비우고, 같은 자리에서 `_eta_smoothed` · `_last_eta_secs` · `_last_eta_emit_ts` · `_dl_start_ts` 모두 초기 상태로 리셋. 위젯 측 `update_status` 의 DONE 분기에서 `lbl_eta.clear()` 가 실제로 호출되는지 함께 검증.
+    - 관련: 2026-05-29 `fix(worker)` ETA 안정화 작업의 후속 잔여 이슈 (커밋 `d6168fd`).
 
 - **파일명 확장자를 제목 라벨에 표시**
     - 위치: `ui/download_item_widget.py` `_apply_title_elide` · `update_title` · 새 `update_ext`, `ui/main_window.py` `_on_format_selected`.
