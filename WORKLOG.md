@@ -40,6 +40,14 @@
 
 ### 2026-05-29
 
+*   **`fix(worker)`**: fragment 다운로드 진행률 출렁임 제거.
+    *   `workers/download_worker.py` `_compute_display_pct` 신설: fragment 다운로더(`fragment_index` / `fragment_count` 정수) 일 때 yt-dlp 가 준 raw pct (= 현재 fragment 내 진행률) 대신 `((index - 1) + raw/100) / count * 100` 로 재계산. 구조적으로 단조 증가 보장. `completed = max(0, frag_idx - 1)` 로 잡아 yt-dlp 버전·다운로더 별 `frag_idx` 의미 차이(0 시작 vs 1 시작) 도 흡수.
+    *   `workers/download_worker.py` `_compute_display_pct`: 보조 방어선으로 `_pct_floor` 단조 ceiling 적용. fragment 정보가 없거나 (단일 progressive) 일관성을 잃은 경계 케이스에서도 진행률이 거꾸로 가지 않도록 보장.
+    *   `workers/download_worker.py` `_on_progress` `downloading`: raw_pct 파싱 후 `_compute_display_pct` 로 보정한 pct 를 emit. ETA 계산(`_emit_eta`) 도 같은 보정된 pct 를 입력으로 받아 "표시 진행도와 남은시간" 이 같은 기준을 공유.
+    *   `workers/download_worker.py` `__init__` + `_on_progress` `finished`: `_pct_floor: float` 상태 신설 및 finished 시점 리셋. 다음 스트림(오디오 등) 진입 시 floor 가 깨끗이 초기화.
+    *   배경: 영상 단일 화질 다운로드(예: 1080p MP4 단독) 시 yt-dlp 가 DASH/HLS fragment 로 받는데, fragment 경계마다 total 추정을 다시 잡아 raw pct 가 55% → 52% → 57% 식으로 출렁이는 현상. 40 fragment 짜리 다운로드에서 progress bar 가 40 번 출렁이는 게 또렷이 보였다. 최고화질("bestvideo+bestaudio") 은 영상·오디오 2 단계로 나뉘어 사용자가 0~50/50~100 두 구간으로 인지해 출렁임이 덜 도드라졌을 뿐 동일 현상이었다.
+    *   참고: yt-dlp 가 fragment 단위로 progress hook 을 발사할 때 `_percent_str` 은 현재 fragment 내 진행률(0~100) 이고 `fragment_index` / `fragment_count` 로 전체 위치를 알 수 있다는 관찰에 기반.
+
 *   **`fix(worker)`**: ETA 막판 수렴 보장, 갱신 주기 단축, 추정 표기 한국어화.
     *   `workers/download_worker.py` `_maybe_emit_eta`: EMA 평활화에 단조 하향 규칙 추가. raw 가 직전 평활값보다 작으면 EMA 를 거치지 않고 raw 를 그대로 채택, raw 가 더 클 때만 EMA 로 부드럽게 올리는 비대칭 평활. 다운로드 막판 구간에서 raw 가 8 → 5 → 2 → 0 으로 떨어질 때 평활값이 같이 따라가 0 에 수렴.
     *   `workers/download_worker.py` `_on_progress`: `status == "finished"` 진입 시 `self.eta.emit("")` 를 명시적으로 호출. 마지막 ETA 값이 비-0 에서 굳은 채 finished 가 들어오는 경로의 잔재 방어.
