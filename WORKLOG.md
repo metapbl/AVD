@@ -40,6 +40,15 @@
 
 ### 2026-05-29
 
+*   **`fix(worker)`**: ETA 막판 수렴 보장, 갱신 주기 단축, 추정 표기 한국어화.
+    *   `workers/download_worker.py` `_maybe_emit_eta`: EMA 평활화에 단조 하향 규칙 추가. raw 가 직전 평활값보다 작으면 EMA 를 거치지 않고 raw 를 그대로 채택, raw 가 더 클 때만 EMA 로 부드럽게 올리는 비대칭 평활. 다운로드 막판 구간에서 raw 가 8 → 5 → 2 → 0 으로 떨어질 때 평활값이 같이 따라가 0 에 수렴.
+    *   `workers/download_worker.py` `_on_progress`: `status == "finished"` 진입 시 `self.eta.emit("")` 를 명시적으로 호출. 마지막 ETA 값이 비-0 에서 굳은 채 finished 가 들어오는 경로의 잔재 방어.
+    *   `ui/download_item_widget.py` `update_eta`: `eta` 가 빈 문자열이면 "남은시간 " 접두사 없이 라벨을 비우는 분기 추가. 워커의 명시적 클리어가 깨끗하게 반영되도록.
+    *   `workers/download_worker.py` `_maybe_emit_eta`: 스로틀 정책 완화. 평상 하한 2 초 → 0.5 초, 막판 구간(≤10 초) 의 큰 변동 임계 15 → 1 로 낮춰 매 초 카운트다운. 표시 단위가 정수 초이므로 같은 표시 문자열 가드에서 대부분 막혀 실제 라벨 갱신은 정수 초 전환 시점에만 일어나고, 0.5 초 하한은 그 전환 순간을 빠르게 포착하기 위함.
+    *   `workers/download_worker.py` `_format_eta_secs`: 폴백 추정 표지 `~` → `약 `. 한국어 UI 에서 의미 모호성(범위 구분자 오인) 을 피하고 어림 표지를 자연스럽게. 표시 형태가 `남은시간 ~0:42` → `남은시간 약 0:42`.
+    *   배경: 단일 progressive 8K 다운로드 종단에서 ETA 가 100% 도달 직전 7~8 초 부근에서 굳어 0 에 수렴하지 못하는 현상. 원인은 EMA tau=10 초 평활화가 raw 의 막판 하향을 따라잡지 못해 평활값이 정체한 채 finished 가 발사되는 것. 평활화를 끄지 않고 "단조 감소만 보장"하는 비대칭 규칙으로 자연 수렴 + finished 명시 클리어 + 스로틀 완화로 매 초 갱신.
+    *   참고: 2026-05-29 `fix(worker)` 의 ETA EMA 도입 (`d6168fd`) 후속 보정.
+
 - **`fix(worker)`**: ETA 라벨 출렁임 안정화 — 소스 고정 + 시간 기반 EMA.
     - `workers/download_worker.py`: `_decide_eta_source` 신설 — yt-dlp 가 의미 있는 `_eta_str` 을 한 번이라도 주면 그 다운로드가 끝날 때까지 그 소스로 고정, 그 외(단일 progressive 에서 `tot=N/A` 로 yt-dlp ETA 가 5초마다 Unknown 으로 리셋되는 케이스) 는 폴백 추정으로 고정. 두 소스가 progress 콜백마다 번갈아 들어오며 라벨이 분 단위로 튀던 현상을 차단.
     - `workers/download_worker.py`: 시간 기반 EMA — 콜백 빈도가 환경마다 달라(`frag=/` 단일 progressive 는 초당 수십~수백 회, `frag=N/M` 프래그먼트는 청크당 1회) 호출 횟수 기반 EMA 가 평활 강도를 보장하지 못함. `effective_alpha = 1 - exp(-dt / tau)` 로 시정수 기반 갱신. 폴백은 `_ETA_EMA_TAU_FALLBACK = 10.0`, yt-dlp 직 소스는 `_ETA_EMA_TAU_YTDLP = 5.0`.
@@ -255,12 +264,6 @@
     - 정책: 가장 단순한 방향 — 두 다이얼로그의 스타일시트에 `QCheckBox::indicator` 의 `width` / `height` 만 키워(예: 18×18) ✓ 가 잘 보이게 하고, 색·배경은 손대지 않음. ✓ 마크는 Qt 기본 렌더 그대로 둠.
     - 그래도 부족하면 두 번째 단계: `QApplication.setStyle("Fusion")` 을 `main.py` 에서 호출 — Fusion 은 OS 와 무관하게 일관된 위젯 렌더링을 보장하고, 다크 팔레트와 잘 어울린다는 평가가 보편적. 단, 다른 위젯(버튼·진행률 바)의 외양이 미세하게 달라질 수 있어 회귀 점검 필요. macOS 호환성 과제와 시너지 — Fusion 으로 통일하면 두 OS 의 렌더 차이도 줄어듦.
     - 라디오 버튼은 현재 코드베이스에 없음(확인됨) — 같이 다룰 필요 없음.
-
-- **단일 progressive 종료 후 ETA 라벨 잔존**
-    - 위치: `workers/download_worker.py` `_on_progress` 의 `status == "finished"` 분기 + `ui/download_item_widget.py` `update_status` 의 DONE 분기.
-    - 현상: 8K 최고화질(yt-dlp 단일 progressive 스트림) 다운로드가 100% 로 끝났는데 라벨에 `~0:07` 같은 값이 잠시 남아 있다가 다음 상태 갱신에서야 사라짐. 폴백 ETA 의 EMA 평활값(`_eta_smoothed`) 이 종료 순간 0 까지 수렴하지 못한 채 마지막으로 emit 된 잔여값이 라벨에 박혀 있는 것이 원인으로 추정.
-    - 정책: `status == "finished"` 진입 시 `self.eta.emit("")` 명시 호출로 라벨을 즉시 비우고, 같은 자리에서 `_eta_smoothed` · `_last_eta_secs` · `_last_eta_emit_ts` · `_dl_start_ts` 모두 초기 상태로 리셋. 위젯 측 `update_status` 의 DONE 분기에서 `lbl_eta.clear()` 가 실제로 호출되는지 함께 검증.
-    - 관련: 2026-05-29 `fix(worker)` ETA 안정화 작업의 후속 잔여 이슈 (커밋 `d6168fd`).
 
 - **파일명 확장자를 제목 라벨에 표시**
     - 위치: `ui/download_item_widget.py` `_apply_title_elide` · `update_title` · 새 `update_ext`, `ui/main_window.py` `_on_format_selected`.

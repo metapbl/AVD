@@ -107,7 +107,9 @@ def _parse_eta_secs(s: str) -> int:
 
 def _format_eta_secs(secs: int, is_estimate: bool) -> str:
     """
-    초 단위 ETA 를 표시 문자열로. 폴백 추정이면 선두에 "~" 를 붙인다.
+    초 단위 ETA 를 표시 문자열로. 폴백 추정이면 선두에 "약 " 을 붙인다.
+    "약" 은 한국어에서 어림 표지로 자연스럽고 "~" 의 의미 모호성(범위 구분자
+    로 오인) 을 피한다. 사용자 측에서 표시 라벨이 "남은시간 약 0:42" 가 된다.
     """
     if secs < 0:
         return ""
@@ -115,7 +117,7 @@ def _format_eta_secs(secs: int, is_estimate: bool) -> str:
         body = f"{secs // 3600}:{(secs % 3600) // 60:02d}:{secs % 60:02d}"
     else:
         body = f"{secs // 60}:{secs % 60:02d}"
-    return f"~{body}" if is_estimate else body
+    return f"약 {body}" if is_estimate else body
 
 
 class DownloadWorker(QThread):
@@ -178,6 +180,11 @@ class DownloadWorker(QThread):
         self._last_eta_emit_ts: float = 0.0
         self._last_eta_secs   : int   = -1
         self._last_eta_text   : str   = ""
+
+        # 진행률 단조 증가 floor — fragment 경계에서 yt-dlp 가 total 추정을
+        # 다시 계산하면서 pct 가 일시적으로 뒤로 후퇴하는 출렁임을 차단.
+        # 한 다운로드(스트림) 안에서만 유효하며 finished 시점에 리셋.
+        self._pct_floor: float = -1.0
 
         # 잔여물 추적
         self._touched_files: set[str] = set()
@@ -247,12 +254,19 @@ class DownloadWorker(QThread):
                 self._dl_start_ts = time.monotonic()
 
             pct_str = strip_ansi(d.get("_percent_str", "0%")).strip()
-            pct: float | None
+            raw_pct: float | None
             try:
-                pct = float(pct_str.replace("%", ""))
-                self.progress.emit(pct)
+                raw_pct = float(pct_str.replace("%", ""))
             except ValueError:
-                pct = None
+                raw_pct = None
+
+            # fragment 출렁임 보정 + 단조 ceiling 적용한 표시용 pct.
+            # ETA 계산은 raw_pct 가 아니라 표시용 pct 를 쓰는 것이 자연스럽다
+            # — 사용자에게 보이는 진행도와 남은시간이 같은 기준을 공유해야
+            # "37.5% / 남은시간 8초" 가 일관된다.
+            pct = self._compute_display_pct(d, raw_pct)
+            if pct is not None:
+                self.progress.emit(pct)
 
             speed = strip_ansi(d.get("_speed_str", "")).strip()
             if speed and _normalize_token(speed) not in _UNKNOWN_TOKENS:
@@ -272,6 +286,12 @@ class DownloadWorker(QThread):
         elif status == "finished":
             self._output_path = d.get("filename", "") or self._output_path
             self.progress.emit(100.0)
+            # ETA 라벨을 명시적으로 비운다. 단조 하향으로 raw 가 0 까지
+            # 따라간다 해도, 마지막 emit 이 1~2 초에서 멈춘 채 finished
+            # 가 들어오는 경우의 잔재를 방어. update_status(DONE) 이
+            # 어차피 라벨을 비우지만, 여기서 한 번 더 비워두면 단일
+            # progressive 처럼 후속 전이가 늦는 경로에서도 안전.
+            self.eta.emit("")
             # 다음 스트림(예: 오디오) 을 위해 ETA 상태 모두 리셋
             self._dl_start_ts       = 0.0
             self._eta_source        = None
@@ -280,6 +300,61 @@ class DownloadWorker(QThread):
             self._last_eta_emit_ts  = 0.0
             self._last_eta_secs     = -1
             self._last_eta_text     = ""
+            self._pct_floor         = -1.0
+
+    def _compute_display_pct(self, d: dict, raw_pct: float | None) -> float | None:
+        """
+        UI 표시용 진행률 계산.
+
+        두 단계로 보정:
+        1) fragment 다운로더일 때는 yt-dlp 가 준 raw_pct (= 현재 fragment 내
+           진행률) 대신 ((index - 1) + raw_pct/100) / count * 100 로 재계산.
+           yt-dlp 는 fragment 경계마다 total 추정을 다시 잡아 raw_pct 가
+           55% → 52% → 57% 처럼 출렁이는데, fragment 인덱스 기반 식은
+           구조적으로 단조 증가한다.
+        2) 그래도 일관성을 잃은 경계 케이스 (frag 정보 누락·재시도 등) 를
+           위해 self._pct_floor 단조 ceiling 적용. 새 pct 가 floor 보다
+           작으면 floor 를 그대로 반환.
+
+        반환값: 표시할 pct (float) 또는 raw_pct 가 None 일 때 None.
+        """
+        if raw_pct is None:
+            return None
+
+        # ── 1) fragment 기반 재계산 ──
+        frag_idx   = d.get("fragment_index")
+        frag_count = d.get("fragment_count")
+        if (
+            isinstance(frag_idx, int) and isinstance(frag_count, int)
+            and frag_count > 0 and 0 <= frag_idx <= frag_count
+        ):
+            # frag_idx 는 "다음에 받을 fragment 번호" 의미 (0 시작) 와
+            # "현재 받고 있는 fragment 번호" (1 시작) 가 yt-dlp 버전·다운로더
+            # 별로 섞여 있다. raw_pct 가 100 이면 frag_idx 가 1 시작 기준
+            # 완료 직후(=frag_idx 가 곧 count 가 됨) 일 수 있고, raw_pct 가
+            # 0~100 사이면 frag_idx 가 현재 진행 중인 fragment.
+            # 안전하게: 이미 완료된 fragment 수 = max(0, frag_idx - 1).
+            completed = max(0, frag_idx - 1)
+            base_pct  = completed / frag_count * 100.0
+            slice_pct = (raw_pct / 100.0) / frag_count * 100.0
+            pct       = base_pct + slice_pct
+            # 안전 클램프
+            if pct < 0.0:
+                pct = 0.0
+            if pct > 100.0:
+                pct = 100.0
+        else:
+            pct = raw_pct
+
+        # ── 2) 단조 ceiling ──
+        if self._pct_floor < 0.0:
+            self._pct_floor = pct
+        elif pct < self._pct_floor:
+            pct = self._pct_floor
+        else:
+            self._pct_floor = pct
+
+        return pct
 
     def _decide_eta_source(self, d: dict) -> str:
         """
@@ -354,15 +429,28 @@ class DownloadWorker(QThread):
         """
         now = time.monotonic()
 
-        # ── 시간 정규화 EMA ──
+        # ── 시간 정규화 EMA + 단조 하향 규칙 ──
+        # 사람의 직관은 "남은시간은 시간이 흐르며 단조 감소한다" 이다.
+        # raw 가 직전 평활값보다 작으면 (= 더 빠른 완료를 시사) EMA 를 거치지
+        # 않고 그 raw 를 그대로 평활값으로 채택한다. 그래야 다운로드 막판
+        # 구간에서 raw 가 8 → 5 → 2 → 0 으로 떨어질 때 평활값이 같이
+        # 따라가 0 에 수렴할 수 있다. raw 가 더 클 때만 EMA 로 부드럽게
+        # 올리는 비대칭 평활. 단발성 속도 저하로 raw 가 튀어오르는 노이즈는
+        # EMA 가 흡수하고, 단조 감소 보장은 즉시 반영.
+        raw_secs = float(secs)
         if self._eta_smoothed < 0:
-            self._eta_smoothed      = float(secs)
+            self._eta_smoothed      = raw_secs
+            self._eta_last_input_ts = now
+        elif raw_secs <= self._eta_smoothed:
+            # 하향 — EMA 우회, raw 그대로 채택
+            self._eta_smoothed      = raw_secs
             self._eta_last_input_ts = now
         else:
+            # 상향 — EMA 로 부드럽게
             dt = max(0.0, now - self._eta_last_input_ts)
             alpha_eff = 1.0 - math.exp(-dt / tau)
             self._eta_smoothed = (
-                alpha_eff * float(secs)
+                alpha_eff * raw_secs
                 + (1.0 - alpha_eff) * self._eta_smoothed
             )
             self._eta_last_input_ts = now
@@ -378,10 +466,21 @@ class DownloadWorker(QThread):
             return
 
         if self._last_eta_secs >= 0:
-            threshold = max(15, int(self._last_eta_secs * 0.30))
+            # 막판 구간(≤10 초) 은 1 초 변동도 즉시 반영해 매끄러운 카운트다운.
+            # 그 외는 종전대로 큰 변동(15 초 또는 30%) 만 즉시 통과.
+            if display_secs <= 10:
+                threshold = 1
+            else:
+                threshold = max(15, int(self._last_eta_secs * 0.30))
             if abs(display_secs - self._last_eta_secs) >= threshold:
                 self._do_emit_eta(text, display_secs, now)
                 return
+
+        # 평상 갱신 하한 0.5 초. 표시 단위는 정수 초이므로 같은 표시 문자열
+        # 가드에서 대부분 막히고, 실제 라벨 갱신은 정수 초가 바뀌는 시점
+        # 근처에서만. 0.5 초 하한은 그 전환 순간을 최대한 빨리 잡기 위함.
+        # 비례 상한 30 초 유지.
+        min_gap = max(0.5, min(display_secs * 0.05, 30.0))
 
         min_gap = max(2.0, min(display_secs * 0.05, 30.0))
         if (now - self._last_eta_emit_ts) < min_gap:

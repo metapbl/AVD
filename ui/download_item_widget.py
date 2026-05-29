@@ -320,8 +320,15 @@ class DownloadItemWidget(QWidget):
         MERGING/DONE/ERROR/CANCELLED 진입 시 라벨을 비우는데, 그 직후 큐에
         남아 있던 eta 시그널 한두 개가 도착해 잔재 "남은시간 0:42" 를 다시
         박는 경우가 있다. 상태 게이트로 차단.
+
+        워커가 status="finished" 시점에 빈 문자열로 명시적 클리어를 보낼
+        수 있다. 그때는 "남은시간 " 접두사가 단독으로 남지 않도록 라벨을
+        깔끔히 비운다.
         """
         if self.item.status != DownloadStatus.DOWNLOADING:
+            return
+        if not eta:
+            self.lbl_eta.setText("")
             return
         self.lbl_eta.setText(f"남은시간 {eta}")
 
