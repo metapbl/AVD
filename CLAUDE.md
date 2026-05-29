@@ -1,7 +1,7 @@
 # AV_Downloader — Claude 컨텍스트 파일
 
 > 이 파일은 새 세션 시작 시 Claude 에게 프로젝트 맥락을 즉시 제공하기 위한 컨텍스트 파일입니다.
-> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub blob URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "11. 새 세션 시작 방법" 참조).
+> Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 raw URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "11. 새 세션 시작 방법" 참조).
 
 ---
 
@@ -134,8 +134,9 @@
 - **"썸네일" 이라는 용어는 두 가지 다른 대상을 가리킬 수 있음**: ① 앱 UI 의 QLabel 미리보기, ② 다운로드된 파일에 임베드된 메타데이터 이미지(Windows 탐색기 아이콘·앨범 아트). 디버깅 시 어느 쪽인지 반드시 명시.
 - **yt-dlp 의 EJS (External JS Runtime) 의존**. YouTube 다운로드는 2025년부터 Node.js / Deno / Bun 중 하나 필수. `js_runtimes`, `remote_components` 옵션 사용. 참고: https://github.com/yt-dlp/yt-dlp/wiki/EJS
 - **`.gitignore` 는 이미 추적 중인 파일에 효과 없음**. `git rm --cached <파일>` 로 인덱스에서 빼야 함.
-- **`crawler` raw 모드는 호출당 최대 10000 바이트** — 첫 청크 크기를 파일 전체 크기로 오인하지 말 것. 빈 응답이 나올 때까지 offset 을 10000 씩 늘려 끝까지 읽고, 빈 응답은 같은 offset 재호출로 교차 검증(일시적 빈 응답 사례 다수).
-- **`crawler` raw 모드는 같은 호스트·URL 시퀀스 안에서 누적 출력이 약 28KB 를 넘으면 "끝"으로 잘못 보고함**. 60KB 짜리 `WORKLOG.md` 를 raw 로 읽다가 28KB 부근에서 "Offset N is at or beyond end of body" 가 떠도 실제 끝이 아닐 수 있음. 호스트를 갈아타면(`raw.githubusercontent.com` → `github.com/.../raw/...` 또는 `cdn.jsdelivr.net/gh/...`) 새 누적 윈도가 열림. GitHub API 의 `contents` 엔드포인트로 `size` 필드를 먼저 확인하면 진짜 끝을 알 수 있음. 한국어 산문이 결정적으로 필요하지 않다면 raw 대신 blob (markdown 변환) 경로가 한 호출로 끝남 — 11.1 참조.
+- **GitHub `blob/` 경로를 `crawler` 로 가져오면 한국어 산문이 통째로 누락됨**. blob 은 GitHub 의 HTML 페이지라 도구가 markdown 으로 변환하는데, 변환 단계에서 CJK 텍스트 노드가 공백으로 치환된다. 헤더 번호·영문 키워드·코드 식별자·URL 은 남지만 그 사이의 한국어 본문은 사라진다. 새 세션 시작 URL·문서 본문 재확인은 항상 `raw.githubusercontent.com` 경로(`raw=false` 기본 모드)로 한다 — 11.1 참조.
+- **`crawler` `raw=true` 모드는 호출당 최대 10000 바이트** — 첫 청크 크기를 파일 전체 크기로 오인하지 말 것. 빈 응답이 나올 때까지 offset 을 10000 씩 늘려 끝까지 읽고, 빈 응답은 같은 offset 재호출로 교차 검증(일시적 빈 응답 사례 다수). 단 마크다운·텍스트 파일을 한 번에 가져오는 게 목적이라면 `raw=true` 를 쓰지 말고 `raw.githubusercontent.com` URL 을 기본 모드로 호출한다 (위 항목 참조).
+- **`crawler` `raw=true` 모드는 같은 호스트·URL 시퀀스 안에서 누적 출력이 약 28KB 를 넘으면 "끝"으로 잘못 보고함**. 60KB 짜리 `WORKLOG.md` 를 `raw=true` 로 읽다가 28KB 부근에서 "Offset N is at or beyond end of body" 가 떠도 실제 끝이 아닐 수 있음. 호스트를 갈아타면(`raw.githubusercontent.com` → `github.com/.../raw/...` 또는 `cdn.jsdelivr.net/gh/...`) 새 누적 윈도가 열림. GitHub API 의 `contents` 엔드포인트로 `size` 필드를 먼저 확인하면 진짜 끝을 알 수 있음. 단 이 함정은 `raw=true` 를 명시한 경우에만 발생하므로, 마크다운을 통째로 받을 때는 11.1 의 raw URL + 기본 모드 절차를 따른다.
 
 ## 10. 현재 상태와 다음 작업
 
@@ -147,15 +148,17 @@
 
 ### 11.1. claude.ai 웹 채팅 (현재 주력)
 
-새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 GitHub **blob** URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
+새 세션의 첫 메시지에 본 파일과 `WORKLOG.md` 의 `raw.githubusercontent.com` URL 두 개를 던지고, 다음 한 줄을 덧붙인다. Claude 가 `crawler` 도구로 즉시 최신 상태를 가져온다 (붙여넣기 스냅샷이 아니라 진짜 HEAD).
 
-> 프로젝트 컨텍스트: https://github.com/metapbl/AVD/blob/main/CLAUDE.md
+> 프로젝트 컨텍스트: https://raw.githubusercontent.com/metapbl/AVD/main/CLAUDE.md
 >
-> 최신 작업 로그: https://github.com/metapbl/AVD/blob/main/WORKLOG.md
+> 최신 작업 로그: https://raw.githubusercontent.com/metapbl/AVD/main/WORKLOG.md
 >
 > 위 두 문서를 먼저 읽어주십시오.
 
-URL 선택 근거: blob 경로는 GitHub 의 HTML 페이지를 도구가 markdown 으로 변환해 한 호출에 파일 전체를 반환한다. `WORKLOG.md` 가 60KB 를 넘어도 한 번에 끝난다. 트레이드오프: blob → markdown 변환 과정에서 **한국어 산문이 상당 부분 빠질 수 있음** — 다만 헤더·번호 체계·코드 블록·식별자·커밋 해시·영문 키워드·ADR 번호는 모두 보존되므로 구조 파악과 키워드 검색에는 충분하다. 산문의 뉘앙스가 결정적으로 필요한 특정 섹션이 생기면 그때만 `https://github.com/metapbl/AVD/raw/main/WORKLOG.md` (또는 `raw.githubusercontent.com` 동일 경로) 에서 해당 offset 청크를 raw 로 가져오면 된다 (9 의 raw 모드 28KB 함정 주의).
+URL 선택 근거: `raw.githubusercontent.com` 경로는 응답 Content-Type 이 `text/plain` 이라 `crawler` 가 기본 모드(`raw=false`)로 호출되어도 HTML→markdown 변환을 거치지 않고 본문을 그대로 통과시킨다. 결과로 (a) 한국어 산문이 100% 보존되고, (b) 한 호출에 파일 전체가 들어오며, (c) `raw=true` 모드의 28KB 누적 함정도 적용되지 않는다. `WORKLOG.md` 가 60KB·100KB 로 커져도 한 번에 끝난다. 대안으로 `https://cdn.jsdelivr.net/gh/metapbl/AVD@main/CLAUDE.md` 형태도 동일하게 동작하나 CDN 캐싱이 push 직후 수 분 지연될 수 있어 `raw.githubusercontent.com` 을 기본으로 둔다. `github.com/.../blob/...` URL 은 사용하지 않는다 — 9 의 blob 한국어 누락 항목 참조.
+
+사람이 브라우저로 문서를 열어볼 때는 평소처럼 `https://github.com/metapbl/AVD/blob/main/...` URL 을 쓰면 된다 — 위 raw URL 은 Claude 의 도구 호출 전용이다.
 
 그 뒤 작업 지시는 다음 셋 중 하나로:
 
