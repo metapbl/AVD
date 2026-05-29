@@ -40,6 +40,14 @@
 
 ### 2026-05-29
 
+*   **`fix(ui)`**: Fusion 스타일 적용으로 체크박스 렌더링 통일.
+    *   `main.py`: `QApplication` 생성 직후 `app.setStyle("Fusion")` 추가. Fusion 은 OS 와 무관하게 Qt 가 자체 렌더링하는 크로스플랫폼 스타일로, 체크박스 indicator 의 체크 마크를 Qt 내부에서 그려준다. 다크 팔레트와도 자연스럽게 어울린다.
+    *   `ui/preferences_dialog.py` `_apply_style`: 기존 `QCheckBox::indicator` 커스텀 블록(16px 사각형 + `:checked` 배경 `#4a90d9`)을 제거. 이 블록은 체크 마크 글리프를 별도로 지정하지 않아 체크 시 "파란 사각형"만 보이고 ✓ 마크가 누락되는 문제가 있었다. Fusion 위임으로 ✓ 마크가 복원된다. `QCheckBox` 의 텍스트 색/크기 규칙은 그대로 유지.
+    *   `ui/confirm_remove_dialog.py`: 변경 없음. 원래 indicator 스타일이 없어 OS 기본 룩을 받고 있었는데, Fusion 적용 후에는 `preferences_dialog` 와 동일한 Fusion 룩을 받는다 — 두 다이얼로그의 체크박스가 픽셀 단위로 일치하게 된다.
+    *   배경: WORKLOG 3.2 단기 목록의 "체크박스 디자인 일관화" 항목. 2026-05-28 에 (a) `QCheckBox::indicator` 커스텀 → 체크 마크 누락, (b) `setStyle` / `setPalette` / `setStyleSheet` 조합 시도 → OS 와 어색함 으로 보류됐던 건. 보류 사유는 OS 위임 경로(스타일시트 indicator 블록 삭제만)의 증상이었고, Fusion 위임은 OS 와 무관하게 Qt 가 그리므로 같은 문제가 발생하지 않는다.
+    *   검증 포인트: (1) 환경설정 다이얼로그의 "앱 시작 시 yt-dlp 자동 업데이트 확인" 체크박스가 ✓ 마크와 함께 표시되는지, (2) 항목 제거 / 목록 비우기 다이얼로그의 "다운로드된 파일 삭제" 체크박스가 같은 모양으로 보이는지, (3) 슬라이더 핸들·트랙·점, 버튼 호버 색 등 기존 커스텀 스타일이 깨지지 않는지.
+    *   부수 효과: 다른 위젯(QSlider 의 groove/handle 색, QPushButton 의 hover, QGroupBox 의 border 등)도 Fusion 베이스 위에서 렌더링된다. 현재 스타일시트가 색상 위주이고 기하 구조는 기본을 따르므로 충돌 없음.
+
 *   **`fix(worker)`**: fragment 다운로드 진행률 출렁임 제거.
     *   `workers/download_worker.py` `_compute_display_pct` 신설: fragment 다운로더(`fragment_index` / `fragment_count` 정수) 일 때 yt-dlp 가 준 raw pct (= 현재 fragment 내 진행률) 대신 `((index - 1) + raw/100) / count * 100` 로 재계산. 구조적으로 단조 증가 보장. `completed = max(0, frag_idx - 1)` 로 잡아 yt-dlp 버전·다운로더 별 `frag_idx` 의미 차이(0 시작 vs 1 시작) 도 흡수.
     *   `workers/download_worker.py` `_compute_display_pct`: 보조 방어선으로 `_pct_floor` 단조 ceiling 적용. fragment 정보가 없거나 (단일 progressive) 일관성을 잃은 경계 케이스에서도 진행률이 거꾸로 가지 않도록 보장.
@@ -533,6 +541,8 @@
 - `QPixmap` · `QImage` 는 GUI 스레드 전용. 워커 스레드에서 만들면 표시 누락·크래시가 발생한다.
 - 시그널·슬롯은 스레드를 넘을 때 `Qt.QueuedConnection` 을 명시하면 안전하다.
 - `QLabel.setScaledContents(True)` 는 0×0 라벨에서 빈 화면을 만들 수 있다. 직접 `scaled()` 호출이 안전하다.
+- **다크 테마 앱은 `QApplication.setStyle("Fusion")` 을 먼저 깐다.** Fusion 은 OS 와 무관하게 Qt 자체 렌더링이라 Windows / macOS 에서 일관된 룩을 준다. 체크박스·라디오버튼 같은 indicator 위젯의 체크 마크가 Qt 내부에서 그려지므로 SVG / 이미지 자산 없이도 채워진다. `QCheckBox::indicator` 를 직접 스타일링하면 ✓ 마크 렌더링이 꺼지는데, Fusion 위임은 그 함정을 피한다. (참조: 2026-05-29 `fix(ui)` Fusion 적용)
+
 
 ### 5.3. yt-dlp
 

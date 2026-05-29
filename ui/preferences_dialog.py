@@ -389,17 +389,6 @@ class PreferencesDialog(QDialog):
                 color: #cccccc;
                 font-size: 12px;
             }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 1px solid #555;
-                border-radius: 3px;
-                background: #1e1e1e;
-            }
-            QCheckBox::indicator:checked {
-                background: #4a90d9;
-                border: 1px solid #4a90d9;
-            }
             QPushButton#btnBrowse {
                 background: #444;
                 color: #ccc;
