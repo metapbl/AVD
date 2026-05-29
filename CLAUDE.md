@@ -2,6 +2,7 @@
 
 > 이 파일은 새 세션 시작 시 Claude 에게 프로젝트 맥락을 즉시 제공하기 위한 컨텍스트 파일입니다.
 > Claude Code 는 자동으로 읽으며, claude.ai 웹 채팅에서는 첫 메시지에 본 파일과 `WORKLOG.md` 의 raw URL 을 던져 Claude 가 직접 가져오게 한다 (자세한 방법은 본 파일 맨 아래 "11. 새 세션 시작 방법" 참조).
+> 변경 이력은 `CHANGELOG.md`, 로드맵·ADR·학습된 교훈은 `WORKLOG.md` 가 담당한다.
 
 ---
 
@@ -34,7 +35,8 @@
     AV_Downloader/
     ├── main.py                     # 진입점
     ├── CLAUDE.md                   # 이 파일
-    ├── WORKLOG.md                  # 작업 로그 (Changelog + ADR)
+    ├── WORKLOG.md                  # 작업 로그 (로드맵 + ADR + 학습된 교훈)
+    ├── CHANGELOG.md                # 시간 역순 변경 이력
     ├── README.md                   # 외부 사용자용 안내
     ├── requirements.txt
     ├── .gitignore
@@ -87,6 +89,7 @@
   - `chore:` 빌드·설정 등 잡일
   - `docs:` 문서 변경
   - `refactor:` 리팩토링 (동작 변경 없음)
+- 의미 단위 커밋 후엔 `CHANGELOG.md` 의 맨 위에 항목 추가 (해당 파일 상단 작성 규칙 준수 — 단순/일반/결정 3단 분량 한도, 분류 헷갈리면 사용자 확인).
 - 큰 결정(아키텍처·라이브러리 선택·중대 버그 해결)은 `WORKLOG.md` 의 ADR 섹션에 기록.
 
 ## 8. Claude 응답 규칙
@@ -155,6 +158,8 @@
 > 최신 작업 로그: https://raw.githubusercontent.com/metapbl/AVD/main/WORKLOG.md
 >
 > 위 두 문서를 먼저 읽어주십시오.
+
+평소엔 위 두 URL 만 던지면 충분하다. 과거 변경 이력을 참조해야 하는 작업(특정 회귀 추적·예전 결정 확인 등) 일 때만 셋째 URL 을 함께 던진다: `https://raw.githubusercontent.com/metapbl/AVD/main/CHANGELOG.md`. Changelog 는 과거 기록이라 모든 세션에서 로드할 필요가 없다.
 
 URL 선택 근거: `raw.githubusercontent.com` 경로는 응답 Content-Type 이 `text/plain` 이라 `crawler` 가 기본 모드(`raw=false`)로 호출되어도 HTML→markdown 변환을 거치지 않고 본문을 그대로 통과시킨다. 결과로 (a) 한국어 산문이 100% 보존되고, (b) 한 호출에 파일 전체가 들어오며, (c) `raw=true` 모드의 28KB 누적 함정도 적용되지 않는다. `WORKLOG.md` 가 60KB·100KB 로 커져도 한 번에 끝난다. 대안으로 `https://cdn.jsdelivr.net/gh/metapbl/AVD@main/CLAUDE.md` 형태도 동일하게 동작하나 CDN 캐싱이 push 직후 수 분 지연될 수 있어 `raw.githubusercontent.com` 을 기본으로 둔다. `github.com/.../blob/...` URL 은 사용하지 않는다 — 9 의 blob 한국어 누락 항목 참조.
 
