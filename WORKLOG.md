@@ -51,11 +51,6 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
-- **체크박스 시각 개선 (체크 시 ✓ 마크가 보이도록)**
-    - 위치: `ui/preferences_dialog.py`, `ui/confirm_remove_dialog.py` 의 `QCheckBox` 들.
-    - 진단 (2026-05-28): 두 다이얼로그 스타일시트는 `QCheckBox::indicator` 미손, 라벨 색·폰트만 지정. `main.py` 도 `setStyle`/`setPalette`/`setStyleSheet` 호출 없음 → OS 기본 (Windows 11 Style) 렌더. ✓ 가 직관적이지 않은 이유는 다이얼로그 다크 배경(`#2b2b2b`) 과 OS 라이트 톤 indicator 의 부조화로 추정.
-    - 정책: 1단계 — 두 다이얼로그 스타일시트의 `QCheckBox::indicator` 에 `width`/`height` 만 18×18 로 키움, 색·배경 미손. 2단계 (부족 시) — `main.py` 에서 `QApplication.setStyle("Fusion")`. Fusion 은 OS 무관 일관 렌더, 다크 팔레트 친화. macOS 호환성 과제와 시너지. 라디오 버튼은 코드베이스 부재 (확인됨).
-
 - **메타 행에 코덱·포맷·비트레이트 추가**
     - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`.
     - 표시: `"업로더 • 재생시간"` → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"`. 오디오 전용: `"아티스트 • 3:42 • MP3 320kbps"`.
