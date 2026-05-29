@@ -38,7 +38,7 @@
 
 > [Keep a Changelog](https://keepachangelog.com/) 형식을 참고하여, 최신 변경이 위로 오도록 누적. 한 번 적은 줄은 절대 지우지 않음.
 
-### 2.1. 2026-05-29
+### 2026-05-29
 
 - **`fix(worker)`**: ETA 라벨 출렁임 안정화 — 소스 고정 + 시간 기반 EMA.
     - `workers/download_worker.py`: `_decide_eta_source` 신설 — yt-dlp 가 의미 있는 `_eta_str` 을 한 번이라도 주면 그 다운로드가 끝날 때까지 그 소스로 고정, 그 외(단일 progressive 에서 `tot=N/A` 로 yt-dlp ETA 가 5초마다 Unknown 으로 리셋되는 케이스) 는 폴백 추정으로 고정. 두 소스가 progress 콜백마다 번갈아 들어오며 라벨이 분 단위로 튀던 현상을 차단.
@@ -51,7 +51,7 @@
     - `ui/download_item_widget.py`: `update_progress` / `update_speed` / `update_eta` / `update_file_size` 네 슬롯에 상태 가드 추가. DOWNLOADING 이 아닐 때(WAITING / MERGING / DONE / ERROR / CANCELLED) 진입한 시그널은 무시. 워커가 종료 직전 마지막으로 발사한 progress·speed 가 DONE 라벨 위에 잠시 덧씌워지던 미세 깜빡임 해소.
     - 검증: 정상 완료 후 상태 라벨이 "완료" 로 유지되며 진행률 표기 덮어쓰기 없음. (커밋 `2c5ac0b`)
 
-### 2.1. 2026-05-28
+### 2026-05-28
 
 - **`docs(readme)`**: CLAUDE.md / WORKLOG.md 링크와 `controllers/` 구조, 최신 기능 요약 추가.
     - 기존 README는 초기 설치 가이드 위주였고, `controllers/download_manager.py` 도입(ADR-003) 이후의 새 디렉터리 구조와 동시 다운로드·ETA·NFC 정규화 같은 최근 기능이 반영되어 있지 않았다. `CLAUDE.md` "11. 협업 진입점" 규칙상 협업 문서들이 저장소 루트에서 바로 보여야 하는데, README에 진입 링크가 없어 처음 보는 사람이 협업 규칙·작업 로그를 찾기 어려웠다. `controllers/` 신규 구조 다이어그램, `CLAUDE.md` / `WORKLOG.md` 본문 링크, `WORKLOG.md` 1~5 구성과 부록 A 안내를 추가했다.
@@ -111,7 +111,7 @@
 
 - **`docs(worklog)`**: 2026-05-27 의 `feat(ui)` 환경설정 항목을 실제 최종 구현(`cab59c5`)에 맞춰 정정. 첫 합의의 "3:3:4 단색 컬러 바" 사양은 협의 과정에서 그라데이션 바 + `ConcurrentSlider` (QSlider 서브클래스, `paintEvent` 오버라이드로 트랙 내 위치 안내 점 8개 묘사) 로 재설계되어 대체됨. 같은 제목의 두 커밋(`dd1113d` → `cab59c5`) 의 관계도 명기. 섹션 3 단기 목록의 "환경설정 다이얼로그 정비" 항목은 본 정정과 함께 Changelog 로 이관됨.
 
-### 2.2. 2026-05-27
+### 2026-05-27
 
 - **`feat(ui)`**: 환경설정 다이얼로그 정비 — 동시 다운로드 슬라이더 + last_chosen_ext.
   - `ui/preferences_dialog.py`: SpinBox → 신규 `ConcurrentSlider` (QSlider 서브클래스, `paintEvent` 오버라이드로 트랙 내부에 위치 안내용 점 8개(값 2~9, `#cccccc`, 직경 3px) 묘사. 양 끝값 1·10 은 핸들 자체가 위치 신호). 범위 1~10, 기본 2, 자연수 step. 슬라이더 위에 단일 가로 **그라데이션 바** (stop 0.0/0.22 녹 `#2e7d32`, 0.33/0.55 노 `#c9a227`, 0.66/1.0 빨 `#b03030` — 1·3 / 3·4 그라데이션 / 4·6 / 6·7 그라데이션 / 7·10 구간을 자연스럽게 잇는 5-stop 정의). 그 아래 "권장 / 주의 / 비권장" 라벨 행을 stretch 2/4/3 으로 배치(녹·노·빨 폭과 시각 정합). 우측 상단에 현재 값 큰 숫자, 핸들·숫자 색은 dynamic property + `style().unpolish/polish` 로 1~3 녹 / 4~6 노 / 7~10 빨 구간 동기화. 툴팁에 "yt-dlp 단일 인스턴스 병렬 미지원, 1~3 권장, 높은 값은 IP 차단 위험" 명시. "기본 저장 형식" 콤보 제거 — 동일 기능은 FormatSelectDialog 의 `last_chosen_ext` 로 흡수
@@ -147,7 +147,7 @@
   - 검증: ① 정상 완료 후 ✕ — 파일 삭제 확인 다이얼로그 (Yes/No 양쪽 정상). ② 다운로드 중 취소 — `.part`/`.ytdl` 잔여 없음, 작업 관리자에 ffmpeg/node 좀비 없음. ③ 재시도 — 화질 다이얼로그 안 뜨고 같은 사양으로 처음부터 받음. ④ 머지 중 취소 — `postprocess_hook` wrap 덕에 즉시 끊김
   - 관련: 부록 A "학습된 교훈" 의 `Python · PySide6` / `yt-dlp` 항목 갱신 권장 (이번 커밋엔 미포함)
 
-### 2.3. 2026-05-18
+### 2026-05-18
 
 - **`fix(ui)`**: 영상 길이가 항상 `0:00` 으로 표시되던 버그 해결.
   - `ui/download_item_widget.py`: `update_meta(uploader, duration)` 공개 메서드 추가. `_build_ui` 와 동일 포맷을 공유하도록 정적 헬퍼 `_format_meta` 로 단일 출처화. `update_title` 과 같은 패턴 — 라벨 갱신 + `self.item` 단일 출처 동기화
@@ -178,7 +178,7 @@
 
 - **`docs(worklog)`**: 사이드 메모 세 건(파일명·ID3 NFC 정규화 / MP3 major_brand 잔재 / Read timed out 회복력) 단기 섹션에 기록. 학습된 교훈에 `yt-dlp` / `유니코드·파일명` 카테고리 추가.
 
-### 2.4. 2026-05-17
+### 2026-05-17
 
 - **`docs(claude)`**: "새 세션 시작 방법" 섹션을 환경별 안내로 개정.
   - claude.ai 웹 채팅 / Claude Code 두 환경 분리
