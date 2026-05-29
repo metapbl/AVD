@@ -56,13 +56,6 @@
     - 진단 (2026-05-28): 두 다이얼로그 스타일시트는 `QCheckBox::indicator` 미손, 라벨 색·폰트만 지정. `main.py` 도 `setStyle`/`setPalette`/`setStyleSheet` 호출 없음 → OS 기본 (Windows 11 Style) 렌더. ✓ 가 직관적이지 않은 이유는 다이얼로그 다크 배경(`#2b2b2b`) 과 OS 라이트 톤 indicator 의 부조화로 추정.
     - 정책: 1단계 — 두 다이얼로그 스타일시트의 `QCheckBox::indicator` 에 `width`/`height` 만 18×18 로 키움, 색·배경 미손. 2단계 (부족 시) — `main.py` 에서 `QApplication.setStyle("Fusion")`. Fusion 은 OS 무관 일관 렌더, 다크 팔레트 친화. macOS 호환성 과제와 시너지. 라디오 버튼은 코드베이스 부재 (확인됨).
 
-- **파일명 확장자를 제목 라벨에 표시**
-    - 위치: `ui/download_item_widget.py` `_apply_title_elide`·`update_title`·신규 `update_ext`, `ui/main_window.py` `_on_format_selected`.
-    - 표시: 폭 넉넉 시 `"긴 영상 제목.mp4"`, 좁아 잘릴 때 `"긴 영상 제… .mp4"` (확장자 절대 안 잘림).
-    - elide: 모드는 `ElideRight`, Qt 기본 줄임표(U+2026) + 줄임표·점 사이 공백 1칸 (점 4개 시각 충돌 회피). 확장자+구분 공백 폭만큼 가용 폭에서 미리 빼고 제목만 `elidedText(ElideRight)`, 결과 뒤에 `" .mp4"` 부착. 잘림 없으면 공백 없이 `".mp4"`.
-    - 스타일: HTML rich text 로 확장자 색 `#ffd060`, 굵기는 제목 동일. `<`/`>`/`&` 는 `html.escape`.
-    - 가드: 화질 선택 전엔 미표시. 위젯에 `_ext_known: bool` 두고 `update_ext` 호출 후에만 라벨에 확장자 포함. `_on_format_selected` 가 `item.ext = fmt.ext` 직후 `widget.update_ext(fmt.ext)` 호출. resize 시 기존 `resizeEvent` 경로가 elide 재적용.
-
 - **메타 행에 코덱·포맷·비트레이트 추가**
     - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`.
     - 표시: `"업로더 • 재생시간"` → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"`. 오디오 전용: `"아티스트 • 3:42 • MP3 320kbps"`.
@@ -84,7 +77,7 @@
 
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
-- **포맷 선택 UX 개선** — "최고 화질 (자동·효율 우선)" 과 "최고 호환 (MP4/H.264)" 분리. ADR-002 의 결정과 함께 진행.
+- **포맷 선택 UX 개선** — "최고 화질 (자동·효율 우선)" 과 "최고 호환 (MP4/H.264)" 분리. 더불어 사용자가 비디오·오디오 컨테이너 (mp4/webm/mkv, mp3/m4a/opus 등) 를 직접 고를 수 있도록 다이얼로그 확장. ADR-002 의 결정과 함께 진행.
 
 ### 3.4. 장기 (Long-term, 백로그)
 
