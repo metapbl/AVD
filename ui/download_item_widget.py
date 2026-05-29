@@ -282,18 +282,47 @@ class DownloadItemWidget(QWidget):
         진행률 바 업데이트.
         다운로드 단계에서는 상태 라벨도 "38.5% 다운로드 중" 형식으로 함께 갱신.
         병합 등 다른 단계에서 들어오는 progress 시그널은 라벨을 덮지 않는다.
+
+        비활성 상태(DONE/ERROR/CANCELLED/WAITING) 진입 후 큐에 남아 있던
+        progress 시그널이 0/100 막대를 다시 박는 것을 막는다. 재시도 직전
+        잠시 WAITING 으로 떨어진 항목의 막대가 흔들리지 않도록 WAITING 도
+        가드 대상.
         """
+        if self.item.status in (
+            DownloadStatus.DONE,
+            DownloadStatus.ERROR,
+            DownloadStatus.CANCELLED,
+            DownloadStatus.WAITING,
+        ):
+            return
+
         self.progress_bar.setValue(int(pct))
 
         if self.item.status == DownloadStatus.DOWNLOADING:
             self.lbl_status.setText(f"{pct:.1f}% 다운로드 중")
 
     def update_speed(self, speed: str):
-        """속도 레이블 업데이트"""
+        """
+        속도 레이블 업데이트.
+
+        활성 다운로드 단계(DOWNLOADING) 에서만 표시. 병합·완료·에러·취소
+        진입 후 늦게 도착한 speed 시그널이 빈 라벨을 다시 채우는 잔재를 막는다.
+        """
+        if self.item.status != DownloadStatus.DOWNLOADING:
+            return
         self.lbl_speed.setText(speed)
 
     def update_eta(self, eta: str):
-        """남은 시간 레이블 업데이트"""
+        """
+        남은시간 레이블 업데이트.
+
+        활성 다운로드 단계(DOWNLOADING) 에서만 표시. update_status 가
+        MERGING/DONE/ERROR/CANCELLED 진입 시 라벨을 비우는데, 그 직후 큐에
+        남아 있던 eta 시그널 한두 개가 도착해 잔재 "남은시간 0:42" 를 다시
+        박는 경우가 있다. 상태 게이트로 차단.
+        """
+        if self.item.status != DownloadStatus.DOWNLOADING:
+            return
         self.lbl_eta.setText(f"남은시간 {eta}")
 
     def update_file_size(self, size: str):
@@ -302,8 +331,11 @@ class DownloadItemWidget(QWidget):
 
         DownloadWorker 가 "48.20 / 128.50 MiB" 또는 "128.50 MiB" 같은 합성
         문자열로 emit. 빈 문자열이면 라벨을 지운다 (초기 한 틱이나 HLS 같이
-        크기 정보가 없는 경우).
+        크기 정보가 없는 경우). 활성 다운로드 단계에서만 반영 — 병합·완료
+        진입 후 잔재 시그널이 라벨을 되살리는 것을 막는다.
         """
+        if self.item.status != DownloadStatus.DOWNLOADING:
+            return
         self.lbl_size.setText(size or "")
 
     def update_status(self, status: DownloadStatus):
