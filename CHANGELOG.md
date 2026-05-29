@@ -25,6 +25,11 @@
 
 ## 2026-05-29
 
+- **`docs`** `cc833a7`: `CLAUDE.md` 의 헤더·폴더 트리·작업 흐름·새 세션 안내 네 자리에 `CHANGELOG.md` 분리 사실 환기.
+
+- **`docs`** `237ec76`: Changelog 를 `WORKLOG.md` 섹션 2 에서 `CHANGELOG.md` 로 분리.
+    - 어제 약 580줄까지 자란 섹션 2 가 WORKLOG 의 다른 섹션(로드맵·ADR·교훈) 을 묻고 있던 문제 해소. 새 파일 상단에 작성 규칙(단순/일반/결정 3단 분량 한도, 분류 헷갈리면 사용자 확인) 명시.
+
 - **`fix(ui)`** `00af8eb`: Fusion 스타일 적용으로 체크박스 렌더링 통일.
     - 커스텀 `QCheckBox::indicator` 가 체크 마크 글리프를 지정하지 않아 "파란 사각형" 만 보이던 문제를 `app.setStyle("Fusion")` 위임으로 해소. 두 다이얼로그(`preferences_dialog` / `confirm_remove_dialog`) 의 체크박스가 픽셀 단위로 일치.
 
