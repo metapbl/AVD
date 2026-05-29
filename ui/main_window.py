@@ -304,6 +304,9 @@ class MainWindow(QMainWindow):
         item.save_path = self.config.get("save_path", "")
         item.status    = DownloadStatus.WAITING
 
+        # 제목 라벨 우측에 ".ext" 표시 — 확장자가 확정된 이 시점에 알린다.
+        widget.update_ext(fmt.ext)
+
         widget.update_status(DownloadStatus.WAITING)
         self.status_bar.showMessage(f"대기열에 추가: {item.title}")
 
@@ -356,7 +359,14 @@ class MainWindow(QMainWindow):
     # ── 매니저 시그널 핸들러 ─────────────────────────
 
     def _on_download_done(self, item_id: str, path: str):
-        """다운로드 완료 (매니저 시그널)"""
+        """
+        다운로드 완료 (매니저 시그널).
+
+        path 는 디스크에 최종 떨어진 파일 경로. yt-dlp 의 후처리(예: 비디오
+        트랙 없는 m4a 자동 리네이밍) 로 인해 사용자가 화질 다이얼로그에서
+        고른 ext 와 실제 파일 ext 가 다를 수 있다. 이 시점에 path 의 실제
+        suffix 로 위젯·항목의 ext 를 정정해 라벨이 진실을 따라가게 한다.
+        """
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
@@ -364,6 +374,15 @@ class MainWindow(QMainWindow):
 
         item.status    = DownloadStatus.DONE
         item.save_path = path
+
+        # 실제 파일 확장자 동기화 — Path.suffix 는 ".m4a" 처럼 점 포함.
+        # update_ext 가 lstrip(".") 으로 정규화하므로 그대로 넘긴다.
+        # 빈 경로/빈 suffix 경계도 update_ext 측이 _ext_known=False 로 처리.
+        actual_ext = Path(path).suffix.lstrip(".") if path else ""
+        if actual_ext:
+            item.ext = actual_ext
+            widget.update_ext(actual_ext)
+
         widget.update_status(DownloadStatus.DONE)
         self.status_bar.showMessage(f"완료: {item.title}")
 

@@ -109,6 +109,11 @@ class InfoFetcher:
         """
         yt-dlp가 반환한 포맷 목록을 FormatInfo 리스트로 정리
         화질 높은 순으로 정렬
+
+        현재 정책: 비디오는 무조건 MP4 로 머지 (Downloader.merge_output_format).
+        그래서 사용자에게 보이는 라벨도 yt-dlp 의 raw ext (webm/mp4) 가 아니라
+        실제 결과 컨테이너인 "MP4" 로 통일한다. 라벨이 진실을 말하도록 하는
+        것이 거짓 라벨(예: "1080p WEBM" 인데 파일은 .mp4)을 피하는 정공법.
         """
         formats = info.get("formats", [])
         result  = []
@@ -144,12 +149,13 @@ class InfoFetcher:
             seen_heights.add(height)
 
             width   = f.get("width", 0)
-            ext     = f.get("ext", "mp4")
             size    = f.get("filesize") or f.get("filesize_approx") or 0
 
+            # 라벨의 ext 표기는 항상 "MP4" — 실제 머지 결과와 일치.
+            # yt-dlp 의 raw ext (webm 등) 는 사용자에게 노출하지 않는다.
             result.append(FormatInfo(
                 format_id   = f"{f['format_id']}+bestaudio/best",
-                label       = f"{height}p {ext.upper()}",
+                label       = f"{height}p MP4",
                 ext         = "mp4",
                 resolution  = f"{width}x{height}",
                 filesize    = size,

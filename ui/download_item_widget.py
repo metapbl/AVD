@@ -1,6 +1,8 @@
 # ui/download_item_widget.py
 # 다운로드 목록에서 항목 하나를 표시하는 위젯
 
+import html
+
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QProgressBar, QPushButton, QSizePolicy
@@ -40,6 +42,11 @@ class DownloadItemWidget(QWidget):
     def __init__(self, item: DownloadItem, parent=None):
         super().__init__(parent)
         self.item = item
+        # 확장자 표시 가드:
+        # 화질 선택 전엔 확장자가 확정되지 않았으므로 제목 라벨에 섞지 않는다.
+        # MainWindow._on_format_selected 가 update_ext 를 부른 뒤에야 True 가 된다.
+        self._ext_known: bool = False
+        self._ext: str = ""
         self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
         self._apply_style()
@@ -73,9 +80,11 @@ class DownloadItemWidget(QWidget):
         # 가로 sizeHint 권리를 포기시킨다(Ignored). 실제 텍스트 잘라내기는
         # resizeEvent → _apply_title_elide 에서 QFontMetrics 로 처리.
         # 원본 제목은 self.item.title 단일 출처에서 항상 다시 가져온다.
+        # RichText 모드 — 확장자만 노란색으로 강조하기 위해 HTML 사용.
         self.lbl_title = QLabel(self.item.title)
         self.lbl_title.setObjectName("itemTitle")
         self.lbl_title.setWordWrap(False)
+        self.lbl_title.setTextFormat(Qt.TextFormat.RichText)
         self.lbl_title.setSizePolicy(
             QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
         )
@@ -233,23 +242,77 @@ class DownloadItemWidget(QWidget):
 
     def _apply_title_elide(self):
         """
-        lbl_title 의 현재 폭에 맞춰 self.item.title 을 ElideRight 로 잘라
-        라벨에 다시 박는다. setText 가 잘린 문자열로 라벨을 덮으므로
-        원본 제목은 self.item.title 단일 출처에서 매번 다시 가져온다.
+        lbl_title 의 현재 폭에 맞춰 제목 + (선택된) 확장자를 RichText 로
+        조립해 다시 박는다. 원본 제목은 self.item.title 단일 출처, 확장자는
+        self._ext (update_ext 가 채움) 단일 출처에서 매번 다시 가져온다.
 
-        호출 지점은 두 곳:
+        호출 지점:
         - resizeEvent: 항목 폭이 바뀔 때마다 다시 잘라 박는다
         - update_title: 제목 자체가 갱신되어 단일 출처가 바뀌었을 때
+        - update_ext: 화질 선택으로 확장자가 확정되었을 때
+
+        표시 규칙:
+        - 확장자 미확정(self._ext_known is False) — 제목만 표시. RichText
+          모드이므로 HTML 이스케이프는 그대로 적용한다.
+        - 확장자 확정 + 잘림 없음 — "제목.mp4" (공백 없이 부착)
+        - 확장자 확정 + 잘림 발생 — "제목… .mp4" (Qt 기본 줄임표 + 공백 1 + 확장자)
+        - 확장자는 항상 잘리지 않는다. 가용 폭에서 확장자 부분 폭을 먼저
+          빼고 제목만 elidedText 한다.
         """
         fm = QFontMetrics(self.lbl_title.font())
-        # 라벨 폭이 아직 0 일 수 있는 첫 paint 직전 케이스 — 그땐 원본 그대로.
-        # 이후 resizeEvent 가 진짜 폭으로 다시 호출한다.
         avail = self.lbl_title.width()
+
+        # 라벨 폭이 아직 0 일 수 있는 첫 paint 직전 케이스 — 그땐 원본 그대로.
+        # 이후 resizeEvent 가 진짜 폭으로 다시 호출한다. RichText 모드이므로
+        # HTML 이스케이프는 적용해서 박아 둔다.
         if avail <= 0:
-            self.lbl_title.setText(self.item.title)
+            self.lbl_title.setText(html.escape(self.item.title))
             return
+
+        title = self.item.title
+
+        # 확장자 미확정 — 제목만 elide 해서 박는다.
+        if not self._ext_known or not self._ext:
+            elided = fm.elidedText(
+                title, Qt.TextElideMode.ElideRight, avail
+            )
+            self.lbl_title.setText(html.escape(elided))
+            return
+
+        # 확장자 확정 — 두 가지 부착 문자열을 후보로 두고 잘림 여부에 따라 선택.
+        # 잘림 없을 때: ".mp4"  (공백 없이)
+        # 잘림 있을 때: " .mp4" (Qt 기본 줄임표 U+2026 뒤 공백 1 + 점 + 확장자)
+        ext_no_gap   = f".{self._ext}"
+        ext_with_gap = f" .{self._ext}"
+
+        # 잘림 여부를 판정하려면 일단 잘림 없을 때 기준으로 제목 elide 를 한 번 해 본다.
+        # 가용 폭에서 ".ext" 폭을 뺀 영역에 제목 전체가 들어가면 잘림 없음 확정.
+        budget_no_gap = avail - fm.horizontalAdvance(ext_no_gap)
+        if budget_no_gap < 0:
+            budget_no_gap = 0
+        elided_try = fm.elidedText(
+            title, Qt.TextElideMode.ElideRight, budget_no_gap
+        )
+
+        if elided_try == title:
+            # 잘림 없음 — 공백 없이 ".mp4" 부착
+            title_html = html.escape(title)
+            ext_html   = html.escape(ext_no_gap)
+        else:
+            # 잘림 발생 — " .mp4" 부착. 가용 폭에서 " .ext" 폭을 빼고 다시 elide.
+            budget_with_gap = avail - fm.horizontalAdvance(ext_with_gap)
+            if budget_with_gap < 0:
+                budget_with_gap = 0
+            elided = fm.elidedText(
+                title, Qt.TextElideMode.ElideRight, budget_with_gap
+            )
+            title_html = html.escape(elided)
+            ext_html   = html.escape(ext_with_gap)
+
+        # 확장자만 #ffd060 (노란빛) 으로 강조. 굵기·크기는 라벨 기본을 따른다.
         self.lbl_title.setText(
-            fm.elidedText(self.item.title, Qt.TextElideMode.ElideRight, avail)
+            f'{title_html}'
+            f'<span style="color:#ffd060;">{ext_html}</span>'
         )
 
     def resizeEvent(self, event):
@@ -446,8 +509,24 @@ class DownloadItemWidget(QWidget):
 
     def update_title(self, title: str):
         """제목 레이블 업데이트"""
-        self.lbl_title.setText(title)
         self.item.title = title
+        # _apply_title_elide 가 self.item.title 단일 출처에서 다시 조립하므로
+        # 여기서 lbl_title 에 직접 setText 할 필요는 없다.
+        self._apply_title_elide()
+
+    def update_ext(self, ext: str):
+        """
+        파일 확장자 표시 갱신.
+
+        화질 선택이 끝나 항목의 ext 가 확정되면 MainWindow._on_format_selected
+        가 호출한다. 호출 후부터 lbl_title 의 우측 끝에 ".ext" 가 노란빛
+        (#ffd060) 으로 표시되며, 폭이 좁아 잘릴 때도 확장자는 잘리지 않고
+        제목만 줄임표 처리된다.
+
+        ext 는 점 없이 ("mp4", "webm" 등) 받는다.
+        """
+        self._ext = (ext or "").lstrip(".")
+        self._ext_known = bool(self._ext)
         self._apply_title_elide()
 
     def update_meta(self, uploader: str, duration: int):
