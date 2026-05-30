@@ -6,6 +6,12 @@ from yt_dlp.postprocessor.common import PostProcessor
 from utils.file_utils import ensure_dir
 
 
+# MP3 후처리 비트레이트 (kbps). 단일 출처 — 이 값을 바꾸면
+# info_fetcher 의 MP3 항목 라벨도 자동으로 따라온다.
+# FFmpegExtractAudio 의 preferredquality 는 문자열이라 str() 로 감싼다.
+MP3_BITRATE_KBPS = 192
+
+
 class _NFCNormalizePP(PostProcessor):
     """후처리 체인의 pre_process 단계 (extract_info 직후, 다운로드/파일명
     결정/메타 임베드 모두에 앞섬) 에 끼워, info dict 의 문자열 값을
@@ -74,7 +80,10 @@ class Downloader:
             postprocessors.append({
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": ext,
-                "preferredquality": "192",
+                # MP3 비트레이트는 모듈 상수에서 일괄 관리. info_fetcher 의
+                # 표시 라벨도 같은 상수를 참조하므로 한 곳만 바꾸면 양쪽이 따라온다.
+                # FFmpegExtractAudio 의 preferredquality 는 문자열을 요구.
+                "preferredquality": str(MP3_BITRATE_KBPS),
             })
         postprocessors.append({"key": "FFmpegMetadata", "add_metadata": True})
         postprocessors.append({"key": "EmbedThumbnail", "already_have_thumbnail": False})

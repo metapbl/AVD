@@ -4,6 +4,7 @@
 import yt_dlp
 from dataclasses import dataclass
 
+from core.downloader import MP3_BITRATE_KBPS
 from utils.file_utils import normalize_info_dict
 
 
@@ -164,8 +165,8 @@ class InfoFetcher:
         - 비디오 포맷 행: 해당 비디오 트랙의 vcodec + best audio 후보의 acodec/abr.
           머지 결과의 오디오 정보를 메타 라벨에 미리 보여 줘 사용자가 결과를
           예측할 수 있게 한다.
-        - 오디오 전용 (MP3): acodec="mp3" 로 명시. abr 은 후처리 ffmpeg 에서
-          결정되므로 0 으로 두고 표시 헬퍼가 단독 "MP3" 라벨로 폴백.
+        - 오디오 전용 (MP3): acodec="mp3" + abr=MP3_BITRATE_KBPS.
+          downloader.py 의 ffmpeg postprocessor 설정과 단일 출처 공유.
         """
         formats = info.get("formats", [])
         result  = []
@@ -230,7 +231,8 @@ class InfoFetcher:
             ))
 
         # MP3 오디오 전용 옵션 추가 — 후처리로 MP3 인코딩.
-        # abr 은 ffmpeg 옵션에서 결정되므로 0 으로 두고, 표시는 단독 "MP3".
+        # abr 은 downloader.py 의 MP3_BITRATE_KBPS 와 단일 출처를 공유.
+        # 한쪽만 바꾸면 다른 쪽이 거짓이 되므로 반드시 함께 갱신.
         result.append(FormatInfo(
             format_id   = "bestaudio/best",
             label       = "MP3 오디오만",
@@ -240,7 +242,7 @@ class InfoFetcher:
             is_audio    = True,
             vcodec      = "",
             acodec      = "mp3",
-            abr         = 0.0,
+            abr         = float(MP3_BITRATE_KBPS),
             tbr         = 0.0,
         ))
 
