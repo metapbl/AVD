@@ -25,6 +25,9 @@
 
 ## 2026-05-30
 
+- **`docs(adr)`** `6036984`: ADR-005 오디오 후처리 정책 재검토 추가 (Proposed).
+- **`docs`** `329bfe0`: 단기 1번 완료 — 세 커밋(c8e66b1, 12a53c7, 9e64f02) 을 CHANGELOG 흡수, WORKLOG 섹션 3.2 항목 제거.
+
 - **`feat(ui)`** `c8e66b1`: 다운로드 항목 메타 행에 컨테이너·코덱·비트레이트 추가.
   - `FormatInfo` 에 `vcodec`/`acodec`/`abr`/`tbr` 필드 신설. `_select_best_format` 이 고른 video/audio 포맷의 raw 값을 위젯에 전달, 코덱 표기 정규화 헬퍼(`avc1.* → H.264`, `mp4a.* → AAC` 등) 거쳐 "1920x1080 • MP4 • H.264 • Opus 160kbps" 형태로 표기. 오디오 전용 항목은 "MP3 192kbps" 단독.
 
