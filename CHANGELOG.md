@@ -25,6 +25,7 @@
 
 ## 2026-05-30
 
+- **`docs(claude)`** `517b518`: 작업 흐름 7 에 메타 커밋 CHANGELOG 흡수 예외 명시.
 - **`docs(adr)`** `6036984`: ADR-005 오디오 후처리 정책 재검토 추가 (Proposed).
 - **`docs`** `329bfe0`: 단기 1번 완료 — 세 커밋(c8e66b1, 12a53c7, 9e64f02) 을 CHANGELOG 흡수, WORKLOG 섹션 3.2 항목 제거.
 
