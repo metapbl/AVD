@@ -83,6 +83,7 @@
 - **ADR-002** 포맷 선택 — "최고 화질" 의미 분리 (Proposed, TBD) — `bestvideo+bestaudio/best` 의 VP9/AV1 우선이 사용자 기대(H.264 1080p) 와 어긋날 수 있어 "자동·효율 우선" 과 "최고 호환 MP4/H.264" 분리 검토. → [ADR.md#adr-002](./ADR.md#adr-002)
 - **ADR-003** 다운로드 워커 오케스트레이션을 `DownloadManager` 로 분리 (Accepted, 2026-05-28) — `MainWindow` 의 다섯 책임 중 ③ 만 `controllers/` 로 떼어냄. 진행 시그널은 워커→위젯 직결, 라이프사이클만 매니저 경유. 큐는 `items` dict 삽입 순서. → [ADR.md#adr-003](./ADR.md#adr-003)
 - **ADR-004** `process_ie_result` 우회 폐기, NFC 보존을 PostProcessor 정공법으로 (Accepted, 2026-05-28) — YouTube 토큰 만료 회귀(403) 해결. `ydl.download([url])` 복귀 + `_NFCNormalizePP(when="pre_process")`. `js_runtimes`/`remote_components` 고정 제거. 2026-05-18 결정 부분 번복. → [ADR.md#adr-004](./ADR.md#adr-004)
+- **ADR-005** 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일 (Proposed, TBD) — `FFmpegExtractAudio` 의 192 kbps 일괄 적용이 고음질 원본을 다운컨버트하는 문제. 네 갈래 검토 (환경설정 노출 / 컨테이너만 변경 / 다이얼로그 드롭다운 / 조건부 확인). → [ADR.md#adr-005](./ADR.md#adr-005)
 
 ---
 

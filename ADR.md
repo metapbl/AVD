@@ -117,3 +117,16 @@ A. `process_ie_result` 유지 + 토큰만 재발급 — 사적 API 호출 필요
 **관련**
 
 ADR-001 (후처리 체인). LESSONS yt-dlp 항목의 `process_ie_result` 함정.
+
+---
+
+### ADR-005: (예약됨) 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일
+
+<a id="adr-005"></a>
+
+- **상태**: Proposed
+- **날짜**: TBD
+
+**결정**
+
+현재 `core/downloader.py` 는 `is_audio` (mp3/m4a/wav/aac) 모두에 대해 `FFmpegExtractAudio` 를 192 kbps 로 일괄 적용. YouTube Opus 160 kbps, SoundCloud 320 kbps MP3, Bandcamp FLAC 등 원본이 192 kbps 보다 고음질일 때 lossy→lossy 재인코딩으로 정보 손실. `MP3_BITRATE_KBPS` 가 모듈 상수라 환경설정 노출도 없음. 네 갈래 검토 — (가) 현상 유지 + 비트레이트 환경설정 노출, (나) 원본 더 고음질이면 컨테이너만 변경 권고, (다) 포맷 선택 다이얼로그에 비트레이트 드롭다운 (ADR-002 와 결합), (라) 원본 `abr > 192` 일 때만 사용자 확인. 결정 시 본 ADR 갱신.
