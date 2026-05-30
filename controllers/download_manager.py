@@ -207,7 +207,9 @@ class DownloadManager(QObject):
             ext       = item.ext,
             save_dir  = save_dir,
         )
-        # 진행률·속도·ETA·크기·병합은 워커→위젯 직접 연결 (매니저 미경유)
+        # 진행률·속도·ETA·크기·병합·코덱정보는 워커→위젯 직접 연결 (매니저 미경유).
+        # 코덱 정보는 라이프사이클이 아니라 갱신 시그널이므로 progress/speed
+        # 와 같은 패턴으로 위젯에 직결. 매니저 중계 시 N 배 시그널만 늘어남.
         worker.progress.connect(widget.update_progress)
         worker.speed.connect(widget.update_speed)
         worker.eta.connect(widget.update_eta)
@@ -215,6 +217,7 @@ class DownloadManager(QObject):
         worker.merging.connect(
             lambda: widget.update_status(DownloadStatus.MERGING)
         )
+        worker.codec_info_resolved.connect(widget.update_format_meta_resolved)
         # 라이프사이클은 매니저가 받아 자체 시그널로 다시 emit
         worker.finished.connect(
             lambda path, iid=item_id: self._on_worker_finished(iid, path)

@@ -120,29 +120,69 @@ def _format_eta_secs(secs: int, is_estimate: bool) -> str:
     return f"약 {body}" if is_estimate else body
 
 
+def _extract_codec_info(info_dict: dict) -> tuple[str, str, str, float, float] | None:
+    """
+    yt-dlp 의 info_dict 에서 코덱·컨테이너·비트레이트 정보를 뽑아낸다.
+
+    반환: (vcodec, acodec, ext, abr, tbr) 또는 None (의미 있는 정보 없음).
+
+    "의미 있음" 의 기준은 vcodec 또는 acodec 중 하나라도 "none" / 빈값이
+    아닌 것. info_dict 가 진행 중 fragment 정보일 수도 있고 후처리 직전의
+    부분 정보일 수도 있어, 코덱이 전혀 없으면 emit 하지 않는다 (직전 emit 유지).
+    """
+    if not isinstance(info_dict, dict):
+        return None
+
+    vcodec = (info_dict.get("vcodec") or "").strip()
+    acodec = (info_dict.get("acodec") or "").strip()
+
+    # 둘 다 "none"/빈값이면 정보 없음
+    has_video = vcodec and vcodec != "none"
+    has_audio = acodec and acodec != "none"
+    if not has_video and not has_audio:
+        return None
+
+    ext = (info_dict.get("ext") or "").strip()
+    try:
+        abr = float(info_dict.get("abr") or 0.0)
+    except (TypeError, ValueError):
+        abr = 0.0
+    try:
+        tbr = float(info_dict.get("tbr") or 0.0)
+    except (TypeError, ValueError):
+        tbr = 0.0
+
+    return (vcodec, acodec, ext, abr, tbr)
+
+
 class DownloadWorker(QThread):
     """
     다운로드를 백그라운드로 실행하는 워커 스레드
 
     시그널:
-        progress    : 진행률 (0.0 ~ 100.0)
-        speed       : 다운로드 속도 문자열 (예: "2.3 MiB/s")
-        eta         : 남은 시간 문자열 (예: "0:42", HLS 폴백 시 "~0:42")
-        file_size   : 파일 크기 문자열 (예: "128.5 MiB")
-        merging     : 영상+음성 병합 시작 알림
-        finished    : 다운로드 완료 - 저장된 파일 경로 전달
-        error       : 오류 발생 - 에러 메시지 전달
-        cancelled   : 사용자 취소 알림
+        progress             : 진행률 (0.0 ~ 100.0)
+        speed                : 다운로드 속도 문자열 (예: "2.3 MiB/s")
+        eta                  : 남은 시간 문자열 (예: "0:42", HLS 폴백 시 "~0:42")
+        file_size            : 파일 크기 문자열 (예: "128.5 MiB")
+        merging              : 영상+음성 병합 시작 알림
+        codec_info_resolved  : 다운로드/후처리 진행 중 확정된 코덱·비트레이트
+                               (vcodec, acodec, ext, abr, tbr) — 여러 번 발사
+                               될 수 있으며 마지막 값이 최종 진실. 위젯은 매번
+                               덮어쓰면 됨. is_audio 항목은 위젯 측에서 거부.
+        finished             : 다운로드 완료 - 저장된 파일 경로 전달
+        error                : 오류 발생 - 에러 메시지 전달
+        cancelled            : 사용자 취소 알림
     """
 
-    progress    = Signal(float)  # 진행률
-    speed       = Signal(str)    # 속도
-    eta         = Signal(str)    # 남은 시간
-    file_size   = Signal(str)    # 파일 크기
-    merging     = Signal()       # 병합 시작
-    finished    = Signal(str)    # 완료 (파일 경로)
-    error       = Signal(str)    # 오류
-    cancelled   = Signal()       # 취소
+    progress             = Signal(float)                        # 진행률
+    speed                = Signal(str)                          # 속도
+    eta                  = Signal(str)                          # 남은 시간
+    file_size            = Signal(str)                          # 파일 크기
+    merging              = Signal()                             # 병합 시작
+    codec_info_resolved  = Signal(str, str, str, float, float)  # vcodec, acodec, ext, abr, tbr
+    finished             = Signal(str)                          # 완료 (파일 경로)
+    error                = Signal(str)                          # 오류
+    cancelled            = Signal()                             # 취소
 
     def __init__(
         self,
@@ -185,6 +225,10 @@ class DownloadWorker(QThread):
         # 다시 계산하면서 pct 가 일시적으로 뒤로 후퇴하는 출렁임을 차단.
         # 한 다운로드(스트림) 안에서만 유효하며 finished 시점에 리셋.
         self._pct_floor: float = -1.0
+
+        # codec_info_resolved 의 마지막 emit 값 — 같은 값을 중복 emit 하지
+        # 않기 위한 가드. (vcodec, acodec, ext, abr, tbr) 튜플.
+        self._last_codec_info: tuple[str, str, str, float, float] | None = None
 
         # 잔여물 추적
         self._touched_files: set[str] = set()
@@ -241,6 +285,22 @@ class DownloadWorker(QThread):
         """외부에서 취소 요청"""
         self._downloader.cancel()
 
+    def _maybe_emit_codec_info(self, info_dict: dict):
+        """
+        info_dict 에서 코덱 정보를 뽑아 의미 있으면 codec_info_resolved 시그널 발사.
+
+        같은 값 연속 emit 은 가드한다 (라벨 깜빡임 방지). 후처리 체인의 각
+        단계마다 호출될 수 있고 마지막 단계의 값이 최종 진실이 된다.
+        """
+        extracted = _extract_codec_info(info_dict)
+        if extracted is None:
+            return
+        if extracted == self._last_codec_info:
+            return
+        self._last_codec_info = extracted
+        vcodec, acodec, ext, abr, tbr = extracted
+        self.codec_info_resolved.emit(vcodec, acodec, ext, abr, tbr)
+
     def _on_progress(self, d: dict):
         """
         yt-dlp 진행률 콜백
@@ -286,6 +346,13 @@ class DownloadWorker(QThread):
         elif status == "finished":
             self._output_path = d.get("filename", "") or self._output_path
             self.progress.emit(100.0)
+            # 코덱 정보 사후 갱신 — progress hook 의 finished 시점에
+            # info_dict 가 들어 있으면 거기서 한 번 emit. 머지가 있는 경로는
+            # _on_postprocess 의 finished 가 더 진실에 가까운 통합 정보를
+            # 갖지만, 머지 없는 단일 progressive 경로는 여기가 끝일 수 있다.
+            info_dict = d.get("info_dict")
+            if isinstance(info_dict, dict):
+                self._maybe_emit_codec_info(info_dict)
             # ETA 라벨을 명시적으로 비운다. 단조 하향으로 raw 가 0 까지
             # 따라간다 해도, 마지막 emit 이 1~2 초에서 멈춘 채 finished
             # 가 들어오는 경우의 잔재를 방어. update_status(DONE) 이
@@ -546,6 +613,12 @@ class DownloadWorker(QThread):
 
         이 중 사용자에게 "병합 중"으로 보여야 하는 단계는 영상+오디오를
         실제로 머지하는 'Merger' 한 단계뿐이다.
+
+        코덱 정보 사후 갱신: 각 단계의 finished 시점에 info_dict 에서
+        코덱·비트레이트·컨테이너를 뽑아 codec_info_resolved 시그널 발사.
+        Merger 직후가 통합 코덱 정보의 진실에 가장 가깝지만, MoveFiles
+        직전까지도 ext 가 바뀔 수 있어 매번 덮어쓴다. _maybe_emit_codec_info
+        가 같은 값 중복은 가드.
         """
         status        = d.get("status")
         postprocessor = d.get("postprocessor", "")
@@ -556,10 +629,14 @@ class DownloadWorker(QThread):
             self.merging.emit()
 
         if status == "finished":
-            self._output_path = d.get("info_dict", {}).get(
-                "filepath",
-                self._output_path
-            )
+            info_dict = d.get("info_dict") or {}
+            if isinstance(info_dict, dict):
+                self._output_path = info_dict.get(
+                    "filepath",
+                    self._output_path
+                )
+                # 후처리 단계마다 코덱 정보 갱신 — 마지막 단계 값이 최종 진실.
+                self._maybe_emit_codec_info(info_dict)
 
     # ── 잔여물 추적·정리 ──────────────────────────────────────
 

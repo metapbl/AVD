@@ -383,10 +383,12 @@ class DownloadItemWidget(QWidget):
         1. "업로더  •  재생시간"      — 항상 표시 (위젯 생성 직후부터)
         2. " • 코덱·포맷·비트레이트"  — 화질 선택 이후만 표시.
            통합 포맷(AUTO_FORMAT_ID) 은 코덱이 미확정이므로 "자동" 으로 표시.
+           단, 사후 갱신(update_format_meta_resolved) 이 들어와 _fmt_format_id
+           가 빈 값으로 바뀌면 실제 코덱 세그먼트가 그려진다.
 
-        update_meta / update_format_meta 가 단일 출처
-        (self.item.uploader/duration, self._fmt_*) 를 갱신한 뒤 이 헬퍼를
-        호출해 라벨을 다시 박는다.
+        update_meta / update_format_meta / update_format_meta_resolved 가
+        단일 출처 (self.item.uploader/duration, self._fmt_*) 를 갱신한 뒤
+        이 헬퍼를 호출해 라벨을 다시 박는다.
         """
         base = (
             f"{self.item.uploader}  •  {format_duration(self.item.duration)}"
@@ -400,6 +402,8 @@ class DownloadItemWidget(QWidget):
         # 이 분기를 segment 폴백보다 앞에 두는 이유: 통합 포맷은 ext="mp4"
         # 가 박혀 있어 segment 가 "MP4" 를 반환하는데, 그러면 "자동" 폴백이
         # 작동하지 않기 때문. format_id 단일 출처로 명확히 식별한다.
+        # 사후 갱신(update_format_meta_resolved) 이 _fmt_format_id 를 비우면
+        # 여기 분기를 빠져나가 아래 segment 가 그려진다.
         if self._fmt_format_id == AUTO_FORMAT_ID:
             return f"{base}  •  자동"
 
@@ -743,6 +747,8 @@ class DownloadItemWidget(QWidget):
 
         format_id 는 통합 포맷("자동 선택") 식별 단일 출처. AUTO_FORMAT_ID
         와 일치하면 _build_meta_text 가 코덱 세그먼트 대신 "자동" 으로 표시.
+        다운로드가 시작되어 사후 갱신(update_format_meta_resolved) 이 들어오면
+        _fmt_format_id 가 빈 값으로 바뀌어 실제 코덱 세그먼트가 그려진다.
         """
         self._fmt_chosen    = True
         self._fmt_format_id = format_id or ""
@@ -752,6 +758,63 @@ class DownloadItemWidget(QWidget):
         self._fmt_abr       = abr or 0.0
         self._fmt_tbr       = tbr or 0.0
         self._fmt_is_audio  = bool(is_audio)
+        self.lbl_meta.setText(self._build_meta_text())
+
+    def update_format_meta_resolved(
+        self,
+        vcodec: str,
+        acodec: str,
+        ext: str,
+        abr: float,
+        tbr: float,
+    ):
+        """
+        다운로드/후처리 진행 중 yt-dlp 가 확정한 코덱·비트레이트로 메타 라벨을
+        사후 갱신.
+
+        DownloadWorker.codec_info_resolved 시그널에 연결되어 호출. 같은
+        다운로드에서 여러 번 호출될 수 있고 마지막 호출의 값이 최종 진실.
+
+        정책:
+        - 화질 선택 전(_fmt_chosen=False) 호출은 무시 — 사용자 의도가 박혀
+          있지 않은 상태의 라벨 변경 방지.
+        - 오디오 전용(self._fmt_is_audio=True) 항목은 사후 갱신 거부 —
+          info_dict 의 acodec/abr 은 ffmpeg 재인코딩 전 원본 트랙 값이라
+          "MP3 192kbps" 가 "Opus 160kbps" 같은 거짓으로 덮이는 사고를 막는다.
+          MP3 의 진실은 core/downloader.py 의 MP3_BITRATE_KBPS 단일 출처.
+        - 통합 포맷("자동") 도, 수동 선택도 모두 갱신 대상. 통합 포맷은
+          _fmt_format_id 를 빈 값으로 바꿔 _build_meta_text 의 "자동" 분기를
+          빠져나오게 한다.
+        - vcodec/acodec 둘 다 비어 들어오면 무시 (의미 없는 갱신).
+        """
+        if not self._fmt_chosen:
+            return
+        if self._fmt_is_audio:
+            return
+
+        v = (vcodec or "").strip()
+        a = (acodec or "").strip()
+        # 둘 다 비거나 "none" 이면 의미 없음 — 직전 표시 유지
+        if (not v or v == "none") and (not a or a == "none"):
+            return
+
+        # 통합 포맷이었다면 "자동" 분기에서 빠져나오게 format_id 를 비운다.
+        # 수동 선택은 원래 빈 값이거나 다른 format_id 라 분기 변화 없음.
+        self._fmt_format_id = ""
+
+        # 새 정보로 덮어쓴다. vcodec/acodec 중 한쪽이 비어 들어오면 기존 값
+        # 유지 (예: vcodec 만 들어오는 비디오-only fragment 경계 케이스).
+        if v and v != "none":
+            self._fmt_vcodec = v
+        if a and a != "none":
+            self._fmt_acodec = a
+        if ext:
+            self._fmt_ext = ext
+        if abr and abr > 0:
+            self._fmt_abr = float(abr)
+        if tbr and tbr > 0:
+            self._fmt_tbr = float(tbr)
+
         self.lbl_meta.setText(self._build_meta_text())
 
     def update_thumbnail(self, data: bytes):
