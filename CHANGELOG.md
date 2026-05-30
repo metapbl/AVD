@@ -23,6 +23,17 @@
 
 ---
 
+## 2026-05-30
+
+- **`feat(ui)`** `c8e66b1`: 다운로드 항목 메타 행에 컨테이너·코덱·비트레이트 추가.
+  - `FormatInfo` 에 `vcodec`/`acodec`/`abr`/`tbr` 필드 신설. `_select_best_format` 이 고른 video/audio 포맷의 raw 값을 위젯에 전달, 코덱 표기 정규화 헬퍼(`avc1.* → H.264`, `mp4a.* → AAC` 등) 거쳐 "1920x1080 • MP4 • H.264 • Opus 160kbps" 형태로 표기. 오디오 전용 항목은 "MP3 192kbps" 단독.
+
+- **`feat(ui)`** `12a53c7`: "자동" 선택 시 예측 메타 표시.
+  - `format_id` 가 비어 있을 때(통합 포맷 `bv*+ba/b` 정책) `_predict_auto_meta` 가 정책 기준 가장 가능성 높은 컨테이너/코덱 조합(MP4+H.264+Opus) 을 예측해 "... • 자동" 접미사와 함께 표시. 사용자가 다운로드 전에 무엇이 받아질지 가늠 가능.
+
+- **`feat(worker)`** `9e64f02`: 다운로드 완료 시 코덱·비트레이트 사후 갱신.
+  - `DownloadWorker.codec_info_resolved` 시그널 신설, progress hook 의 `finished` 와 postprocess hook 의 각 단계 `finished` 에서 `info_dict` 의 `vcodec`/`acodec`/`ext`/`abr`/`tbr` 추출해 emit. `DownloadItemWidget.update_format_meta_resolved` 가 받아 실제 값으로 덮어쓰고 `_fmt_format_id` 비워 "자동" 분기에서 빠져나옴. `is_audio` 항목은 사후 갱신 거부 (MP3 비트레이트는 `MP3_BITRATE_KBPS` 단일 출처).
+
 ### 2026-05-29
 
 - **`feat(ui)`** `be39920`: 제목 라벨 우측에 파일 확장자 표시 + 두 거짓 라벨 정정.

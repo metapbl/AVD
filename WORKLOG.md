@@ -51,14 +51,6 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
-- **메타 행에 코덱·포맷·비트레이트 추가**
-    - 위치: `ui/download_item_widget.py` `lbl_meta`, `core/info_fetcher.py` `FormatInfo`, `ui/format_select_dialog.py`, `ui/main_window.py` `_on_format_selected`.
-    - 표시: `"업로더 • 재생시간"` → `"업로더 • 재생시간 • H.264 MP4 • AAC 192kbps"`. 오디오 전용: `"아티스트 • 3:42 • MP3 320kbps"`.
-    - `FormatInfo` 에 `vcodec`/`acodec`/`abr`/`tbr` 필드 추가 (yt-dlp raw dict 그대로).
-    - 갱신 시점: 위젯 생성 직후엔 업로더·재생시간만, `_on_format_selected` 직후 코덱·비트레이트 채워 메타 라벨 재갱신.
-    - 통합 포맷 (`bestvideo+bestaudio/best`) 정책: 선택 시점에 코덱 미확정 → 빈 값 또는 `"자동"`. ffprobe 호출 같은 추가 비용 미도입.
-    - 코덱 표기 정규화: yt-dlp `vcodec` 의 `"avc1.640028"` raw 문자열 → 사람 친화 이름(`H.264`, `VP9`, `AV1`, `AAC`, `Opus`, `MP3`) 매핑 헬퍼.
-
 - **macOS 지원 정식화 (실행 환경만)**
     - 동기: 사용자가 Windows 에서 개발, macOS 에서는 실행만. README/CLAUDE 의 "Windows 우선, macOS 일부 미동작" 정책을 "Windows 개발 / macOS 실행 양쪽 정식 지원" 으로 격상.
     - 진단 (2026-05-28): `utils/file_utils.py` `open_folder()` 의 `subprocess.run(["explorer", ...])` 가 Windows 전용 → macOS 에서 "📂 열기" 깨짐. `main.py` 의 `QFont("맑은 고딕", 10)` 은 macOS 폴백. yt-dlp·ffmpeg·Node.js 는 Homebrew 로 정식 지원. `windowsfilenames: True` 는 macOS 에서도 동작 (보수적 정책 유지).
