@@ -62,6 +62,63 @@
     - 검증: Windows 수정 → push → macOS pull → `python main.py` → 📂 열기·한글 폰트·다운로드 확인.
     - 보류: NFC vs APFS NFD (실측 후 필요 시), `.gitattributes` (단일 OS 작업이라 불필요).
 
+- **병합 중 항목의 동시성 슬롯 점유 해제**
+    - 동기: `max_concurrent` 한도 안에 병합(MERGING) 단계 항목까지 들어가 있어, 큰 파일 병합이 길어지면 다음 WAITING 항목이 출발하지 못함. 병합은 다운로드가 아니므로 다운로드 슬롯에서 빼는 것이 사용자 직관과도 일치.
+    - 진단: `controllers/download_manager.py` `active_count()` 가 `w.isRunning()` 만 카운트. `DownloadWorker.run()` 은 `Downloader.download()` 를 동기 호출하고, yt-dlp 는 다운로드 직후 같은 호출 안에서 후처리(병합·메타·썸네일 임베드) 까지 마친 뒤 리턴 → MERGING 동안 `isRunning()` = True 가 계속 유지되어 슬롯을 잡고 있음.
+    - 정책:
+        1. `active_count()` 의 활성 기준을 `isRunning() and items[id].status != MERGING` 으로 변경. WAITING 라벨 재계산은 기존 `_refresh_waiting_labels()` 가 status 기준이라 별도 수정 불필요.
+        2. 워커 `merging` 시그널 수신 경로에 매니저의 `_dispatch_next()` 호출 추가. 현재는 `lambda: widget.update_status(MERGING)` 만 연결되어 있으므로 매니저 슬롯을 하나 더 붙이는 방식 (위젯 직결은 유지, 매니저는 라이프사이클 한정 원칙 — ADR-003 정합).
+        3. 병합 동시 실행에는 별도 한도를 두지 않는다. 디스크 I/O 포화가 실측에서 관찰되면 `max_concurrent_merge` 도입을 ADR 로 검토.
+    - 검증: 슬라이더 2, 큰 영상 3개 연속 추가 → 첫 두 개가 병합 단계에 진입한 순간 세 번째 항목이 즉시 DOWNLOADING 으로 출발하는지 확인. 동시에 진행 중인 두 항목의 라벨이 "병합 중" 유지되는지도 확인 (상태 전이가 슬롯 회수의 부작용으로 흔들리지 않을 것).
+    - 보류: 위 한도 분리(`max_concurrent_merge`) 는 실측 후 결정.
+
+- **병합 단계 진행률 표시**
+    - 동기: 큰 파일은 병합에 수십 초~수 분이 걸리는데 현재 UI 는 "병합 중" 라벨만 뜨고 진행률이 없어 사용자가 멈춘 것으로 오인.
+    - 진단: yt-dlp `postprocessor_hook` 은 `started`/`finished` 두 신호만 전달, 퍼센트 정보 없음. `FFmpegMerger` 가 내부에서 호출하는 ffmpeg 의 stdout 도 yt-dlp 가 잡아먹어 외부 노출 없음. 우회로는 ffmpeg `-progress pipe:1 -nostats` 출력을 직접 가로채는 커스텀 PostProcessor 로 `FFmpegMerger` 를 대체하는 것.
+    - 정책:
+        1. 커스텀 머지 PostProcessor 추가 (`core/downloader.py` 또는 신규 모듈). `requested_formats` 가 2개 이상일 때만 활성, 단일 progressive 경로는 기존 흐름 유지.
+        2. `subprocess.Popen(..., stdout=PIPE, stderr=DEVNULL)` 로 ffmpeg 직접 기동, 라인 파싱(`out_time_ms=`, `progress=continue|end`) → `out_time_ms / (info["duration"] * 1e6) * 100` 으로 퍼센트 환산.
+        3. `DownloadWorker` 에 새 시그널 `merge_progress(float)` 추가, 위젯 직결.
+        4. 위젯 표시 방식 — 기존 진행률 바 재활용 (라벨만 "병합" 으로 전환) vs 별도 라벨. 코드 작성 단계에서 결정.
+    - 검증: 4K 60fps 영상(병합에 30초 이상 걸리는 표본) 다운로드 → 병합 단계 진입 후 퍼센트가 0 → 100 으로 카운트업, 종료 직후 DONE 전이 확인. 단일 progressive 경로(병합 없음) 가 회귀하지 않는지도 확인.
+    - 보류: 진행률 표시 UI(바 재활용 vs 별도), `duration` 이 누락된 라이브/스트림 경우의 폴백(시간 표시만, 퍼센트 생략).
+
+- **확장자 표시 정직화 — 미확정 시 숨김, 메타데이터 확보 후 갱신**
+    - 동기: SoundCloud 같은 오디오 전용 소스를 "최고 화질 (자동 선택)" 으로 받으면 실제 결과는 m4a 인데, 화질 선택 직후부터 다운로드 완료 직전까지 제목 옆에 노란 ".mp4" 가 거짓으로 표시되다가 완료 시점에야 ".m4a" 로 바뀐다. 표시가 진실이 되는 시점이 너무 늦다.
+    - 진단:
+        1. `core/info_fetcher.py` `_parse_formats()` 가 통합 포맷("bestvideo+bestaudio/best") 행에 무조건 `ext="mp4"` 를 박는다 — 비디오 소스에서는 진실이지만 오디오 전용 소스에서는 거짓.
+        2. `DownloadWorker.codec_info_resolved` 는 후처리 단계마다 `(vcodec, acodec, ext, abr, tbr)` 를 emit 하며 ext 가 함께 들어오지만, 위젯 `update_format_meta_resolved` 는 메타 라벨만 갱신할 뿐 제목 옆 노란 ext 라벨(`update_ext` 경로) 은 건드리지 않는다.
+        3. 결과적으로 ext 의 진실은 `_on_worker_finished(path)` 시점의 실제 파일 경로에서야 반영된다.
+    - 정책:
+        1. `info_fetcher._parse_formats()` 의 통합 포맷 행에서 `ext=""` 로 변경 (미확정 표식). 비디오 구체 행("1080p MP4") 은 그대로 `ext="mp4"` 유지 — 머지 정책으로 진실 보장.
+        2. `DownloadItemWidget.update_ext("")` 호출 시 `_ext_known=False` 로 자연스럽게 처리되도록 기존 가드 활용 (`update_ext` 가 이미 `lstrip(".")` 후 빈 값이면 미확정으로 다룬다). 제목 옆 노란 ".mp4" 가 표시되지 않는다.
+        3. `DownloadItemWidget.update_format_meta_resolved` 에 ext 반영 로직 추가 — `ext` 가 의미 있는 값이면 `self._ext` 갱신 + `_apply_title_elide()` 호출. `_fmt_ext` 단일 출처도 같이 갱신해 메타 라벨의 컨테이너 표기도 진실로.
+        4. (선택) 다이얼로그 측 표시 — 통합 포맷 행의 라벨 "최고 화질 (자동 선택)" 은 비디오/오디오 어느 쪽에도 거짓이 아니므로 그대로 유지. 화질 선택 후 위젯에는 ext 가 비어 있다가 다운로드 개시 후 채워지는 흐름.
+    - 검증:
+        1. SoundCloud URL 추가 → "최고 화질 자동 선택" 행 선택 → 다운로드 개시 전까지 제목 옆 노란 ext 라벨 비어 있음 → 다운로드 진행 중 ".m4a" 로 채워짐 → 완료까지 유지.
+        2. YouTube URL 의 "1080p MP4" 명시적 선택 → 화질 선택 직후부터 ".mp4" 표시 (현재 동작 유지, 회귀 없음).
+        3. YouTube URL 의 "최고 화질 자동 선택" → 다운로드 개시 전까지 ext 비어 있음 → 진행 중 ".mp4" 로 채워짐 → 완료까지 유지.
+    - 보류: 다이얼로그의 통합 포맷 행 라벨을 소스에 따라 동적으로 바꾸는 것 ("최고 화질" vs "최고 음질") 은 별도 항목으로 분리 가능 — 본 항목은 표시 정직화에 집중.
+
+- **모듈 분할 — 큰 파일의 응집도 점검과 헬퍼 추출**
+    - 동기: `ui/download_item_widget.py` ~900줄, `workers/download_worker.py` ~750줄, `ui/main_window.py` ~700줄. 줄 수 자체보다 응집도 저하와 향후 분할 비용 증가가 우려.
+    - 진단:
+        1. `ui/download_item_widget.py` 모듈 최상위 `humanize_codec` / `format_bitrate` / `format_codec_segment` / `_VCODEC_PREFIX_MAP` / `_ACODEC_PREFIX_MAP` / `AUTO_FORMAT_ID` 6개 심볼은 표시 포맷 헬퍼로 위젯 본질이 아니며 `format_select_dialog` 도 이미 import 중. 응집도 다른 곳에 박혀 있다.
+        2. `workers/download_worker.py` 모듈 최상위 `_normalize_token` / `_split_size_str` / `_normalize_size_str` / `_is_unknown_size` / `_parse_eta_secs` / `_format_eta_secs` / `_extract_codec_info` + `_UNKNOWN_TOKENS` 는 순수 문자열 파싱 유틸로 Qt 의존 없음. 워커 클래스와 분리 가능.
+        3. 두 분할 모두 외부 결합 N≤2, 내부 상태 공유 없음 → 시기 민감도 낮음. 지금 하든 미루든 비용 거의 동일하나 의식이 또렷할 때 처리.
+        4. `ui/main_window.py` 는 책임 6갈래(UI 구성·항목 추가 흐름·썸네일 라이프사이클·다운로드 위임·제거 흐름·업데이터) 가 같은 dict 4개(items / widgets / info_workers / _thumb_workers) 를 공유하는 시그널 라우팅 허브. 분할은 dict 소유권 재배치 + 별도 컨트롤러 신설이 필요한 재설계 수준. ADR-003 직후라 책임 경계가 안정화 중이므로 본 항목에선 제외.
+    - 정책:
+        1. `ui/codec_format.py` 신규 — download_item_widget 의 코덱 헬퍼 6개 심볼 이동. download_item_widget·format_select_dialog 둘 다 새 모듈에서 import. 동작 변경 없음.
+        2. `workers/progress_parsing.py` 신규 — download_worker 의 모듈 최상위 유틸 8개 + `_UNKNOWN_TOKENS` 이동. 워커는 import 만. 동작 변경 없음.
+        3. 워커의 ETA 평활화 메서드(`_decide_eta_source` / `_emit_eta` / `_maybe_emit_eta` / `_do_emit_eta`) 는 인스턴스 상태와 강결합이라 분할 보류.
+        4. main_window 분할·stylesheet 모듈화·file_utils 의 psutil 그룹 분리는 본 항목 범위 밖. 중기/장기 항목으로 별도 관리.
+    - 검증: 분할 후 `python main.py` 정상 기동 + 화질 선택·다운로드·재시도·취소·환경설정 동선 회귀 없음 + import 순환 없음.
+    - 보류:
+        1. main_window 분할 — ADR-003 의 후속 책임 안정화 후 별도 ADR 로 검토 (다음 마일스톤 이후).
+        2. stylesheet 의 모듈/리소스 분리 — 장기 항목 "테마·스타일 옵션" 진입 시 함께 처리.
+        3. file_utils 의 psutil 그룹(`snapshot_child_pids` / `terminate_pids`) 분리 — 양이 더 자라거나 프로세스 관리 유틸이 추가될 때.
+
+
 ### 3.3. 중기 (Mid-term, 다음 마일스톤)
 
 - **포맷 선택 UX 개선** — "최고 화질 (자동·효율 우선)" 과 "최고 호환 (MP4/H.264)" 분리. 더불어 사용자가 비디오·오디오 컨테이너 (mp4/webm/mkv, mp3/m4a/opus 등) 를 직접 고를 수 있도록 다이얼로그 확장. ADR-002 의 결정과 함께 진행.
