@@ -51,6 +51,20 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
+- **플레이리스트 리스트 썸네일 누락 — 동시 부하 시 UI 미리보기 일부 실패**
+    - 동기: 60 항목 일괄 다운로드 시 약 15 개의 리스트 썸네일(UI 미리보기) 이 비었음. 단, 결과 파일의 임베드 썸네일은 정상 — ADR-001 의 두 대상 분리상 UI 경로만의 문제.
+    - 진단 (2026-06-02): `workers/thumbnail_worker.py` `TIMEOUT_SEC = 10` 가 동시 다발 요청과 충돌 추정. 게이트 없이 60 항목이 거의 동시에 썸네일 GET 을 던져 일부가 10 초 안에 응답 못 받고 `failed` 로 빠짐 (약 25% 실패율이 동시 폭주·일시 거절 패턴과 부합).
+    - 정책 (택일, 코드 단계 결정): (가) 썸네일 워커도 InfoWorker 식 경량 동시성 게이트에 태움, (나) `failed` 시 1 회 지연 재시도, (다) 둘 다.
+    - 검증: 60+ 항목 플레이리스트 추가 → 리스트 썸네일 누락 0~소수 확인. 결과 파일 임베드는 회귀 없음 (분리 경로).
+    - 보류: 게이트 크기 산정 — 다운로드 `max_concurrent` 공유 여부 vs 썸네일 전용 고정값.
+
+- **다운로드 자동 재시도·백오프 — 일시적 오류의 무인 회복**
+    - 동기: 플레이리스트 다운로드 중 일부 항목에 `HTTP Error 403: Forbidden` 팝업, 재시도 버튼을 누르면 바로 성공. 60 항목을 수동 재시도하는 부담이 큼.
+    - 진단: YouTube 403 은 대부분 일시적(세션 토큰 만료·순간 거절). 영구 오류(비공개·삭제·지역차단) 와 구분 필요.
+    - 정책 (코드 단계 결정): `DownloadWorker`/`DownloadManager` 에서 일시적 오류(403·타임아웃·일시 네트워크) 한정 지수 백오프(예: 2→5→10 초) 최대 3 회 자동 재시도, 최종 실패 시에만 ERROR 팝업 1 회. 영구 오류는 즉시 ERROR.
+    - 검증: 403 빈발 플레이리스트 추가 → 자동 회복으로 수동 재시도 없이 대부분 완주, 영구 오류 항목은 즉시 ERROR 표시.
+    - 보류: 재시도 대상 오류 분류 기준(메시지 패턴 vs yt-dlp 예외 타입), 백오프 파라미터의 설정 노출 여부.
+
 - **macOS 지원 정식화 (실행 환경만)**
     - 동기: 사용자가 Windows 에서 개발, macOS 에서는 실행만. README/CLAUDE 의 "Windows 우선, macOS 일부 미동작" 정책을 "Windows 개발 / macOS 실행 양쪽 정식 지원" 으로 격상.
     - 진단 (2026-05-28): `utils/file_utils.py` `open_folder()` 의 `subprocess.run(["explorer", ...])` 가 Windows 전용 → macOS 에서 "📂 열기" 깨짐. `main.py` 의 `QFont("맑은 고딕", 10)` 은 macOS 폴백. yt-dlp·ffmpeg·Node.js 는 Homebrew 로 정식 지원. `windowsfilenames: True` 는 macOS 에서도 동작 (보수적 정책 유지).
@@ -127,7 +141,6 @@
 
 - **자동 업데이트 검증** — `utils/updater.py` 가 yt-dlp 신버전 감지 시 안전 갱신 확인.
 - **다국어 지원** — i18n 도입 (한국어·영어 기본).
-- **플레이리스트 일괄 다운로드** — 한 URL 로 N 개 항목 추가.
 - **테마·스타일 옵션** — 라이트·다크·시스템 자동 전환.
 
 ---
@@ -141,6 +154,7 @@
 - **ADR-003** 다운로드 워커 오케스트레이션을 `DownloadManager` 로 분리 (Accepted, 2026-05-28) — `MainWindow` 의 다섯 책임 중 ③ 만 `controllers/` 로 떼어냄. 진행 시그널은 워커→위젯 직결, 라이프사이클만 매니저 경유. 큐는 `items` dict 삽입 순서. → [ADR.md#adr-003](./ADR.md#adr-003)
 - **ADR-004** `process_ie_result` 우회 폐기, NFC 보존을 PostProcessor 정공법으로 (Accepted, 2026-05-28) — YouTube 토큰 만료 회귀(403) 해결. `ydl.download([url])` 복귀 + `_NFCNormalizePP(when="pre_process")`. `js_runtimes`/`remote_components` 고정 제거. 2026-05-18 결정 부분 번복. → [ADR.md#adr-004](./ADR.md#adr-004)
 - **ADR-005** 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일 (Proposed, TBD) — `FFmpegExtractAudio` 의 192 kbps 일괄 적용이 고음질 원본을 다운컨버트하는 문제. 네 갈래 검토 (환경설정 노출 / 컨테이너만 변경 / 다이얼로그 드롭다운 / 조건부 확인). → [ADR.md#adr-005](./ADR.md#adr-005)
+- **ADR-006** 플레이리스트 일괄 다운로드 — 글로벌 포맷 선택과 워커 시그널 규율 (Accepted, 2026-06-02) — 한 URL → 상한 500 경량 목록(`extract_flat`) → 체크박스 선택 다이얼로그 → 영상/음원 단일 선택 전체 적용. 정보추출은 다운로드 `max_concurrent` 공유 게이트. 워커 커스텀 시그널이 QThread 내장 `finished` 를 가리던 크래시를 시그널 개명(`download_finished`/`info_ready`/`thumb_ready`)으로 해소. → [ADR.md#adr-006](./ADR.md#adr-006)
 
 ---
 
@@ -162,6 +176,7 @@
 - 스레드 횡단 시그널의 `Qt.QueuedConnection`
 - `setScaledContents(True)` + 0×0 라벨 함정
 - 다크 테마는 `setStyle("Fusion")` 우선 — indicator ✓ 렌더링 보장
+- QThread 내장 시그널(`finished`/`started`) 은 같은 이름 커스텀 Signal 로 가리지 말 것 — 스레드 생존 중 GC 크래시 (ADR-006)
 
 ### 5.3. yt-dlp → [LESSONS.md#lessons-yt-dlp](./LESSONS.md#lessons-yt-dlp)
 

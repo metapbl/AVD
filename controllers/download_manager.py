@@ -1,7 +1,7 @@
 # controllers/download_manager.py
 # 다운로드 워커 오케스트레이션 + 동시성 제어 큐 매니저
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, Qt
 
 from models.download_item import DownloadItem, DownloadStatus
 from workers.download_worker import DownloadWorker
@@ -16,15 +16,21 @@ class DownloadManager(QObject):
       묶여 있고 큐 정책과 무관하므로 MainWindow 가 그대로 보유한다.
       매니저는 다운로드 단계(DownloadWorker) 만 책임진다.
     - items / widgets dict 는 MainWindow 가 단일 소유자이고, 매니저는
-      읽기·순회 용도로 참조를 받는다. ItemRegistry 같은 추상을 더 만들지
-      않은 것은 이 규모에 과설계라고 판단했기 때문.
-    - 진행률·속도·ETA·병합 시그널은 워커→위젯을 직접 연결한다. 매니저가
-      중계하면 N 배 시그널이 늘어나는 비용 대비 얻을 게 없다. 매니저는
-      "출발·종료" 같은 라이프사이클 이벤트만 다룬다.
+      읽기·순회 용도로 참조를 받는다.
+    - 진행률·속도·ETA·병합 시그널은 워커→위젯을 직접 연결한다.
+
+    워커 수명 관리 (크래시 방지):
+    - DownloadWorker 의 "작업 결과" 는 download_finished/error/cancelled 로
+      받는다 (QThread 내장 finished 를 가리지 않는 이름).
+    - 워커 "객체 소멸·dict 정리" 는 QThread 내장 finished(스레드가 진짜로
+      종료된 시점) 에 건다. run() 막바지의 결과 시그널 핸들러 안에서 객체를
+      정리하면 run() 종료 전 GC 로 QThread 가 파괴되어 "Destroyed while
+      thread is still running" 크래시가 난다. 결과 처리와 객체 수명을 서로
+      다른 시그널로 분리하는 것이 핵심.
 
     공개 API:
-        enqueue(item_id)   : 화질 선택이 끝난 항목을 큐에 넣는다 (즉시 또는 대기)
-        retry(item_id)     : ERROR / CANCELLED 항목을 큐에 다시 넣는다 (정책 A)
+        enqueue(item_id)   : 화질 선택이 끝난 항목을 큐에 넣는다
+        retry(item_id)     : ERROR / CANCELLED 항목을 큐에 다시 넣는다
         cancel(item_id)    : 단건 취소 시그널을 워커에 송신
         cancel_all()       : 진행 중 워커 일괄 취소
         is_active(item_id) : 해당 항목의 워커가 isRunning() 인지
@@ -67,33 +73,14 @@ class DownloadManager(QObject):
     # ── 공개 라이프사이클 진입점 ──────────────────────
 
     def enqueue(self, item_id: str):
-        """
-        화질 선택이 끝난 항목을 큐에 진입시킨다.
-
-        항목의 status 는 호출 시점에 이미 WAITING 으로 설정되어 있어야 한다
-        (MainWindow._on_format_selected 의 책임). 매니저는 슬롯 여유를 보고
-        실제 출발 여부를 결정한다.
-        """
+        """화질 선택이 끝난 항목을 큐에 진입시킨다."""
         self._dispatch_next()
 
     def retry(self, item_id: str):
-        """
-        ERROR / CANCELLED 항목의 재시도 진입점.
-
-        정책 A: 재시도도 동시성 한도를 준수한다. 슬롯이 비어 있으면
-        _dispatch_next 가 즉시 출발시키고, 슬롯이 꽉 차 있으면 잠시
-        WAITING 으로 떨어졌다가 자기 차례를 기다린다.
-
-        호출 측(MainWindow._on_retry)이 item.status 를 WAITING 으로
-        전이시키고 widget.update_status(WAITING) 까지 호출한 뒤에 매니저로
-        들어와야 한다. 매니저는 이전 워커 참조만 정리하고 dispatch.
-        """
-        prev = self.dl_workers.pop(item_id, None)
-        if prev is not None:
-            try:
-                prev.deleteLater()
-            except Exception:
-                pass
+        """ERROR / CANCELLED 항목의 재시도 진입점."""
+        # 이전 워커 객체 정리는 내장 finished 슬롯이 이미 했거나, 아직
+        # 살아있다면 그쪽이 할 것이다. 여기서는 dict 참조만 떼어낸다.
+        self.dl_workers.pop(item_id, None)
         self._dispatch_next()
 
     def cancel(self, item_id: str):
@@ -118,28 +105,16 @@ class DownloadManager(QObject):
         """
         항목 제거 시 매니저가 보유한 워커 참조도 정리.
 
-        MainWindow._remove_item_quiet 에서 호출. 진행 중 워커의 cancel 은
-        그 전에 별도로 호출되어 있어야 한다 (cancel 시그널을 받은 워커가
-        자식·잔여물 정리를 수행한 뒤 cancelled 시그널을 emit 하므로,
-        여기서 deleteLater 까지 가지는 않는다 — 자연 종료를 기다린다).
+        dict 에서만 떼어낸다. 실제 워커 객체의 소멸은 QThread 내장 finished
+        슬롯(_on_worker_thread_finished)이 스레드 종료 시점에 deleteLater 로
+        처리한다. isRunning() 중인 워커를 강제 종료하지 않는다.
         """
-        # dict 에서만 떼어낸다. 실제 워커 객체의 정리는 Qt 의 GC + 워커
-        # 자체의 종료 흐름에 맡긴다. isRunning() 중인 워커를 강제 종료하지
-        # 않는다 (cancel 흐름이 자식·잔여물 정리를 보장하는 정상 경로).
         self.dl_workers.pop(item_id, None)
 
     # ── 큐 매니저 본체 ───────────────────────────────
 
     def _dispatch_next(self):
-        """
-        동시성 한도 안에서 가능한 만큼 WAITING 항목들을 출발시킨다.
-
-        삽입 순서(self.items 의 dict 순서) 가 큐 순서. 별도 큐 자료구조를
-        두지 않는다 — status == WAITING 인 것이 곧 대기열.
-
-        한 번 호출에 빈 슬롯만큼 반복 출발. 슬라이더를 6 으로 키워둔 채
-        8 개를 한꺼번에 추가한 경우 한 번의 dispatch 로 6 개가 출발한다.
-        """
+        """동시성 한도 안에서 가능한 만큼 WAITING 항목들을 출발시킨다."""
         limit  = int(self.config.get("max_concurrent", 2))
         active = self.active_count()
 
@@ -148,23 +123,16 @@ class DownloadManager(QObject):
                 break
             if item.status != DownloadStatus.WAITING:
                 continue
-            # 이미 워커가 붙어 있는 WAITING (모순 상태) 방어
             existing = self.dl_workers.get(item_id)
             if existing is not None and existing.isRunning():
                 continue
             self._start_worker(item_id)
             active += 1
 
-        # 출발 못 한 WAITING 들의 순번 라벨 갱신
         self._refresh_waiting_labels()
 
     def _refresh_waiting_labels(self):
-        """
-        WAITING 항목들의 상태 라벨을 "대기 중 (N번째)" 로 다시 그린다.
-
-        N 은 WAITING 항목들 사이의 순번 — 진행 중 항목은 카운트하지 않음 (정책 P).
-        dispatch 직후 호출되어 슬롯 풀림으로 한 칸씩 당겨진 순번을 즉시 반영.
-        """
+        """WAITING 항목들의 상태 라벨을 '대기 중 (N번째)' 로 다시 그린다."""
         n = 0
         for item_id, item in self.items.items():
             if item.status != DownloadStatus.WAITING:
@@ -175,26 +143,15 @@ class DownloadManager(QObject):
                 widget.update_waiting_position(n)
 
     def _start_worker(self, item_id: str):
-        """
-        실제 DownloadWorker 를 생성·연결·기동한다.
-
-        호출 시점에 항목 상태를 DOWNLOADING 으로 전이시키므로 _dispatch_next
-        의 active 카운트 일관성이 유지된다. save_path 는 다운로드 완료 시점에
-        파일 경로로 덮어쓰일 수 있어, 매번 config 에서 디렉터리를 다시 읽는다
-        (사용자가 환경설정에서 폴더를 바꿨을 가능성도 흡수).
-        """
+        """실제 DownloadWorker 를 생성·연결·기동한다."""
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
             return
 
-        # 이전 워커 참조 정리 (재시도 경로)
-        prev = self.dl_workers.pop(item_id, None)
-        if prev is not None:
-            try:
-                prev.deleteLater()
-            except Exception:
-                pass
+        # 이전 워커 dict 참조 정리 (재시도 경로). 객체 소멸은 그 워커의
+        # 내장 finished 슬롯이 이미 처리했거나 곧 처리한다.
+        self.dl_workers.pop(item_id, None)
 
         save_dir = self.config.get("save_path", "")
         item.save_path = save_dir
@@ -207,9 +164,7 @@ class DownloadManager(QObject):
             ext       = item.ext,
             save_dir  = save_dir,
         )
-        # 진행률·속도·ETA·크기·병합·코덱정보는 워커→위젯 직접 연결 (매니저 미경유).
-        # 코덱 정보는 라이프사이클이 아니라 갱신 시그널이므로 progress/speed
-        # 와 같은 패턴으로 위젯에 직결. 매니저 중계 시 N 배 시그널만 늘어남.
+        # 진행률·속도·ETA·크기·병합·코덱정보는 워커→위젯 직접 연결.
         worker.progress.connect(widget.update_progress)
         worker.speed.connect(widget.update_speed)
         worker.eta.connect(widget.update_eta)
@@ -218,8 +173,8 @@ class DownloadManager(QObject):
             lambda: widget.update_status(DownloadStatus.MERGING)
         )
         worker.codec_info_resolved.connect(widget.update_format_meta_resolved)
-        # 라이프사이클은 매니저가 받아 자체 시그널로 다시 emit
-        worker.finished.connect(
+        # "작업 결과" 는 download_finished/error/cancelled 로 받는다.
+        worker.download_finished.connect(
             lambda path, iid=item_id: self._on_worker_finished(iid, path)
         )
         worker.error.connect(
@@ -228,14 +183,21 @@ class DownloadManager(QObject):
         worker.cancelled.connect(
             lambda iid=item_id: self._on_worker_cancelled(iid)
         )
+        # "객체 소멸·dict 정리" 는 QThread 내장 finished 에 건다 — run() 이
+        # 진짜로 끝난 시점. QueuedConnection 으로 두어, 종료 처리가 현재
+        # 시그널 스택을 빠져나온 뒤 안전하게 실행되게 한다.
+        worker.finished.connect(
+            lambda w=worker, iid=item_id: self._on_worker_thread_finished(iid, w),
+            Qt.ConnectionType.QueuedConnection,
+        )
         self.dl_workers[item_id] = worker
         worker.start()
 
     # ── 워커 시그널 수신 → 매니저 시그널 재발사 ────────
 
     def _on_worker_finished(self, item_id: str, path: str):
+        """다운로드 작업 결과(완료). 다음 항목 출발."""
         self.item_done.emit(item_id, path)
-        # 슬롯 한 칸 풀림 — 다음 WAITING 항목 출발
         self._dispatch_next()
 
     def _on_worker_error(self, item_id: str, message: str):
@@ -245,3 +207,19 @@ class DownloadManager(QObject):
     def _on_worker_cancelled(self, item_id: str):
         self.item_cancelled.emit(item_id)
         self._dispatch_next()
+
+    def _on_worker_thread_finished(self, item_id: str, worker):
+        """
+        QThread 내장 finished — 스레드가 진짜로 종료된 시점.
+
+        이때 비로소 워커 객체를 안전하게 소멸시킨다. dict 의 현재 워커가
+        넘겨받은 worker 와 동일할 때만 pop (재시도로 새 워커가 이미 붙은
+        경우 그건 건드리지 않는다).
+        """
+        current = self.dl_workers.get(item_id)
+        if current is worker:
+            self.dl_workers.pop(item_id, None)
+        try:
+            worker.deleteLater()
+        except Exception:
+            pass

@@ -18,12 +18,16 @@ class ThumbnailWorker(QThread):
     이 워커는 raw bytes 까지만 책임진다.
 
     시그널:
-        finished(item_id: str, data: bytes) : 다운로드 완료
-        failed(item_id: str, reason: str)   : 실패
+        thumb_ready(item_id: str, data: bytes) : 다운로드 완료.
+            ⚠ QThread 내장 finished 와 겹치지 않도록 thumb_ready 로 둔다.
+            내장 finished 는 MainWindow 가 스레드 수명 관리에 쓴다.
+            (LESSONS: QThread 상속 워커는 started/finished 이름을 자체
+            시그널로 쓰지 말 것.)
+        failed(item_id: str, reason: str)      : 실패
     """
 
-    finished = Signal(str, bytes)
-    failed   = Signal(str, str)
+    thumb_ready = Signal(str, bytes)
+    failed      = Signal(str, str)
 
     TIMEOUT_SEC = 10
     MAX_BYTES   = 8 * 1024 * 1024  # 8MB 방어
@@ -66,7 +70,7 @@ class ThumbnailWorker(QThread):
                 self.failed.emit(self.item_id, "response too large")
                 return
 
-            self.finished.emit(self.item_id, data)
+            self.thumb_ready.emit(self.item_id, data)
 
         except Exception as e:
             self.failed.emit(self.item_id, str(e))

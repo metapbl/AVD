@@ -24,6 +24,16 @@ from utils.file_utils import open_folder
 from core.info_fetcher import VideoInfo, FormatInfo
 from workers.thumbnail_worker import ThumbnailWorker
 from controllers.download_manager import DownloadManager
+from controllers.playlist_flow import PlaylistFlow
+
+
+# ── 플레이리스트 URL 판정 ────────────────────────────
+# yt-dlp 풀 추출을 돌리기 전에 URL 문자열만으로 플레이리스트 여부를 가른다.
+def _is_playlist_url(url: str) -> bool:
+    if not url:
+        return False
+    low = url.lower()
+    return ("list=" in low) or ("/playlist" in low)
 
 
 class MainWindow(QMainWindow):
@@ -37,9 +47,18 @@ class MainWindow(QMainWindow):
         self.info_workers   : dict[str, InfoWorker]         = {}
         self._thumb_workers : dict[str, ThumbnailWorker]    = {}
 
+        # ── InfoWorker 동시성 게이트 ──
+        # 단일 항목 경로와 플레이리스트 경로를 같은 게이트로 통일.
+        # max_concurrent 를 한도로 정보 추출을 흘려보낸다.
+        self._info_pending : list[str] = []
+        self._info_running : set[str]  = set()
+
+        # ── 플레이리스트 사전결정 항목 ──
+        # item_id → (format_id, ext). 정보 추출 완료 시 화질 다이얼로그를
+        # 건너뛰고 곧장 큐로 보내는 항목들.
+        self._predetermined : dict[str, tuple[str, str]] = {}
+
         # 다운로드 워커 오케스트레이션은 매니저로 위임.
-        # items / widgets dict 참조를 공유하므로 MainWindow 가 추가/제거를
-        # 가하면 매니저의 dispatch 가 자연스럽게 따라온다.
         self.download_manager = DownloadManager(
             config  = self.config,
             items   = self.items,
@@ -50,12 +69,17 @@ class MainWindow(QMainWindow):
         self.download_manager.item_error.connect(self._on_download_error)
         self.download_manager.item_cancelled.connect(self._on_download_cancelled)
 
+        # ── 플레이리스트 플로우 (단일 인스턴스) ──
+        self.playlist_flow = PlaylistFlow(self)
+        self.playlist_flow.entry_ready.connect(self._on_playlist_entry)
+        self.playlist_flow.status.connect(self._on_playlist_status)
+        self.playlist_flow.finished.connect(self._on_playlist_finished)
+
         self.setWindowTitle("AV Downloader")
         self.setMinimumSize(800, 600)
         self._build_ui()
         self._apply_style()
 
-        # 앱 시작 시 yt-dlp 업데이트 체크
         if self.config.get("auto_update_ytdlp", True):
             self._check_ytdlp_update()
 
@@ -63,20 +87,15 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self):
         """전체 UI 구성"""
-
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # 상단 툴바
         root.addWidget(self._build_toolbar())
-
-        # 다운로드 목록 영역
         root.addWidget(self._build_list_area(), stretch=1)
 
-        # 하단 상태바
         self.status_bar = QStatusBar()
         self.status_bar.setObjectName("mainStatusBar")
         self.setStatusBar(self.status_bar)
@@ -84,7 +103,6 @@ class MainWindow(QMainWindow):
 
     def _build_toolbar(self) -> QWidget:
         """상단 툴바 구성"""
-
         toolbar = QWidget()
         toolbar.setObjectName("toolbar")
         toolbar.setFixedHeight(56)
@@ -119,7 +137,6 @@ class MainWindow(QMainWindow):
 
     def _build_list_area(self) -> QScrollArea:
         """다운로드 목록 스크롤 영역 구성"""
-
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setObjectName("listScroll")
@@ -154,8 +171,40 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _on_link_submitted(self, url: str):
-        """URL 입력 완료 후 영상 정보 추출 시작"""
+        """
+        URL 입력 완료.
 
+        플레이리스트 URL 이면 PlaylistFlow 에 위임. 단일 영상 URL 이면
+        항목·위젯을 만들고 InfoWorker 게이트에 태운다.
+        """
+        if _is_playlist_url(url):
+            if self.playlist_flow.is_busy:
+                self.status_bar.showMessage(
+                    "이미 플레이리스트를 처리 중입니다. 잠시 후 다시 시도해 주세요."
+                )
+                return
+            self.playlist_flow.start(url)
+            return
+
+        # 단일 영상 — 맨 위에 추가(기존 동작).
+        self._spawn_item(url, predetermined=None, append=False)
+
+    def _spawn_item(
+        self,
+        url: str,
+        predetermined: tuple[str, str] | None,
+        append: bool = False,
+    ):
+        """
+        URL 하나에 대해 DownloadItem·위젯을 만들고 InfoWorker 게이트에 태운다.
+
+        predetermined 가 None 이면 정보 추출 후 화질 다이얼로그를 띄우는 기존
+        경로. (format_id, ext) 면 플레이리스트 출신으로 다이얼로그를 건너뛴다.
+
+        append: False 면 맨 위(insertWidget 0), True 면 맨 아래(스트레치 앞).
+        items dict 삽입 순서(= 다운로드 큐 순서)는 양쪽 모두 호출 순서를
+        따르므로, append 는 화면 표시 위치에만 영향을 준다.
+        """
         item = DownloadItem(url=url)
         self.items[item.item_id] = item
 
@@ -167,26 +216,91 @@ class MainWindow(QMainWindow):
         self.widgets[item.item_id] = widget
 
         self.lbl_empty.setVisible(False)
-        self.list_layout.insertWidget(0, widget)
+        if append:
+            self.list_layout.insertWidget(self.list_layout.count() - 1, widget)
+        else:
+            self.list_layout.insertWidget(0, widget)
 
         widget.update_status(DownloadStatus.FETCHING)
-        self.status_bar.showMessage(f"영상 정보 가져오는 중... {url}")
 
-        worker = InfoWorker(url)
-        worker.finished.connect(
-            lambda info: self._on_info_fetched(item.item_id, info)
-        )
-        worker.error.connect(
-            lambda err: self._on_info_error(item.item_id, err)
-        )
-        self.info_workers[item.item_id] = worker
-        worker.start()
+        if predetermined is not None:
+            self._predetermined[item.item_id] = predetermined
+
+        self._enqueue_info(item.item_id)
+
+    # ── InfoWorker 동시성 게이트 ─────────────────────
+
+    def _enqueue_info(self, item_id: str):
+        """정보 추출 대기열에 항목을 넣고 디스패치를 깨운다."""
+        self._info_pending.append(item_id)
+        self._dispatch_info()
+
+    def _dispatch_info(self):
+        """대기열의 항목들을 동시성 한도 안에서 InfoWorker 로 출발시킨다."""
+        limit = int(self.config.get("max_concurrent", 2))
+
+        while self._info_pending and len(self._info_running) < limit:
+            item_id = self._info_pending.pop(0)
+
+            if item_id not in self.items:
+                self._predetermined.pop(item_id, None)
+                continue
+
+            self._info_running.add(item_id)
+            item = self.items[item_id]
+
+            worker = InfoWorker(item.url)
+            # "작업 결과" 는 info_ready 로 받는다 (내장 finished 와 다른 이름).
+            worker.info_ready.connect(
+                lambda info, iid=item_id: self._on_info_fetched(iid, info)
+            )
+            worker.error.connect(
+                lambda err, iid=item_id: self._on_info_error(iid, err)
+            )
+            # "객체 소멸·dict 정리" 는 QThread 내장 finished 에 건다 — run() 이
+            # 진짜로 끝난 시점. 결과 핸들러 안에서 일찍 정리하면 run() 종료 전
+            # GC 로 QThread 가 파괴되어 크래시가 난다.
+            worker.finished.connect(
+                lambda w=worker, iid=item_id: self._on_info_thread_finished(iid, w),
+                Qt.ConnectionType.QueuedConnection,
+            )
+            self.info_workers[item_id] = worker
+            worker.start()
+
+    def _release_info_slot(self, item_id: str):
+        """
+        InfoWorker 한 개의 작업이 끝났을 때 슬롯(running 카운트)을 회수하고
+        다음 대기 항목을 깨운다.
+
+        주의: 여기서 워커 객체를 제거하지 않는다. 객체 소멸은 QThread 내장
+        finished 에 연결된 _on_info_thread_finished 가 run() 종료 시점에
+        한다. 슬롯 회수(작업 결과 시점)와 객체 수명(스레드 종료 시점)을
+        분리해 크래시를 막는다.
+        """
+        self._info_running.discard(item_id)
+        self._dispatch_info()
+
+    def _on_info_thread_finished(self, item_id: str, worker):
+        """
+        InfoWorker 의 QThread 내장 finished — 스레드가 진짜로 종료된 시점.
+        이때 객체를 안전하게 소멸시킨다. dict 의 현재 워커가 넘겨받은 worker
+        와 동일할 때만 pop (재시도로 새 워커가 붙은 경우 보존).
+        """
+        current = self.info_workers.get(item_id)
+        if current is worker:
+            self.info_workers.pop(item_id, None)
+        try:
+            worker.deleteLater()
+        except Exception:
+            pass
 
     def _on_info_fetched(self, item_id: str, info: VideoInfo):
         """영상 정보 추출 완료"""
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
+            self._predetermined.pop(item_id, None)
+            self._release_info_slot(item_id)
             return
 
         item.title     = info.title
@@ -196,8 +310,6 @@ class MainWindow(QMainWindow):
 
         widget.update_title(info.title)
         widget.update_meta(info.uploader, info.duration)
-        widget.update_status(DownloadStatus.WAITING)
-        self.status_bar.showMessage("화질을 선택해 주세요.")
 
         # ── 썸네일 다운로드 ──
         if info.thumbnail:
@@ -212,22 +324,32 @@ class MainWindow(QMainWindow):
                     pass
 
             thumb_worker = ThumbnailWorker(item_id, info.thumbnail)
-            thumb_worker.finished.connect(
+            thumb_worker.thumb_ready.connect(
                 self._on_thumb_ready, Qt.ConnectionType.QueuedConnection
             )
             thumb_worker.failed.connect(
                 self._on_thumb_failed, Qt.ConnectionType.QueuedConnection
             )
+            # 객체 소멸은 QThread 내장 finished 에 건다.
             thumb_worker.finished.connect(
-                lambda iid, _d, w=thumb_worker: self._cleanup_thumb_worker(w)
-            )
-            thumb_worker.failed.connect(
-                lambda iid, _r, w=thumb_worker: self._cleanup_thumb_worker(w)
+                lambda w=thumb_worker: self._cleanup_thumb_worker(w),
+                Qt.ConnectionType.QueuedConnection,
             )
             self._thumb_workers[item_id] = thumb_worker
             thumb_worker.start()
 
-        # 다이얼로그 띄우기 직전 paint flush
+        # ── 사전결정 항목 (플레이리스트 출신) ──
+        predetermined = self._predetermined.pop(item_id, None)
+        if predetermined is not None:
+            format_id, ext = predetermined
+            self._apply_format(item_id, format_id, ext, info)
+            self._release_info_slot(item_id)
+            return
+
+        # ── 단일 항목 경로 — 화질 선택 다이얼로그 ──
+        widget.update_status(DownloadStatus.WAITING)
+        self.status_bar.showMessage("화질을 선택해 주세요.")
+
         from PySide6.QtWidgets import QApplication
         QApplication.processEvents()
 
@@ -238,7 +360,57 @@ class MainWindow(QMainWindow):
         dialog.rejected.connect(
             lambda: self._on_remove(item_id, skip_confirm=True)
         )
+        # 다이얼로그를 띄우기 전에 슬롯을 회수 — 사용자가 오래 열어둬도 다음
+        # 추출이 막히지 않게 한다. (정보 추출은 이미 끝났다.)
+        self._release_info_slot(item_id)
         dialog.exec()
+
+    def _apply_format(
+        self, item_id: str, format_id: str, ext: str, info: VideoInfo
+    ):
+        """
+        화질/형태가 정해진 항목에 사양을 박고 큐에 진입시킨다.
+        사전결정 경로(_on_info_fetched)와 _on_format_selected 의 공통 처리.
+        """
+        item   = self.items.get(item_id)
+        widget = self.widgets.get(item_id)
+        if not item or not widget:
+            return
+
+        item.format_id = format_id
+        item.ext       = ext
+        item.save_path = self.config.get("save_path", "")
+        item.status    = DownloadStatus.WAITING
+
+        widget.update_ext(ext)
+
+        matched = next(
+            (f for f in info.formats if f.format_id == format_id), None
+        )
+        if matched is not None:
+            widget.update_format_meta(
+                format_id = matched.format_id,
+                vcodec    = matched.vcodec,
+                acodec    = matched.acodec,
+                ext       = matched.ext,
+                abr       = matched.abr,
+                tbr       = matched.tbr,
+                is_audio  = matched.is_audio,
+            )
+        else:
+            widget.update_format_meta(
+                format_id = format_id,
+                vcodec    = "",
+                acodec    = "",
+                ext       = ext,
+                abr       = 0.0,
+                tbr       = 0.0,
+                is_audio  = (format_id == "bestaudio/best"),
+            )
+
+        widget.update_status(DownloadStatus.WAITING)
+        self.status_bar.showMessage(f"대기열에 추가: {item.title}")
+        self.download_manager.enqueue(item_id)
 
     def _on_thumb_ready(self, item_id: str, data: bytes):
         """썸네일 워커 완료 — GUI 스레드에서 QPixmap 생성하여 위젯에 전달."""
@@ -255,8 +427,15 @@ class MainWindow(QMainWindow):
         pass
 
     def _cleanup_thumb_worker(self, worker):
-        """완료/실패한 썸네일 워커를 dict 에서 제거."""
+        """
+        썸네일 워커 객체 소멸 — QThread 내장 finished 에 연결되어 호출.
+        dict 에서 빼고 deleteLater.
+        """
         if not hasattr(self, "_thumb_workers"):
+            try:
+                worker.deleteLater()
+            except Exception:
+                pass
             return
         for iid, w in list(self._thumb_workers.items()):
             if w is worker:
@@ -268,10 +447,24 @@ class MainWindow(QMainWindow):
             pass
 
     def _on_info_error(self, item_id: str, err: str):
-        """영상 정보 추출 실패"""
+        """
+        영상 정보 추출 실패.
+
+        단일 항목은 에러 다이얼로그 후 정리. 플레이리스트 출신(사전결정)은
+        다이얼로그를 N 번 띄우지 않도록 조용히 ERROR 상태로만 둔다.
+        """
+        was_predetermined = item_id in self._predetermined
+        self._predetermined.pop(item_id, None)
+
         widget = self.widgets.get(item_id)
         if widget:
             widget.update_status(DownloadStatus.ERROR)
+
+        self._release_info_slot(item_id)
+
+        if was_predetermined:
+            self.status_bar.showMessage("일부 항목의 정보를 가져오지 못했습니다.")
+            return
 
         dialog = QMessageBox(self)
         dialog.setWindowTitle("오류")
@@ -284,16 +477,27 @@ class MainWindow(QMainWindow):
         dialog.exec()
         self._on_remove(item_id, skip_confirm=True)
 
+    # ── 플레이리스트 플로우 콜백 ─────────────────────
+
+    def _on_playlist_entry(self, url: str, format_id: str, ext: str):
+        """
+        PlaylistFlow 가 펼친 항목 하나 — 사전결정 사양과 함께 게이트에 태운다.
+        append=True — 원래 순서대로 목록 맨 아래로 차례차례 쌓는다.
+        """
+        self._spawn_item(url, predetermined=(format_id, ext), append=True)
+
+    def _on_playlist_status(self, message: str):
+        """PlaylistFlow 상태 메시지 → 상태바."""
+        self.status_bar.showMessage(message)
+
+    def _on_playlist_finished(self):
+        """PlaylistFlow 종료 — 항목들은 이미 게이트에 올라갔다."""
+        pass
+
     # ── 다운로드 워커 매니저 위임 진입점 ──────────────
 
     def _on_format_selected(self, item_id: str, fmt: FormatInfo):
-        """
-        화질 선택 완료.
-
-        사양(format_id / ext / save_path)을 항목에 박고 상태를 WAITING 으로
-        둔 다음 매니저에 큐 진입을 위임. 실제 출발 여부는 매니저의
-        _dispatch_next 가 슬롯 여유를 보고 결정한다.
-        """
+        """화질 선택 완료 (단일 항목 다이얼로그 경로)."""
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
@@ -304,11 +508,8 @@ class MainWindow(QMainWindow):
         item.save_path = self.config.get("save_path", "")
         item.status    = DownloadStatus.WAITING
 
-        # 제목 라벨 우측에 ".ext" 표시 — 확장자가 확정된 이 시점에 알린다.
         widget.update_ext(fmt.ext)
 
-        # 메타 라벨에 코덱·포맷·비트레이트 세그먼트 추가.
-        # 통합 포맷(format_id == AUTO_FORMAT_ID) 은 위젯 측에서 "자동" 으로 표시.
         widget.update_format_meta(
             format_id = fmt.format_id,
             vcodec    = fmt.vcodec,
@@ -328,15 +529,24 @@ class MainWindow(QMainWindow):
         """
         재시도 버튼 클릭.
 
-        ERROR / CANCELLED 상태의 항목을 같은 format_id / ext / save_dir 로
-        다시 다운로드한다. 화질 다이얼로그는 다시 띄우지 않는다.
-
-        정책 A: 재시도도 동시성 한도를 준수. 매니저가 슬롯 여유에 따라
-        즉시 출발시키거나 잠시 WAITING 으로 둔다.
+        정보 추출조차 끝나지 않은(제목 기본값) 플레이리스트 항목의 재시도는
+        정보 추출부터 다시. 그 외는 같은 format_id 로 다운로드 재시도.
         """
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
+            return
+
+        never_fetched = (item.duration == 0 and not item.uploader)
+        if never_fetched:
+            fmt_id = (
+                "bestaudio/best" if item.ext == "mp3"
+                else "bestvideo+bestaudio/best"
+            )
+            self._predetermined[item_id] = (fmt_id, item.ext or "mp4")
+            widget.update_status(DownloadStatus.FETCHING)
+            self.status_bar.showMessage(f"정보 재요청: {item.url}")
+            self._enqueue_info(item_id)
             return
 
         item.status = DownloadStatus.WAITING
@@ -346,13 +556,7 @@ class MainWindow(QMainWindow):
         self.download_manager.retry(item_id)
 
     def _on_cancel(self, item_id: str):
-        """
-        항목 "취소" 버튼 클릭.
-
-        진행 중인 워커가 있을 때만 확인 다이얼로그를 띄우고 취소한다.
-        WAITING 항목은 update_status 가 취소 버튼을 숨겨두므로 여기 도달
-        하지 않는다.
-        """
+        """항목 '취소' 버튼 클릭."""
         if not self.download_manager.is_active(item_id):
             return
 
@@ -371,14 +575,7 @@ class MainWindow(QMainWindow):
     # ── 매니저 시그널 핸들러 ─────────────────────────
 
     def _on_download_done(self, item_id: str, path: str):
-        """
-        다운로드 완료 (매니저 시그널).
-
-        path 는 디스크에 최종 떨어진 파일 경로. yt-dlp 의 후처리(예: 비디오
-        트랙 없는 m4a 자동 리네이밍) 로 인해 사용자가 화질 다이얼로그에서
-        고른 ext 와 실제 파일 ext 가 다를 수 있다. 이 시점에 path 의 실제
-        suffix 로 위젯·항목의 ext 를 정정해 라벨이 진실을 따라가게 한다.
-        """
+        """다운로드 완료 (매니저 시그널)."""
         item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
         if not item or not widget:
@@ -387,9 +584,6 @@ class MainWindow(QMainWindow):
         item.status    = DownloadStatus.DONE
         item.save_path = path
 
-        # 실제 파일 확장자 동기화 — Path.suffix 는 ".m4a" 처럼 점 포함.
-        # update_ext 가 lstrip(".") 으로 정규화하므로 그대로 넘긴다.
-        # 빈 경로/빈 suffix 경계도 update_ext 측이 _ext_known=False 로 처리.
         actual_ext = Path(path).suffix.lstrip(".") if path else ""
         if actual_ext:
             item.ext = actual_ext
@@ -424,14 +618,7 @@ class MainWindow(QMainWindow):
     # ── 항목 제거 ────────────────────────────────────
 
     def _on_clear_list(self):
-        """
-        "목록 비우기" 버튼 클릭.
-
-        - 진행 중 워커는 매니저에 일괄 취소 요청
-        - 모든 항목을 목록에서 제거
-        - 사용자가 "다운로드된 파일들 일괄 삭제" 체크 시, 완료 항목의
-          디스크 파일도 모두 삭제
-        """
+        """'목록 비우기' 버튼 클릭."""
         if not self.items:
             self.status_bar.showMessage("목록이 비어 있습니다.")
             return
@@ -464,10 +651,8 @@ class MainWindow(QMainWindow):
         if not dlg.confirmed:
             return
 
-        # 1) 진행 중 워커 일괄 취소
         self.download_manager.cancel_all()
 
-        # 2) (체크 시) 완료 항목의 디스크 파일 삭제
         if dlg.delete_disk_files:
             for it in list(self.items.values()):
                 if (
@@ -480,7 +665,6 @@ class MainWindow(QMainWindow):
                     except OSError:
                         pass
 
-        # 3) 모든 항목 위젯 제거
         for item_id in list(self.items.keys()):
             self._remove_item_quiet(item_id)
 
@@ -488,21 +672,23 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("목록을 비웠습니다.")
 
     def _remove_item_quiet(self, item_id: str):
-        """
-        다이얼로그·확인 없이 항목을 정리하는 내부 헬퍼.
-
-        _on_clear_list 의 일괄 처리와 _on_remove 의 단건 처리가 같은 정리
-        루틴을 공유한다.
-        """
-        # 진행 중 썸네일 워커 무효화
+        """다이얼로그·확인 없이 항목을 정리하는 내부 헬퍼."""
+        # 진행 중 썸네일 워커 무효화 (객체 소멸은 내장 finished 가 처리).
         tw_dict = getattr(self, "_thumb_workers", None)
         if isinstance(tw_dict, dict):
-            tw = tw_dict.pop(item_id, None)
+            tw = tw_dict.get(item_id)
             if tw is not None:
                 try:
                     tw.cancel()
                 except Exception:
                     pass
+
+        # 정보 추출 게이트에서 제거. InfoWorker 객체 소멸은 내장 finished
+        # 슬롯이 처리하므로 여기서 강제 종료하지 않는다.
+        if item_id in self._info_pending:
+            self._info_pending.remove(item_id)
+        self._info_running.discard(item_id)
+        self._predetermined.pop(item_id, None)
 
         widget = self.widgets.pop(item_id, None)
         if widget:
@@ -510,12 +696,10 @@ class MainWindow(QMainWindow):
             widget.deleteLater()
 
         self.items.pop(item_id, None)
-        self.info_workers.pop(item_id, None)
-        # 다운로드 워커 참조는 매니저가 보유 — 매니저에 위임해 정리.
-        # 진행 중이었다면 그 위 단계에서 cancel 이 호출되어 있고, cancelled
-        # 시그널은 _on_download_cancelled 로 들어와 위젯이 이미 없는 상태를
-        # 만나면 조용히 무시되도록 가드되어 있다.
         self.download_manager.forget(item_id)
+
+        # 게이트 슬롯이 풀렸을 수 있으니 다음 대기 항목을 깨운다.
+        self._dispatch_info()
 
     def _on_open_folder(self, item_id: str):
         """폴더 열기 버튼 클릭"""
@@ -524,25 +708,7 @@ class MainWindow(QMainWindow):
             open_folder(item.save_path)
 
     def _on_remove(self, item_id: str, skip_confirm: bool = False):
-        """
-        항목 ✕ 버튼 클릭.
-
-        분기 (상태별):
-        - 진행 중 (DOWNLOADING / MERGING / FETCHING):
-            "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?"
-        - 완료(DONE) + 디스크 파일 존재:
-            "이 항목을 목록에서 제거하시겠습니까?" + "다운로드된 파일 삭제" 체크
-        - 그 외 (WAITING / ERROR / CANCELLED / DONE 인데 파일 없음):
-            "이 항목을 목록에서 제거하시겠습니까?"
-
-        WAITING 항목 제거 시 뒤쪽 WAITING 들의 순번이 한 칸씩 당겨진다 —
-        _remove_item_quiet 가 매니저의 forget 을 호출하지만 dispatch 까지는
-        부르지 않으므로, 여기서 명시적으로 한 번 더 dispatch 를 깨워야
-        순번 라벨이 즉시 갱신된다.
-
-        skip_confirm=True 는 시스템 경로(InfoWorker 에러, FormatSelectDialog
-        rejected)에서 자동 정리 시 사용.
-        """
+        """항목 ✕ 버튼 클릭."""
         item = self.items.get(item_id)
         if item is None:
             return
@@ -580,28 +746,20 @@ class MainWindow(QMainWindow):
                 return
             delete_file = dlg.delete_disk_files
 
-        # 활성 워커가 있으면 매니저에 취소 위임
         if is_active:
             self.download_manager.cancel(item_id)
 
-        # 디스크 파일 삭제 (위젯 제거 전)
         if delete_file and is_done_with_file:
             try:
                 Path(item.save_path).unlink(missing_ok=True)
             except OSError:
                 pass
 
-        # 위젯·dict 정리
         self._remove_item_quiet(item_id)
 
         if not self.widgets:
             self.lbl_empty.setVisible(True)
 
-        # WAITING 항목 제거 시 뒤쪽 WAITING 들의 순번이 한 칸씩 당겨진다.
-        # 활성 항목 ✕ 경로는 매니저의 cancelled 콜백이 dispatch 를 부르므로
-        # 거기서도 라벨이 갱신되지만, WAITING / 완료 / 에러 항목의 ✕ 경로는
-        # 콜백을 거치지 않으므로 매니저의 enqueue 를 한 번 깨워 dispatch
-        # (no-op + label refresh) 를 강제한다.
         self.download_manager.enqueue(item_id)
 
     def _on_preferences(self):

@@ -130,3 +130,36 @@ ADR-001 (후처리 체인). LESSONS yt-dlp 항목의 `process_ie_result` 함정.
 **결정**
 
 현재 `core/downloader.py` 는 `is_audio` (mp3/m4a/wav/aac) 모두에 대해 `FFmpegExtractAudio` 를 192 kbps 로 일괄 적용. YouTube Opus 160 kbps, SoundCloud 320 kbps MP3, Bandcamp FLAC 등 원본이 192 kbps 보다 고음질일 때 lossy→lossy 재인코딩으로 정보 손실. `MP3_BITRATE_KBPS` 가 모듈 상수라 환경설정 노출도 없음. 네 갈래 검토 — (가) 현상 유지 + 비트레이트 환경설정 노출, (나) 원본 더 고음질이면 컨테이너만 변경 권고, (다) 포맷 선택 다이얼로그에 비트레이트 드롭다운 (ADR-002 와 결합), (라) 원본 `abr > 192` 일 때만 사용자 확인. 결정 시 본 ADR 갱신.
+
+---
+
+### ADR-006: 플레이리스트 일괄 다운로드 — 글로벌 포맷 선택과 워커 시그널 규율
+
+<a id="adr-006"></a>
+
+- **상태**: Accepted
+- **날짜**: 2026-06-02
+
+**결정**
+
+한 URL 로 플레이리스트 N 개 항목을 일괄 추가한다. 흐름은 `controllers/playlist_flow.py` 의 상태머신 단일 소유 — `PlaylistProbeWorker` (`extract_flat="in_playlist"`, 상한 500) 로 경량 목록 → `PlaylistSelectDialog` (체크박스 목록·전체선택/해제·영상/음원 단일 선택) → 선택 항목만 큐 투입. 화질은 항목별 다이얼로그 없이 다이얼로그의 단일 선택을 전체 적용 — 영상 `bestvideo+bestaudio/best`+`mp4`, 음원 `bestaudio/best`+`mp3`. 음원 비트레이트는 하드코딩하지 않고 `core/downloader.py` 단일 출처에 위임 (ADR-005 확정 시 자동 반영).
+
+정보추출 동시성은 별도 값을 두지 않고 다운로드 `max_concurrent` 를 공유하는 게이트(`_info_pending`/`_info_running`)로 제한 — 단일 항목·플레이리스트 항목 모두 한 경로 경유.
+
+부수 결정 (중대): 워커는 QThread 내장 시그널(`finished`/`started`)을 **같은 이름의 커스텀 Signal 로 가리지 않는다**. 결과 전달용 시그널을 별도 명명(`download_finished`/`info_ready`/`thumb_ready`) 하고, 객체·dict 정리는 QThread 내장 `finished` 에 연결해 스레드 종료 후 수행.
+
+**이유**
+
+`DownloadWorker.finished = Signal(str)` 가 QThread 의 인자 없는 `finished` 를 가려, `run()` 종료 직전 emit 된 결과 시그널 처리 중에 dict 에서 워커가 빠지고 GC 되어 "QThread: Destroyed while thread is still running" 크래시 발생. 동시 2 + 플레이리스트 60 항목 부하에서 3~4번째 병합 단계에 재현. 단일 항목에서는 pop 시점이 늦어 잠복했음.
+
+**결과**
+
+크래시 해소, 60+ 항목 MP3 일괄 다운로드 완주 검증. 정보추출이 다운로드 한도를 공유해 429/IP 차단 위험 회피. 항목별 화질 다이얼로그 제거로 일괄 UX 단순화. 플레이리스트 항목은 목록 하단 삽입(추가 순서 보존), 단일 항목은 상단 삽입(기존 동작 유지).
+
+**대안**
+
+A. 워커 시그널 이름 유지 + `destroyed`/플래그 우회 — 섀도잉 잔존, 새 함정. B. 정보추출 전용 동시성 값 신설 — 설정 항목 증가, 사용자 혼란. C. 항목별 체크박스 없는 단순 확인 다이얼로그 — 세밀 선택 불가. D(채택): 위 결정.
+
+**관련**
+
+ADR-003 (매니저 라이프사이클 분리 — 본 게이트가 같은 원칙 확장). ADR-005 (음원 비트레이트 단일 출처 위임). LESSONS PySide6 의 QThread 시그널 섀도잉 항목.

@@ -30,6 +30,7 @@
 - 시그널·슬롯이 스레드를 넘으면 `Qt.QueuedConnection` 명시.
 - `QLabel.setScaledContents(True)` 는 0×0 라벨에서 빈 화면을 만들 수 있음. 직접 `scaled()` 호출이 안전.
 - 다크 테마 앱은 `QApplication.setStyle("Fusion")` 을 먼저 깐다. OS 무관한 Qt 자체 렌더링이라 체크박스·라디오 indicator 의 ✓ 마크가 SVG 자산 없이 그려짐. `QCheckBox::indicator` 직접 스타일링은 ✓ 렌더링을 꺼뜨림. (출처: 2026-05-29 `fix(ui)` Fusion 적용)
+- QThread 의 내장 시그널 `finished`/`started` 를 같은 이름 커스텀 `Signal` 로 정의하면 내장 시그널이 가려짐. 결과 전달용 시그널은 별도 명명(`download_finished` 등)하고, 객체·dict 정리는 내장 `finished` 에 연결해 스레드 완전 종료 후 수행. 동명 섀도잉 시 run() 종료 직전 워커가 GC 되어 "QThread: Destroyed while thread is still running" 크래시. (출처: ADR-006)
 
 ### yt-dlp
 

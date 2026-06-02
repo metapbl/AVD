@@ -11,15 +11,20 @@ class InfoWorker(QThread):
     URL에서 영상 정보를 백그라운드로 추출하는 워커 스레드
 
     시그널:
-        finished  : 정보 추출 성공 시 VideoInfo 전달
-        error     : 실패 시 에러 메시지 문자열 전달
+        info_ready : 정보 추출 성공 시 VideoInfo 전달.
+                     ⚠ QThread 내장 finished(스레드 종료 신호) 와 겹치지
+                     않도록 info_ready 로 둔다. 내장 finished 는 MainWindow 가
+                     스레드 수명 관리(객체 소멸·dict 정리) 에 쓰므로 가리면
+                     안 된다. (LESSONS: QThread 상속 워커는 started/finished
+                     이름을 자체 시그널로 쓰지 말 것.)
+        error      : 실패 시 에러 메시지 문자열 전달
     """
 
     # 성공 시그널 - VideoInfo 객체 전달
-    finished = Signal(object)
+    info_ready = Signal(object)
 
     # 실패 시그널 - 에러 메시지 전달
-    error    = Signal(str)
+    error      = Signal(str)
 
     def __init__(self, url: str):
         super().__init__()
@@ -33,7 +38,7 @@ class InfoWorker(QThread):
         """
         try:
             info = self._fetcher.fetch(self.url)
-            self.finished.emit(info)
+            self.info_ready.emit(info)
 
         except Exception as e:
             self.error.emit(str(e))

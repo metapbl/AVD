@@ -169,7 +169,13 @@ class DownloadWorker(QThread):
                                (vcodec, acodec, ext, abr, tbr) — 여러 번 발사
                                될 수 있으며 마지막 값이 최종 진실. 위젯은 매번
                                덮어쓰면 됨. is_audio 항목은 위젯 측에서 거부.
-        finished             : 다운로드 완료 - 저장된 파일 경로 전달
+        download_finished    : 다운로드 완료 - 저장된 파일 경로 전달.
+                               ⚠ QThread 내장 finished(인자 없음, 스레드 종료
+                               신호) 와 이름이 겹치지 않도록 download_finished
+                               로 둔다. 내장 finished 는 매니저가 스레드 수명
+                               관리(객체 소멸·dict 정리) 에 쓰므로 가리면 안 된다.
+                               (LESSONS: QThread 상속 워커는 started/finished
+                               이름을 자체 시그널로 쓰지 말 것.)
         error                : 오류 발생 - 에러 메시지 전달
         cancelled            : 사용자 취소 알림
     """
@@ -180,7 +186,7 @@ class DownloadWorker(QThread):
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
     codec_info_resolved  = Signal(str, str, str, float, float)  # vcodec, acodec, ext, abr, tbr
-    finished             = Signal(str)                          # 완료 (파일 경로)
+    download_finished    = Signal(str)                          # 완료 (파일 경로)
     error                = Signal(str)                          # 오류
     cancelled            = Signal()                             # 취소
 
@@ -279,7 +285,7 @@ class DownloadWorker(QThread):
         elif errored:
             self.error.emit(error_msg)
         else:
-            self.finished.emit(self._output_path)
+            self.download_finished.emit(self._output_path)
 
     def cancel(self):
         """외부에서 취소 요청"""
@@ -395,17 +401,10 @@ class DownloadWorker(QThread):
             isinstance(frag_idx, int) and isinstance(frag_count, int)
             and frag_count > 0 and 0 <= frag_idx <= frag_count
         ):
-            # frag_idx 는 "다음에 받을 fragment 번호" 의미 (0 시작) 와
-            # "현재 받고 있는 fragment 번호" (1 시작) 가 yt-dlp 버전·다운로더
-            # 별로 섞여 있다. raw_pct 가 100 이면 frag_idx 가 1 시작 기준
-            # 완료 직후(=frag_idx 가 곧 count 가 됨) 일 수 있고, raw_pct 가
-            # 0~100 사이면 frag_idx 가 현재 진행 중인 fragment.
-            # 안전하게: 이미 완료된 fragment 수 = max(0, frag_idx - 1).
             completed = max(0, frag_idx - 1)
             base_pct  = completed / frag_count * 100.0
             slice_pct = (raw_pct / 100.0) / frag_count * 100.0
             pct       = base_pct + slice_pct
-            # 안전 클램프
             if pct < 0.0:
                 pct = 0.0
             if pct > 100.0:
@@ -429,11 +428,7 @@ class DownloadWorker(QThread):
 
         결정 규칙:
         - fragment_index 가 정수 (frag 다운로더) → "yt-dlp" 신뢰.
-          fragment 다운로더는 각 frag 평균 속도로 ETA 를 계산해 안정적.
         - 그 외 (단일 progressive 또는 식별 불가) → "fallback".
-          native HTTP 다운로더는 매 5초 ETA 를 Unknown 으로 리셋하는 패턴이라
-          우리 elapsed/pct 폴백이 훨씬 안정적.
-
         한 번 결정되면 그 스트림 끝까지 유지 (finished 에서 리셋).
         """
         frag_idx = d.get("fragment_index")
@@ -447,8 +442,6 @@ class DownloadWorker(QThread):
 
         출처 잠금: 첫 진입에서 _decide_eta_source 로 출처를 결정하고, 이후 같은
         스트림 끝까지 그 출처만 쓴다.
-        - "yt-dlp": yt-dlp 의 _eta_str 을 평활화해 emit. unknown 시 emit 생략.
-        - "fallback": elapsed/pct 로 계산한 추정치를 평활화해 "~" 접두사로 emit.
         """
         if self._eta_source is None:
             self._eta_source = self._decide_eta_source(d)
@@ -456,7 +449,7 @@ class DownloadWorker(QThread):
         if self._eta_source == "yt-dlp":
             raw = strip_ansi(d.get("_eta_str", "")).strip()
             if not raw or _normalize_token(raw) in _UNKNOWN_TOKENS:
-                return  # unknown 은 emit 생략 (직전 표시값 유지)
+                return
             secs = _parse_eta_secs(raw)
             if secs < 0:
                 return
@@ -465,7 +458,6 @@ class DownloadWorker(QThread):
             )
             return
 
-        # fallback 출처 — 우리 elapsed/pct 추정
         if pct is None or pct < 0.5:
             return
         elapsed = time.monotonic() - self._dl_start_ts
@@ -483,37 +475,17 @@ class DownloadWorker(QThread):
     def _maybe_emit_eta(self, secs: int, is_estimate: bool, tau: float):
         """
         시간 정규화 EMA 평활화 + 스로틀 규칙에 따라 ETA 를 emit.
-
-        EMA: alpha_eff = 1 - exp(-dt / tau). tau 가 클수록 더 부드럽다.
-        호출 빈도에 무관한 시간 기준 평활. 단일 progressive(초당 수십~수백 회)
-        와 fragment(초당 몇 회) 모두 일관된 시정수로 평탄화.
-
-        스로틀:
-        - 첫 emit 은 항상 통과.
-        - 큰 변동 (직전 emit 대비 30% 또는 15초) 은 즉시 통과.
-        - 그 외는 비례 스로틀: max(2, min(secs * 0.05, 30)).
-        - 같은 표시 문자열은 emit 생략.
         """
         now = time.monotonic()
 
-        # ── 시간 정규화 EMA + 단조 하향 규칙 ──
-        # 사람의 직관은 "남은시간은 시간이 흐르며 단조 감소한다" 이다.
-        # raw 가 직전 평활값보다 작으면 (= 더 빠른 완료를 시사) EMA 를 거치지
-        # 않고 그 raw 를 그대로 평활값으로 채택한다. 그래야 다운로드 막판
-        # 구간에서 raw 가 8 → 5 → 2 → 0 으로 떨어질 때 평활값이 같이
-        # 따라가 0 에 수렴할 수 있다. raw 가 더 클 때만 EMA 로 부드럽게
-        # 올리는 비대칭 평활. 단발성 속도 저하로 raw 가 튀어오르는 노이즈는
-        # EMA 가 흡수하고, 단조 감소 보장은 즉시 반영.
         raw_secs = float(secs)
         if self._eta_smoothed < 0:
             self._eta_smoothed      = raw_secs
             self._eta_last_input_ts = now
         elif raw_secs <= self._eta_smoothed:
-            # 하향 — EMA 우회, raw 그대로 채택
             self._eta_smoothed      = raw_secs
             self._eta_last_input_ts = now
         else:
-            # 상향 — EMA 로 부드럽게
             dt = max(0.0, now - self._eta_last_input_ts)
             alpha_eff = 1.0 - math.exp(-dt / tau)
             self._eta_smoothed = (
@@ -527,14 +499,11 @@ class DownloadWorker(QThread):
         if not text:
             return
 
-        # ── 스로틀 ──
         if self._last_eta_emit_ts == 0.0:
             self._do_emit_eta(text, display_secs, now)
             return
 
         if self._last_eta_secs >= 0:
-            # 막판 구간(≤10 초) 은 1 초 변동도 즉시 반영해 매끄러운 카운트다운.
-            # 그 외는 종전대로 큰 변동(15 초 또는 30%) 만 즉시 통과.
             if display_secs <= 10:
                 threshold = 1
             else:
@@ -542,12 +511,6 @@ class DownloadWorker(QThread):
             if abs(display_secs - self._last_eta_secs) >= threshold:
                 self._do_emit_eta(text, display_secs, now)
                 return
-
-        # 평상 갱신 하한 0.5 초. 표시 단위는 정수 초이므로 같은 표시 문자열
-        # 가드에서 대부분 막히고, 실제 라벨 갱신은 정수 초가 바뀌는 시점
-        # 근처에서만. 0.5 초 하한은 그 전환 순간을 최대한 빨리 잡기 위함.
-        # 비례 상한 30 초 유지.
-        min_gap = max(0.5, min(display_secs * 0.05, 30.0))
 
         min_gap = max(2.0, min(display_secs * 0.05, 30.0))
         if (now - self._last_eta_emit_ts) < min_gap:
@@ -569,18 +532,7 @@ class DownloadWorker(QThread):
     @staticmethod
     def _compose_size_text(downloaded: str, total: str) -> str:
         """
-        yt-dlp 의 `_downloaded_bytes_str` 와 `_total_bytes_str` 두 문자열을
-        UI 표시용 한 문자열로 합친다.
-
-        규칙:
-            - 둘 다 의미 있는 값이고 단위 같음   → "48.20 / 128.50 MiB"
-            - 둘 다 의미 있는 값이고 단위 다름   → "48.20MiB / 1.25GiB"
-            - 전체가 unknown(N/A 등) 이면         → "48.20 MiB" (현재만)
-            - 현재가 unknown 이면                 → "" (의미 없음)
-            - 둘 다 비거나 unknown 이면           → ""
-
-        _is_unknown_size 로 정규화 비교 후 분기. "98.15 MiB / N / A" 같은
-        라벨이 새어 나가는 것을 차단.
+        yt-dlp 의 두 크기 문자열을 UI 표시용 한 문자열로 합친다.
         """
         d = (downloaded or "").strip()
         t = (total      or "").strip()
@@ -595,7 +547,6 @@ class DownloadWorker(QThread):
         if t_known and not d_known:
             return _normalize_size_str(t)
 
-        # 둘 다 의미 있는 값 — 단위 비교
         d_num, d_unit = _split_size_str(d)
         t_num, t_unit = _split_size_str(t)
 
@@ -606,19 +557,6 @@ class DownloadWorker(QThread):
     def _on_postprocess(self, d: dict):
         """
         yt-dlp 후처리 콜백.
-
-        ADR-001 이후 후처리 체인이 길어져, 한 다운로드에 다음 후처리기들이
-        순차적으로 발사된다:
-            ThumbnailsConvertor → Merger → Metadata → EmbedThumbnail → MoveFiles
-
-        이 중 사용자에게 "병합 중"으로 보여야 하는 단계는 영상+오디오를
-        실제로 머지하는 'Merger' 한 단계뿐이다.
-
-        코덱 정보 사후 갱신: 각 단계의 finished 시점에 info_dict 에서
-        코덱·비트레이트·컨테이너를 뽑아 codec_info_resolved 시그널 발사.
-        Merger 직후가 통합 코덱 정보의 진실에 가장 가깝지만, MoveFiles
-        직전까지도 ext 가 바뀔 수 있어 매번 덮어쓴다. _maybe_emit_codec_info
-        가 같은 값 중복은 가드.
         """
         status        = d.get("status")
         postprocessor = d.get("postprocessor", "")
@@ -635,7 +573,6 @@ class DownloadWorker(QThread):
                     "filepath",
                     self._output_path
                 )
-                # 후처리 단계마다 코덱 정보 갱신 — 마지막 단계 값이 최종 진실.
                 self._maybe_emit_codec_info(info_dict)
 
     # ── 잔여물 추적·정리 ──────────────────────────────────────
