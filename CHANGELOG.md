@@ -25,7 +25,7 @@
 
 ## 2026-06-02
 
-- **`feat(playlist)`** `<해시>`: 플레이리스트 일괄 다운로드 + 워커 QThread 시그널 섀도잉 크래시 해소. **(ADR-006)**
+- **`feat(playlist)`** `e27f3fb`: 플레이리스트 일괄 다운로드 + 워커 QThread 시그널 섀도잉 크래시 해소. **(ADR-006)**
     - 한 URL 로 플레이리스트 N 개 항목 일괄 추가. `controllers/playlist_flow.py` 상태머신이 `PlaylistProbeWorker`(`extract_flat`, 상한 500)→`PlaylistSelectDialog`(체크박스·전체선택/해제·영상/음원 단일 선택)→선택 항목 큐 투입을 단일 소유. 항목별 화질 다이얼로그 생략, 다이얼로그 선택을 전체 적용. 음원 비트레이트는 `core/downloader.py` 단일 출처 위임.
     - 정보추출 동시성을 다운로드 `max_concurrent` 공유 게이트(`_info_pending`/`_info_running`)로 제한 — 단일·플레이리스트 항목 한 경로. 플레이리스트 항목은 목록 하단 삽입(추가 순서 보존), 단일 항목은 상단 유지.
     - 크래시 본수정: `DownloadWorker`/`InfoWorker`/`ThumbnailWorker` 가 QThread 내장 `finished` 를 동명 커스텀 Signal 로 가려, run() 종료 직전 워커가 GC 되며 "Destroyed while thread is still running" 발생. 결과 시그널을 `download_finished`/`info_ready`/`thumb_ready` 로 개명하고 객체·dict 정리를 QThread 내장 `finished` 에 연결. 동시 2 + 60 항목 MP3 완주 검증.
