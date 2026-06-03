@@ -241,6 +241,8 @@ config.local.*
 config.json
 
 .vscode/
+!.vscode/
+!.vscode/settings.json
 
 all_changes.txt
 
