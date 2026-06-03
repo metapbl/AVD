@@ -2,7 +2,6 @@
 # 앱 설정을 JSON 파일로 저장하고 불러오는 파일
 
 import json
-import os
 from pathlib import Path
 
 

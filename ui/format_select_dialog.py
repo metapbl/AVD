@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QListWidget,
-    QListWidgetItem, QSizePolicy
+    QListWidgetItem
 )
 from PySide6.QtCore import Qt, Signal
 from core.info_fetcher import VideoInfo, FormatInfo

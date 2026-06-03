@@ -3,7 +3,7 @@
 
 from PySide6.QtCore import QObject, Signal, Qt
 
-from models.download_item import DownloadItem, DownloadStatus
+from models.download_item import DownloadStatus
 from workers.download_worker import DownloadWorker
 
 

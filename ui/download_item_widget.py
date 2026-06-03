@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QFontMetrics
 from models.download_item import DownloadItem, DownloadStatus
-from utils.file_utils import format_duration, open_folder
+from utils.file_utils import format_duration
 
 
 # ── 자동 선택 포맷 식별자 ────────────────────────────

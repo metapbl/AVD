@@ -6,7 +6,7 @@
 from PySide6.QtCore import QObject, QThread, QTimer, Signal, Qt
 from PySide6.QtWidgets import QWidget
 
-from workers.playlist_probe_worker import PlaylistProbeWorker, PlaylistEntry
+from workers.playlist_probe_worker import PlaylistProbeWorker
 from ui.playlist_select_dialog import PlaylistSelectDialog
 
 

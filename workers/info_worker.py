@@ -3,7 +3,7 @@
 # UI가 멈추지 않도록 QThread로 분리
 
 from PySide6.QtCore import QThread, Signal
-from core.info_fetcher import InfoFetcher, VideoInfo
+from core.info_fetcher import InfoFetcher
 
 
 class InfoWorker(QThread):

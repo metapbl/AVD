@@ -3,7 +3,6 @@
 # UI가 멈추지 않도록 QThread로 분리
 
 import math
-import os
 import time
 from pathlib import Path
 

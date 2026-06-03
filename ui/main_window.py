@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QStatusBar
 )
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
 
 from models.download_item import DownloadItem, DownloadStatus
 from ui.download_item_widget import DownloadItemWidget
