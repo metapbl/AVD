@@ -23,6 +23,10 @@
 
 ---
 
+## 2026-06-03
+
+- chore: 미사용 import 일괄 제거 (Ruff F401) — `main.py`(Qt), `controllers/download_manager.py`(DownloadItem), `controllers/playlist_flow.py`(PlaylistEntry), `ui/add_link_dialog.py`(Qt·QKeyEvent), `ui/download_item_widget.py`(open_folder), `ui/format_select_dialog.py`(QSizePolicy), `ui/main_window.py`(QPixmap), `utils/config_manager.py`(os), `workers/download_worker.py`(os), `workers/info_worker.py`(VideoInfo) 등 11건. 동작 변경 없음.
+
 ## 2026-06-02
 
 - **`feat(playlist)`** `e27f3fb`: 플레이리스트 일괄 다운로드 + 워커 QThread 시그널 섀도잉 크래시 해소. **(ADR-006)**
