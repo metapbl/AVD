@@ -16,7 +16,9 @@ from ui.add_link_dialog import AddLinkDialog
 from ui.format_select_dialog import FormatSelectDialog
 from ui.preferences_dialog import PreferencesDialog
 from ui.confirm_remove_dialog import ConfirmRemoveDialog
+from ui.update_progress_dialog import UpdateProgressDialog
 from workers.info_worker import InfoWorker
+from workers.update_worker import UpdateWorker
 from utils.config_manager import ConfigManager
 from utils.updater import YtdlpUpdater
 from utils.file_utils import open_folder
@@ -945,36 +947,56 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _check_ytdlp_update(self):
-        """앱 시작 시 yt-dlp 업데이트 체크"""
-        from PySide6.QtCore import QTimer
+        """앱 시작 시 yt-dlp 업데이트 체크
 
+        업데이트 자체는 UpdateWorker(백그라운드 스레드) + 모달 진행
+        다이얼로그로 처리한다. 예전처럼 GUI 스레드에서 pip 을 동기 실행하면
+        10 초간 창이 얼어붙어 '강제 종료된 것처럼' 보였기 때문이다.
+        """
         def check():
             updater = YtdlpUpdater()
             needed, current, latest = updater.is_update_available()
-            if needed:
-                reply = QMessageBox.question(
-                    self,
-                    "yt-dlp 업데이트",
-                    f"yt-dlp 새 버전이 있습니다.\n\n"
-                    f"현재: {current}\n"
-                    f"최신: {latest}\n\n"
-                    f"지금 업데이트 하시겠습니까?",
-                )
-                if reply == QMessageBox.StandardButton.Yes:
-                    success = updater.update()
-                    if success:
-                        QMessageBox.information(
-                            self, "완료",
-                            "yt-dlp가 최신 버전으로 업데이트됐습니다."
-                        )
-                    else:
-                        QMessageBox.warning(
-                            self, "실패",
-                            "업데이트에 실패했습니다.\n"
-                            "수동으로 pip install --upgrade yt-dlp 를 실행해 주세요."
-                        )
+            if not needed:
+                return
+            reply = QMessageBox.question(
+                self,
+                "yt-dlp 업데이트",
+                f"yt-dlp 새 버전이 있습니다.\n\n"
+                f"현재: {current}\n"
+                f"최신: {latest}\n\n"
+                f"지금 업데이트 하시겠습니까?",
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self._run_ytdlp_update(current, latest)
 
         QTimer.singleShot(3000, check)
+
+    def _run_ytdlp_update(self, current: str, latest: str):
+        """업데이트를 워커+모달 다이얼로그로 실행(메인창 차단, 비동기)."""
+        dialog = UpdateProgressDialog(current, latest, self)
+        worker = UpdateWorker(self)
+
+        # 워커 참조를 self 에 보관해야 GC 로 스레드가 중간에 죽지 않는다.
+        self._update_worker = worker
+        self._update_dialog = dialog
+
+        worker.progress_text.connect(dialog.append_line)
+
+        def _on_done(success: bool, message: str):
+            dialog.on_done(success, message)
+            # 워커 정리(다이얼로그는 사용자가 '닫기' 누를 때까지 유지).
+            worker.quit()
+            worker.wait(2000)
+
+        worker.done.connect(_on_done)
+        worker.start()
+
+        # 모달 진입: 여기서 메인창 입력이 막힌다. 사용자가 완료 후 '닫기'.
+        dialog.exec()
+
+        # 다이얼로그 종료 후 참조 해제.
+        self._update_worker = None
+        self._update_dialog = None
 
     # ── 스타일 ───────────────────────────────────────
 
