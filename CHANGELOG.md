@@ -25,6 +25,11 @@
 
 ## 2026-07-09
 
+- **`feat(ui)`** `1fd5c95`: yt-dlp 업데이트 비동기화 — 워커+모달 진행 다이얼로그.
+    - 실기에서 업데이트 시 창 전체가 ~10초 얼어붙어 "강제 종료된 것처럼" 보이는 증상 확인. 원인은 `_check_ytdlp_update` 가 `updater.update()`(내부 `subprocess.check_call`) 를 GUI 스레드에서 동기 실행해서였음.
+    - 해법: `UpdateWorker(QThread)` 로 pip 을 `subprocess.Popen` 실행하며 stdout 을 `progress_text(str)` 로 한 줄씩 흘리고 완료 시 `done(bool, str)` 방출(내장 `finished` 와 겹치지 않게 명명). `UpdateProgressDialog(QDialog)` 는 `setModal(True)` 로 메인창을 차단하고 진행 중 닫기·ESC·X 를 막아 중간 강제 종료를 방지. pip 은 % 를 안 주므로 진행바는 busy 인디케이터, 상태 라벨에 pip 마지막 출력을 실시간 표시. `_check_ytdlp_update` 는 Yes 시 `_run_ytdlp_update` 로 워커+다이얼로그를 엮어 `exec()` 모달 진입, 워커 참조를 `self` 에 보관해 GC 사망 방지.
+    - 검증: ruff/compile/app-boot OK, 워커 시그널 성공(code 0→done True)·실패(code 1→done False, 코드 안내) 경로 시뮬레이션 통과, 다이얼로그 인스턴스화·완료 후 닫기 활성 확인.
+
 - **`fix(thumbnail)`**: 미리보기 썸네일 누락 근본 해소 — 후보 URL 폴백 체인.
     - 실기 검증에서 다운로드는 완료되나 리스트 썸네일이 일부(약 44%) 비는 증상 확인. 원인은 앱이 `info["thumbnail"]` 단일 URL(YouTube `maxresdefault.jpg`)만 시도하는데, 최고화질 원본이 없는 영상(개인 업로드·가사영상 등)은 그 URL 이 404 라 재시도해도 영영 실패였음. #1 의 동시성 게이트는 "요청 폭주 타임아웃" 만 완화했을 뿐 이 404 원인은 별개였음.
     - 해법: `InfoFetcher` 가 `thumbnail` 단일값 대신 `thumbnail_candidates`(화질 내림차순 리스트)를 만든다. (a) yt-dlp `thumbnails` 리스트 상위 후보 + (b) YouTube videoid 로 조립한 표준 URL(maxres→sd→**hqdefault**). `hqdefault` 는 모든 YouTube 영상에 존재하는 최후의 보루. `ThumbnailWorker` 가 후보를 순서대로 시도해 첫 성공에서 멈춘다. 모든 후보 실패 시 마지막 사유를 콘솔에 진단 로그로 남긴다.
