@@ -105,9 +105,14 @@ class Downloader:
         }
 
         if ext == "mp3":
+            # ID3v2.3(UTF-16) 로 태그를 쓴다. 한글 제목·아티스트가 온전히 담긴다.
+            # ⚠ ID3v1(-write_id3v1 1) 은 절대 켜지 않는다: ID3v1 규격은 인코딩
+            #   개념이 없어 FFmpeg 가 UTF-8 바이트를 그대로 밀어 넣는데, 한글
+            #   Windows 의 탐색기·플레이어가 이를 CP949 로 디코딩해 제목이
+            #   "?뱀떊怨쇱쓽…" 식 mojibake 로 깨졌다(2026-07-10 실기 확인).
+            #   v1 을 빼면 최신 플레이어는 v2.3 을 읽어 한글이 정상 표시된다.
             ydl_opts["postprocessor_args"]["ffmpeg"] = [
                 "-id3v2_version", "3",
-                "-write_id3v1", "1",
             ]
             ydl_opts["postprocessor_args"]["extractaudio"] = [
                 "-metadata", "major_brand=",

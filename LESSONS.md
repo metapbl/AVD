@@ -48,6 +48,7 @@
 - HLS 는 `total_bytes` / `total_bytes_estimate` 둘 다 없어 yt-dlp ETA 산식 불성립. `_eta_str` placeholder 감지 + `pct` × `elapsed` 추정으로 `~M:SS` 우회.
 - **`pre_process` 단계 커스텀 PostProcessor 가 info dict 사전 가공의 정공법**. `ydl.add_post_processor(MyPP(), when="pre_process")`. NFC 정규화, `meta_<key>` 사전 주입, 사용자 정의 메타 가공은 이 단계. `MetadataParserPP` INTERPRET 는 기존 값 재해석 도구일 뿐 외부 값 주입 불가. (출처: ADR-004)
 - `FFmpegMetadataPP` 는 info dict 의 `title` / `artist` / `description` 을 직접 읽음. 메타 통제는 ffmpeg 인자 우회보다 info dict 정규화 + `pre_process` PP 가 단순·견고.
+- **MP3 에 `-write_id3v1 1` 을 켜면 한글 태그가 깨진다**. ID3v1 은 인코딩 필드가 없어 FFmpeg 가 UTF-8 바이트를 그대로 채우는데, 한글 Windows 는 이를 CP949 로 디코딩해 `?뱀떊怨쇱쓽…` mojibake 로 표시. ID3v2.3 태그(UTF-16)는 정상이므로 v1 만 빼면 해결. 요즘 플레이어는 v2 를 읽는다. (2026-07-10 실기 확인)
 - **단일 프로세스 병렬 다운로드 미지원**. 안전 구간 1~3개, 상한 ~5개. UI 에서 위험 구간(노랑·빨강) 시각 명시 필요. metube 기본 3, youtube-dl-gui 한 자리 수가 관행.
 - [역사적] `ydl.download([url])` 이 `extract_info` 를 다시 돌리므로 사전 가공한 info dict 가 무시되어 `process_ie_result(info, download=True)` 우회 사용. → YouTube 토큰 만료 회귀로 폐기. 현 권장은 `pre_process` PP. (출처: ADR-004)
 - [역사적] `process_ie_result(probed, download=True)` 가 NFC 보존 우회로 유효. → YouTube `HTTP Error 403: Forbidden` 회귀로 폐기. 다른 사이트(SoundCloud 등) 에서는 토큰 정책이 느슨해 잠복했었음. 현 권장은 `pre_process` PP. (출처: ADR-004)
