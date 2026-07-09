@@ -52,8 +52,13 @@ _TRANSIENT_PATTERNS = (
 
 # 영구(즉시 ERROR) 오류의 메시지 패턴. 위 일시 패턴보다 우선 검사한다 —
 # "이 영상은 볼 수 없습니다(403 동반)" 처럼 403 문자열이 섞여 있어도 영구로
-# 판정해 헛된 재시도를 막기 위함.
+# 판정해 헛된 재시도를 막기 위함. 특히 영구성 4xx(400/401/404/410)는
+# yt-dlp 가 "Unable to download webpage: HTTP Error 404 ..." 로 포장해 던져
+# 일시 패턴 "unable to download webpage" 에 오분류되므로, 여기서 먼저 잡는다.
+# (429=rate-limit, 403=토큰 만료 재발급 가능 → 일시 패턴에 남겨 재시도한다.)
 _PERMANENT_PATTERNS = (
+    "http error 400", "http error 401", "http error 404", "http error 410",
+    "not a valid url",
     "private video", "video unavailable", "is not available",
     "this video is unavailable", "has been removed", "was deleted",
     "account associated", "blocked it in your country",

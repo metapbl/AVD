@@ -30,6 +30,9 @@
     - 오류 분류 `_is_transient_error`: 영구 패턴(비공개·삭제·지역차단·연령제한 등) 우선 검사 후 일시 패턴(403·429·5xx·타임아웃·연결 오류 등), 어디에도 안 걸리면 보수적으로 영구(즉시 ERROR). 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 최종 실패 시에만 `error` 1회.
     - 새 시그널 `retrying(현재, 최대)` → `DownloadItemWidget.update_retrying` 이 "재시도 중 (N/M)" 라벨 표시. 백오프 대기는 0.1초 단위 취소 폴링으로 반응성 유지 (대기 중 취소 시 `cancelled` 로 종료).
 
+- **`fix(worker)`**: 영구성 4xx(400/401/404/410) 오분류로 인한 헛재시도 차단. **(ADR-007)**
+    - 실제 yt-dlp 오류 문자열을 직접 추출해 대조한 결과, 404 등은 `Unable to download webpage: HTTP Error 404 ...` 로 포장돼 와 일시 패턴 `unable to download webpage` 에 걸려 재시도로 오분류됨(존재하지 않는 영상을 3회 헛시도). `_PERMANENT_PATTERNS` 에 `http error 400/401/404/410`·`not a valid url` 을 추가해 일시 패턴보다 먼저 잡음. 403(토큰 만료)·429(rate-limit) 는 일시 유지.
+
 - **`fix(ui)`**: 플레이리스트 일괄 추가 시 리스트 썸네일(UI 미리보기) 일부 누락 해소.
     - 원인: `_on_info_fetched` 가 정보 추출 완료마다 `ThumbnailWorker` 를 게이트 없이 즉시 `start()` → 60 항목 일괄 추가 시 짧은 시간에 수십 개의 HTTP GET 이 몰려 일부가 `TIMEOUT_SEC=10` 안에 응답 못 받고 `failed` 로 빠진 뒤 재시도 없이 조용히 누락(약 25%). 결과 파일 임베드 썸네일은 정상 — ADR-001 의 두 대상 분리상 UI 경로만의 문제였음.
     - 해법(둘 다): (가) 썸네일 전용 동시성 게이트 신설(`_thumb_pending`/`_thumb_running`, 고정 한도 `THUMB_CONCURRENCY=4`, 다운로드 `max_concurrent` 와 독립 — 썸네일은 순수 I/O 대기라 CPU·디스크 부담 없음). (나) 실패 시 `THUMB_RETRY_DELAY_MS=1500` ms 후 1 회에 한해 지연 재큐잉(`_thumb_retry`), 소진 시 조용히 포기. 슬롯 회수·객체 소멸은 워커 QThread 내장 `finished` 한 곳에서 처리.
