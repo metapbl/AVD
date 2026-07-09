@@ -25,6 +25,9 @@
 
 ## 2026-07-10
 
+- **`fix(ui)`** `08b8d80`: 다운로드 진행 중 ✕(삭제) 버튼 숨김.
+    - 실기 피드백에서 진행 중 '취소'(중단) 와 ✕(취소+제거) 가 나란히 보여 혼란스럽다는 지적. `update_status` 의 활성 상태(FETCHING/DOWNLOADING/MERGING) 에서 `btn_remove` 를 숨겨 '취소' 단일 경로로 통일. 비활성 상태(WAITING/DONE/ERROR/CANCELLED) 에서만 ✕ 노출. (참고: '취소를 일시정지로' 는 yt-dlp 다운로드 URL 토큰 만료로 재개 시 이어받기가 대부분 실패해 반쪽 기능이 되므로 보류.)
+
 - **`fix(downloader)`**: MP3 한글 태그 깨짐 해소 — ID3v1 기록 중단.
     - 실기에서 MP4 태그는 정상인데 MP3 만 제목·아티스트가 `?뱀떊怨쇱쓽…` 식으로 깨지는 증상 확인(예: `watch?v=OuRZge0MNEg`). 원인은 `-write_id3v1 1` 옵션. ID3v1 규격은 인코딩 개념이 없어 FFmpeg 가 UTF-8 바이트를 그대로 밀어 넣는데, 한글 Windows 의 탐색기·플레이어가 그 바이트를 CP949 로 디코딩해 mojibake 가 됐다. (sandbox 에서 ID3v1 원바이트를 CP949 로 디코딩하니 사용자가 본 깨짐 문자열과 정확히 일치함을 실측 확인.)
     - 해법: `postprocessor_args.ffmpeg` 에서 `-write_id3v1 1` 제거, `-id3v2_version 3` 만 유지. ID3v2.3 은 UTF-16 으로 한글을 온전히 담고 최신 플레이어가 이를 읽어 정상 표시된다. ID3v1 은 1990년대 규격이라 한글을 원천적으로 표현 못 하므로 손실 없음.
