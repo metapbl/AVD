@@ -173,6 +173,7 @@ class DownloadManager(QObject):
             lambda: widget.update_status(DownloadStatus.MERGING)
         )
         worker.codec_info_resolved.connect(widget.update_format_meta_resolved)
+        worker.retrying.connect(widget.update_retrying)
         # "작업 결과" 는 download_finished/error/cancelled 로 받는다.
         worker.download_finished.connect(
             lambda path, iid=item_id: self._on_worker_finished(iid, path)

@@ -25,6 +25,11 @@
 
 ## 2026-07-09
 
+- **`feat(worker)`**: 다운로드 일시적 오류 자동 재시도·백오프 (무인 회복). **(ADR-007)**
+    - `DownloadWorker.run()` 이 `Downloader.download()` 전체를 세션 레벨 재시도 루프로 감쌈. 매 시도 `Downloader` 를 새로 생성(=새 `YoutubeDL` 세션, `extract_info` 재실행)해 만료 토큰을 갱신 — yt-dlp 내부 `retries=10` 이 못 고치는 시작 시점 토큰 만료 403 을 회복.
+    - 오류 분류 `_is_transient_error`: 영구 패턴(비공개·삭제·지역차단·연령제한 등) 우선 검사 후 일시 패턴(403·429·5xx·타임아웃·연결 오류 등), 어디에도 안 걸리면 보수적으로 영구(즉시 ERROR). 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 최종 실패 시에만 `error` 1회.
+    - 새 시그널 `retrying(현재, 최대)` → `DownloadItemWidget.update_retrying` 이 "재시도 중 (N/M)" 라벨 표시. 백오프 대기는 0.1초 단위 취소 폴링으로 반응성 유지 (대기 중 취소 시 `cancelled` 로 종료).
+
 - **`fix(ui)`**: 플레이리스트 일괄 추가 시 리스트 썸네일(UI 미리보기) 일부 누락 해소.
     - 원인: `_on_info_fetched` 가 정보 추출 완료마다 `ThumbnailWorker` 를 게이트 없이 즉시 `start()` → 60 항목 일괄 추가 시 짧은 시간에 수십 개의 HTTP GET 이 몰려 일부가 `TIMEOUT_SEC=10` 안에 응답 못 받고 `failed` 로 빠진 뒤 재시도 없이 조용히 누락(약 25%). 결과 파일 임베드 썸네일은 정상 — ADR-001 의 두 대상 분리상 UI 경로만의 문제였음.
     - 해법(둘 다): (가) 썸네일 전용 동시성 게이트 신설(`_thumb_pending`/`_thumb_running`, 고정 한도 `THUMB_CONCURRENCY=4`, 다운로드 `max_concurrent` 와 독립 — 썸네일은 순수 I/O 대기라 CPU·디스크 부담 없음). (나) 실패 시 `THUMB_RETRY_DELAY_MS=1500` ms 후 1 회에 한해 지연 재큐잉(`_thumb_retry`), 소진 시 조용히 포기. 슬롯 회수·객체 소멸은 워커 QThread 내장 `finished` 한 곳에서 처리.

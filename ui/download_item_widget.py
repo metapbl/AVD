@@ -689,6 +689,18 @@ class DownloadItemWidget(QWidget):
             return
         self.lbl_status.setText(f"대기 중 ({n}번째)")
 
+    def update_retrying(self, current: int, maximum: int):
+        """
+        일시적 오류 후 자동 재시도 중임을 상태 라벨에 표시.
+
+        DownloadWorker 가 세션 재시작(새 YoutubeDL) 직전에 emit 하는
+        retrying 시그널로 호출된다. 상태는 여전히 DOWNLOADING 이며 (활성),
+        라벨 텍스트만 "재시도 중 (N/M)" 으로 덧씌운다. 속도/ETA/크기 자리는
+        다음 progress 콜백이 곧 다시 채운다.
+        """
+        self.lbl_status.setText(f"재시도 중 ({current}/{maximum})")
+        self.lbl_status.setStyleSheet("color: #e0a355;")
+
     def update_title(self, title: str):
         """제목 레이블 업데이트"""
         self.item.title = title

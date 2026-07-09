@@ -42,6 +42,7 @@
 - `postprocess_hook` 은 ffmpeg 머지만이 아니라 **모든 후처리기** 의 started/finished 발사. `d["postprocessor"]` 로 단계 구분 필요. 2026.3.17 기준 체인: `ThumbnailsConvertor → Merger → Metadata → EmbedThumbnail → MoveFiles`. 후크에 퍼센트 키 없음 — 후처리 단계 퍼센트 표시는 현 구조 불가.
 - `ExtractAudio` 의 m4a→mp3 재인코딩 시 ffmpeg 가 기본 `-map_metadata 0` 으로 원본 ftyp 박스 (`major_brand` 등) 를 ID3 TXXX 로 옮겨 박음. `-map_metadata -1` 로 끊으면 `FFmpegMetadataPP` 의 TIT2 까지 무효화됨. 선별 제거가 필요하면 `meta_<key>` info dict 주입 또는 별도 ffmpeg 호출 경로.
 - 기본 retry/timeout 짧음. GUI 에서는 `socket_timeout`, `retries`, `fragment_retries='infinite'`, `file_access_retries`, `retry_sleep_functions` 명시.
+- **`retries`(=세션 내 HTTP 재시도) 는 토큰 만료 403 을 못 고친다**. YouTube 403 은 시작 시점 세션/토큰 만료라 같은 `YoutubeDL` 세션 안에서는 계속 403 — 새 세션(새 `Downloader`, `extract_info` 재실행) 으로 다시 시작해야 새 토큰을 받는다. 자동 회복은 `retries` 위, 세션 전체를 다시 도는 계층에서. 오류 일시/영구 분류는 예외 타입 불가(대부분 `DownloadError`), 메시지 패턴으로. (ADR-007)
 - HLS 는 `total_bytes` / `total_bytes_estimate` 둘 다 없어 yt-dlp ETA 산식 불성립. `_eta_str` placeholder 감지 + `pct` × `elapsed` 추정으로 `~M:SS` 우회.
 - **`pre_process` 단계 커스텀 PostProcessor 가 info dict 사전 가공의 정공법**. `ydl.add_post_processor(MyPP(), when="pre_process")`. NFC 정규화, `meta_<key>` 사전 주입, 사용자 정의 메타 가공은 이 단계. `MetadataParserPP` INTERPRET 는 기존 값 재해석 도구일 뿐 외부 값 주입 불가. (출처: ADR-004)
 - `FFmpegMetadataPP` 는 info dict 의 `title` / `artist` / `description` 을 직접 읽음. 메타 통제는 ffmpeg 인자 우회보다 info dict 정규화 + `pre_process` PP 가 단순·견고.

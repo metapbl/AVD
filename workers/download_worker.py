@@ -25,6 +25,67 @@ _UNKNOWN_TOKENS = frozenset({
 })
 
 
+# ── 자동 재시도·백오프 (세션 레벨) ──────────────────────
+# yt-dlp 내부 retries(=10) 는 "다운로드 중 HTTP 재시도" 를 담당하지만,
+# YouTube 403 은 다운로드 시작 시점의 세션/토큰 만료로 나는 경우가 많아
+# 같은 YoutubeDL 세션 안에서는 몇 번을 재시도해도 계속 403 이다. 새 세션
+# (=Downloader 를 새로 만들어 extract_info 재실행) 으로 다시 시작하면 새
+# 토큰을 받아 성공한다 — "재시도 버튼을 누르면 바로 성공" 의 정체.
+# 따라서 우리의 재시도는 yt-dlp retries 아래가 아니라 그 위, 세션 전체를
+# 다시 도는 계층이다. (LESSONS: YouTube 토큰 만료 403 — ADR-004 배경)
+_MAX_AUTO_RETRY  = 3               # 최초 시도 제외, 최대 자동 재시도 횟수
+_BACKOFF_SCHEDULE = [2, 5, 10]     # 각 재시도 전 대기 (초). 지수 백오프.
+_CANCEL_POLL_SEC = 0.1             # 백오프 대기 중 취소 폴링 간격
+
+# 일시적(재시도 가치 있음) 오류의 메시지 패턴. yt-dlp 는 대부분 오류를
+# DownloadError 로 뭉뚱그려 올려 예외 타입만으론 일시/영구 구분이 안 되므로
+# 메시지 문자열로 분류한다. 소문자화 후 부분 일치로 판정.
+_TRANSIENT_PATTERNS = (
+    "http error 403", "http error 429",
+    "http error 500", "http error 502", "http error 503", "http error 504",
+    "timed out", "timeout", "connection reset", "connection aborted",
+    "connection refused", "temporary failure", "temporarily unavailable",
+    "unable to download webpage", "read operation timed out",
+    "remote end closed connection", "connection broken",
+    "getaddrinfo failed", "network is unreachable",
+)
+
+# 영구(즉시 ERROR) 오류의 메시지 패턴. 위 일시 패턴보다 우선 검사한다 —
+# "이 영상은 볼 수 없습니다(403 동반)" 처럼 403 문자열이 섞여 있어도 영구로
+# 판정해 헛된 재시도를 막기 위함.
+_PERMANENT_PATTERNS = (
+    "private video", "video unavailable", "is not available",
+    "this video is unavailable", "has been removed", "was deleted",
+    "account associated", "blocked it in your country",
+    "not available in your country", "sign in to confirm",
+    "members-only", "join this channel", "age-restricted",
+    "requested format is not available", "unsupported url",
+    "copyright", "terminated",
+)
+
+
+def _is_transient_error(msg: str) -> bool:
+    """
+    오류 메시지가 재시도 가치 있는 일시적 오류인지 판정.
+
+    판정 순서:
+    1) 영구 패턴에 걸리면 → False (즉시 ERROR). 일시 패턴 문자열이 섞여
+       있어도 영구가 우선.
+    2) 일시 패턴에 걸리면 → True.
+    3) 어디에도 안 걸리면 → False (판단 불가는 보수적으로 영구 취급).
+       무의미한 재시도로 사용자를 기다리게 하지 않는다. 수동 재시도 버튼은
+       그대로 남아 있다.
+    """
+    low = (msg or "").lower()
+    for pat in _PERMANENT_PATTERNS:
+        if pat in low:
+            return False
+    for pat in _TRANSIENT_PATTERNS:
+        if pat in low:
+            return True
+    return False
+
+
 # ETA EMA 시정수 (초). yt-dlp ETA 출처일 때 사용.
 # fragment 다운로더는 yt-dlp ETA 가 충분히 안정적이라 5초로 평탄화.
 _ETA_EMA_TAU_YTDLP = 5.0
@@ -168,6 +229,9 @@ class DownloadWorker(QThread):
                                (vcodec, acodec, ext, abr, tbr) — 여러 번 발사
                                될 수 있으며 마지막 값이 최종 진실. 위젯은 매번
                                덮어쓰면 됨. is_audio 항목은 위젯 측에서 거부.
+        retrying             : 일시적 오류 후 세션 레벨 자동 재시도 진입 알림
+                               (현재 시도 번호, 최대 재시도 횟수). 위젯이 상태
+                               라벨을 "재시도 중 (N/M)" 으로 덧씌우는 데 쓴다.
         download_finished    : 다운로드 완료 - 저장된 파일 경로 전달.
                                ⚠ QThread 내장 finished(인자 없음, 스레드 종료
                                신호) 와 이름이 겹치지 않도록 download_finished
@@ -185,6 +249,7 @@ class DownloadWorker(QThread):
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
     codec_info_resolved  = Signal(str, str, str, float, float)  # vcodec, acodec, ext, abr, tbr
+    retrying             = Signal(int, int)                     # 자동 재시도 (현재 시도, 최대)
     download_finished    = Signal(str)                          # 완료 (파일 경로)
     error                = Signal(str)                          # 오류
     cancelled            = Signal()                             # 취소
@@ -243,8 +308,13 @@ class DownloadWorker(QThread):
 
     def run(self):
         """
-        스레드 실행 진입점
-        Downloader.download() 호출 후 시그널로 결과 전달
+        스레드 실행 진입점.
+
+        Downloader.download() 를 세션 레벨 재시도 루프로 감싼다. 일시적
+        오류(_is_transient_error) 는 지수 백오프 후 최대 _MAX_AUTO_RETRY 회
+        자동 재시도하되, 매 시도마다 Downloader 를 새로 만들어(=새 YoutubeDL
+        세션) 만료 토큰을 새로 받게 한다. 영구 오류·판단 불가·취소는 즉시
+        해당 결과로 종료한다.
         """
         try:
             from yt_dlp.utils import DownloadCancelled
@@ -257,22 +327,62 @@ class DownloadWorker(QThread):
         errored   = False
         error_msg = ""
 
-        try:
-            self._downloader.download(
-                url              = self.url,
-                format_id        = self.format_id,
-                ext              = self.ext,
-                save_dir         = self.save_dir,
-                progress_hook    = self._on_progress,
-                postprocess_hook = self._on_postprocess,
-            )
+        attempt = 0
+        while True:
+            try:
+                # 매 시도 새 세션. 재시도 경로에서는 직전 시도의 부분 파일도
+                # 정리하고 진행 상태를 리셋해 표시가 뒤엉키지 않게 한다.
+                if attempt > 0:
+                    self._reset_for_retry()
 
-        except Exception as e:
-            if DownloadCancelled is not None and isinstance(e, DownloadCancelled):
-                cancelled = True
-            else:
+                self._downloader = Downloader()
+                self._downloader.download(
+                    url              = self.url,
+                    format_id        = self.format_id,
+                    ext              = self.ext,
+                    save_dir         = self.save_dir,
+                    progress_hook    = self._on_progress,
+                    postprocess_hook = self._on_postprocess,
+                )
+                cancelled = False
+                errored   = False
+                error_msg = ""
+                break
+
+            except Exception as e:
+                if DownloadCancelled is not None and isinstance(e, DownloadCancelled):
+                    cancelled = True
+                    break
+
                 errored   = True
                 error_msg = str(e)
+
+                # 재시도 판단: 일시적 오류 + 횟수 여유 + 미취소.
+                if (
+                    attempt < _MAX_AUTO_RETRY
+                    and _is_transient_error(error_msg)
+                    and not self._is_cancelled()
+                ):
+                    # 직전 시도의 잔여물 정리 (새 세션이 깨끗이 시작하도록).
+                    new_pids = snapshot_child_pids() - self._pre_pids
+                    terminate_pids(new_pids)
+                    self._cleanup_residue()
+
+                    attempt += 1
+                    self.retrying.emit(attempt, _MAX_AUTO_RETRY)
+
+                    delay = _BACKOFF_SCHEDULE[
+                        min(attempt - 1, len(_BACKOFF_SCHEDULE) - 1)
+                    ]
+                    if self._sleep_cancellable(delay):
+                        # 백오프 대기 중 취소됨.
+                        cancelled = True
+                        errored   = False
+                        break
+                    continue
+
+                # 재시도 안 함 — 영구 오류·판단 불가·횟수 소진.
+                break
 
         if cancelled or errored:
             new_pids = snapshot_child_pids() - self._pre_pids
@@ -285,6 +395,38 @@ class DownloadWorker(QThread):
             self.error.emit(error_msg)
         else:
             self.download_finished.emit(self._output_path)
+
+    def _is_cancelled(self) -> bool:
+        """현재 Downloader 가 취소 요청을 받았는지."""
+        return getattr(self._downloader, "_cancelled", False)
+
+    def _sleep_cancellable(self, seconds: float) -> bool:
+        """
+        백오프 대기. _CANCEL_POLL_SEC 간격으로 취소를 폴링해 반응성을 유지한다.
+        대기 중 취소되면 True, 정상 만료면 False 를 반환한다.
+        """
+        waited = 0.0
+        while waited < seconds:
+            if self._is_cancelled():
+                return True
+            step = min(_CANCEL_POLL_SEC, seconds - waited)
+            time.sleep(step)
+            waited += step
+        return self._is_cancelled()
+
+    def _reset_for_retry(self):
+        """재시도 직전 진행 표시·ETA·코덱 상태를 초기화한다."""
+        self._output_path       = ""
+        self._dl_start_ts       = 0.0
+        self._eta_source        = None
+        self._eta_smoothed      = -1.0
+        self._eta_last_input_ts = 0.0
+        self._last_eta_emit_ts  = 0.0
+        self._last_eta_secs     = -1
+        self._last_eta_text     = ""
+        self._pct_floor         = -1.0
+        self._last_codec_info   = None
+        self.progress.emit(0.0)
 
     def cancel(self):
         """외부에서 취소 요청"""

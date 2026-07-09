@@ -51,13 +51,6 @@
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
 
-- **다운로드 자동 재시도·백오프 — 일시적 오류의 무인 회복**
-    - 동기: 플레이리스트 다운로드 중 일부 항목에 `HTTP Error 403: Forbidden` 팝업, 재시도 버튼을 누르면 바로 성공. 60 항목을 수동 재시도하는 부담이 큼.
-    - 진단: YouTube 403 은 대부분 일시적(세션 토큰 만료·순간 거절). 영구 오류(비공개·삭제·지역차단) 와 구분 필요.
-    - 정책 (코드 단계 결정): `DownloadWorker`/`DownloadManager` 에서 일시적 오류(403·타임아웃·일시 네트워크) 한정 지수 백오프(예: 2→5→10 초) 최대 3 회 자동 재시도, 최종 실패 시에만 ERROR 팝업 1 회. 영구 오류는 즉시 ERROR.
-    - 검증: 403 빈발 플레이리스트 추가 → 자동 회복으로 수동 재시도 없이 대부분 완주, 영구 오류 항목은 즉시 ERROR 표시.
-    - 보류: 재시도 대상 오류 분류 기준(메시지 패턴 vs yt-dlp 예외 타입), 백오프 파라미터의 설정 노출 여부.
-
 - **macOS 지원 정식화 (실행 환경만)**
     - 동기: 사용자가 Windows 에서 개발, macOS 에서는 실행만. README/CLAUDE 의 "Windows 우선, macOS 일부 미동작" 정책을 "Windows 개발 / macOS 실행 양쪽 정식 지원" 으로 격상.
     - 진단 (2026-05-28): `utils/file_utils.py` `open_folder()` 의 `subprocess.run(["explorer", ...])` 가 Windows 전용 → macOS 에서 "📂 열기" 깨짐. `main.py` 의 `QFont("맑은 고딕", 10)` 은 macOS 폴백. yt-dlp·ffmpeg·Node.js 는 Homebrew 로 정식 지원. `windowsfilenames: True` 는 macOS 에서도 동작 (보수적 정책 유지).
@@ -148,6 +141,7 @@
 - **ADR-004** `process_ie_result` 우회 폐기, NFC 보존을 PostProcessor 정공법으로 (Accepted, 2026-05-28) — YouTube 토큰 만료 회귀(403) 해결. `ydl.download([url])` 복귀 + `_NFCNormalizePP(when="pre_process")`. `js_runtimes`/`remote_components` 고정 제거. 2026-05-18 결정 부분 번복. → [ADR.md#adr-004](./ADR.md#adr-004)
 - **ADR-005** 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일 (Proposed, TBD) — `FFmpegExtractAudio` 의 192 kbps 일괄 적용이 고음질 원본을 다운컨버트하는 문제. 네 갈래 검토 (환경설정 노출 / 컨테이너만 변경 / 다이얼로그 드롭다운 / 조건부 확인). → [ADR.md#adr-005](./ADR.md#adr-005)
 - **ADR-006** 플레이리스트 일괄 다운로드 — 글로벌 포맷 선택과 워커 시그널 규율 (Accepted, 2026-06-02) — 한 URL → 상한 500 경량 목록(`extract_flat`) → 체크박스 선택 다이얼로그 → 영상/음원 단일 선택 전체 적용. 정보추출은 다운로드 `max_concurrent` 공유 게이트. 워커 커스텀 시그널이 QThread 내장 `finished` 를 가리던 크래시를 시그널 개명(`download_finished`/`info_ready`/`thumb_ready`)으로 해소. → [ADR.md#adr-006](./ADR.md#adr-006)
+- **ADR-007** 다운로드 자동 재시도 — yt-dlp retries 위의 세션 레벨 재시도 (Accepted, 2026-07-09) — `DownloadWorker.run()` 이 `Downloader.download()` 전체를 재시도 루프로 감싸 매 시도 새 `YoutubeDL` 세션으로 만료 토큰을 갱신. 메시지 패턴 오류 분류(`_is_transient_error`, 판단 불가는 영구 취급), 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 백오프 대기 중 취소 폴링. `retrying` 시그널 → "재시도 중 (N/M)" 라벨. → [ADR.md#adr-007](./ADR.md#adr-007)
 
 ---
 
@@ -181,6 +175,7 @@
 - retry/timeout 명시 필요
 - HLS 의 `total_bytes` 부재 → ETA 우회
 - **`pre_process` 커스텀 PostProcessor 가 정공법** ← 현 권장 (ADR-004)
+- **`retries` 는 세션 내 HTTP 재시도 — 토큰 만료 403 은 새 세션 재시작으로만 회복** (ADR-007)
 - `FFmpegMetadataPP` 의 info dict 직접 참조
 - 단일 프로세스 병렬 다운로드 미지원, 안전 1~3개
 - [역사적] `ydl.download([url])` 의 `extract_info` 재실행 함정 → 폐기
