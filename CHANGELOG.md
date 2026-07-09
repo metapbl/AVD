@@ -23,6 +23,13 @@
 
 ---
 
+## 2026-07-09
+
+- **`fix(ui)`**: 플레이리스트 일괄 추가 시 리스트 썸네일(UI 미리보기) 일부 누락 해소.
+    - 원인: `_on_info_fetched` 가 정보 추출 완료마다 `ThumbnailWorker` 를 게이트 없이 즉시 `start()` → 60 항목 일괄 추가 시 짧은 시간에 수십 개의 HTTP GET 이 몰려 일부가 `TIMEOUT_SEC=10` 안에 응답 못 받고 `failed` 로 빠진 뒤 재시도 없이 조용히 누락(약 25%). 결과 파일 임베드 썸네일은 정상 — ADR-001 의 두 대상 분리상 UI 경로만의 문제였음.
+    - 해법(둘 다): (가) 썸네일 전용 동시성 게이트 신설(`_thumb_pending`/`_thumb_running`, 고정 한도 `THUMB_CONCURRENCY=4`, 다운로드 `max_concurrent` 와 독립 — 썸네일은 순수 I/O 대기라 CPU·디스크 부담 없음). (나) 실패 시 `THUMB_RETRY_DELAY_MS=1500` ms 후 1 회에 한해 지연 재큐잉(`_thumb_retry`), 소진 시 조용히 포기. 슬롯 회수·객체 소멸은 워커 QThread 내장 `finished` 한 곳에서 처리.
+    - 검증: 오프스크린 시뮬레이션으로 동시 실행 peak ≤ 4, 일시 실패 항목 1 회 재시도 후 성공, 지속 실패 항목 재시도 1 회로 제한 후 포기, 큐 완전 소진 및 `_thumb_retry` 정리, 제거 흐름(대기·실행 중 항목)에서 게이트 정리·후속 항목 정상 소진 확인.
+
 ## 2026-06-03
 
 - chore: 미사용 import 일괄 제거 (Ruff F401) — `main.py`(Qt), `controllers/download_manager.py`(DownloadItem), `controllers/playlist_flow.py`(PlaylistEntry), `ui/add_link_dialog.py`(Qt·QKeyEvent), `ui/download_item_widget.py`(open_folder), `ui/format_select_dialog.py`(QSizePolicy), `ui/main_window.py`(QPixmap), `utils/config_manager.py`(os), `workers/download_worker.py`(os), `workers/info_worker.py`(VideoInfo) 등 11건. 동작 변경 없음.

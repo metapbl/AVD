@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QScrollArea, QMessageBox,
     QStatusBar
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 from models.download_item import DownloadItem, DownloadStatus
 from ui.download_item_widget import DownloadItemWidget
@@ -38,6 +38,15 @@ def _is_playlist_url(url: str) -> bool:
 class MainWindow(QMainWindow):
     """AV Downloader 메인 윈도우"""
 
+    # 썸네일(UI 미리보기) 동시 다운로드 한도. 다운로드 max_concurrent 와
+    # 독립된 고정값 — 근거는 __init__ 의 ThumbnailWorker 게이트 주석 참조.
+    THUMB_CONCURRENCY = 4
+    # 썸네일 실패 시 지연 재시도까지의 대기 (ms). 즉시 재시도하면 폭주
+    # 상황이 그대로라 의미가 없어, 잠깐 숨을 돌린 뒤 한 번만 다시 시도한다.
+    THUMB_RETRY_DELAY_MS = 1500
+    # 썸네일 최대 재시도 횟수 (최초 시도 제외).
+    THUMB_MAX_RETRY = 1
+
     def __init__(self):
         super().__init__()
         self.config         = ConfigManager()
@@ -51,6 +60,18 @@ class MainWindow(QMainWindow):
         # max_concurrent 를 한도로 정보 추출을 흘려보낸다.
         self._info_pending : list[str] = []
         self._info_running : set[str]  = set()
+
+        # ── ThumbnailWorker 동시성 게이트 ──
+        # 플레이리스트 일괄 추가 시 InfoWorker 가 (max_concurrent 개씩)
+        # 완료될 때마다 썸네일 워커를 즉시 던지면 짧은 시간에 수십 개의
+        # HTTP GET 이 몰려 일부가 TIMEOUT_SEC 안에 응답을 못 받고 실패한다
+        # (UI 미리보기 누락). 다운로드와 무관한 순수 I/O 대기이므로 전용
+        # 고정 한도로 흐름을 제어한다. 다운로드 max_concurrent 와 공유하지
+        # 않는다 (썸네일은 CPU·디스크 부담이 없어 더 여유롭게 잡아도 안전).
+        self._thumb_pending : list[str]      = []
+        self._thumb_running : set[str]       = set()
+        # item_id → 재시도 횟수. 실패 시 1 회에 한해 지연 후 재큐잉한다.
+        self._thumb_retry   : dict[str, int] = {}
 
         # ── 플레이리스트 사전결정 항목 ──
         # item_id → (format_id, ext). 정보 추출 완료 시 화질 다이얼로그를
@@ -310,32 +331,9 @@ class MainWindow(QMainWindow):
         widget.update_title(info.title)
         widget.update_meta(info.uploader, info.duration)
 
-        # ── 썸네일 다운로드 ──
+        # ── 썸네일 다운로드 (동시성 게이트에 태운다) ──
         if info.thumbnail:
-            if not isinstance(getattr(self, "_thumb_workers", None), dict):
-                self._thumb_workers = {}
-
-            prev = self._thumb_workers.pop(item_id, None)
-            if prev is not None:
-                try:
-                    prev.cancel()
-                except Exception:
-                    pass
-
-            thumb_worker = ThumbnailWorker(item_id, info.thumbnail)
-            thumb_worker.thumb_ready.connect(
-                self._on_thumb_ready, Qt.ConnectionType.QueuedConnection
-            )
-            thumb_worker.failed.connect(
-                self._on_thumb_failed, Qt.ConnectionType.QueuedConnection
-            )
-            # 객체 소멸은 QThread 내장 finished 에 건다.
-            thumb_worker.finished.connect(
-                lambda w=thumb_worker: self._cleanup_thumb_worker(w),
-                Qt.ConnectionType.QueuedConnection,
-            )
-            self._thumb_workers[item_id] = thumb_worker
-            thumb_worker.start()
+            self._enqueue_thumb(item_id, info.thumbnail)
 
         # ── 사전결정 항목 (플레이리스트 출신) ──
         predetermined = self._predetermined.pop(item_id, None)
@@ -411,8 +409,72 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"대기열에 추가: {item.title}")
         self.download_manager.enqueue(item_id)
 
+    # ── ThumbnailWorker 동시성 게이트 ─────────────────
+
+    def _enqueue_thumb(self, item_id: str, url: str):
+        """
+        썸네일 대기열에 항목을 넣고 디스패치를 깨운다.
+
+        같은 item_id 로 이미 진행/대기 중인 워커가 있으면 무효화한다
+        (정보가 갱신되어 썸네일 URL 이 바뀐 재요청 케이스 방어).
+        URL 은 item.thumbnail 에 이미 저장되어 있으므로 디스패치 시점에
+        거기서 다시 읽는다 — 대기 중 갱신을 자연히 반영.
+        """
+        prev = self._thumb_workers.pop(item_id, None) if isinstance(
+            getattr(self, "_thumb_workers", None), dict
+        ) else None
+        if prev is not None:
+            try:
+                prev.cancel()
+            except Exception:
+                pass
+
+        self._thumb_retry[item_id] = 0
+        if item_id not in self._thumb_pending:
+            self._thumb_pending.append(item_id)
+        self._dispatch_thumb()
+
+    def _dispatch_thumb(self):
+        """대기열의 항목들을 THUMB_CONCURRENCY 한도 안에서 출발시킨다."""
+        if not isinstance(getattr(self, "_thumb_workers", None), dict):
+            self._thumb_workers = {}
+
+        while (
+            self._thumb_pending
+            and len(self._thumb_running) < self.THUMB_CONCURRENCY
+        ):
+            item_id = self._thumb_pending.pop(0)
+
+            item = self.items.get(item_id)
+            if item is None or not getattr(item, "thumbnail", ""):
+                # 항목이 사라졌거나 썸네일 URL 이 없어졌으면 건너뛴다.
+                self._thumb_retry.pop(item_id, None)
+                continue
+
+            self._thumb_running.add(item_id)
+
+            worker = ThumbnailWorker(item_id, item.thumbnail)
+            worker.thumb_ready.connect(
+                self._on_thumb_ready, Qt.ConnectionType.QueuedConnection
+            )
+            worker.failed.connect(
+                self._on_thumb_failed, Qt.ConnectionType.QueuedConnection
+            )
+            # 슬롯 회수 + 객체 소멸을 QThread 내장 finished 한 곳에서 처리.
+            # 썸네일 워커는 결과 emit 직후 run() 이 끝나므로, InfoWorker
+            # 게이트처럼 슬롯 회수 시점과 객체 소멸 시점을 나눌 필요가 없다
+            # (LESSONS 의 GC 크래시 회피 원칙은 내장 finished 를 쓰는 것으로
+            # 이미 충족).
+            worker.finished.connect(
+                lambda w=worker, iid=item_id: self._on_thumb_thread_finished(iid, w),
+                Qt.ConnectionType.QueuedConnection,
+            )
+            self._thumb_workers[item_id] = worker
+            worker.start()
+
     def _on_thumb_ready(self, item_id: str, data: bytes):
         """썸네일 워커 완료 — GUI 스레드에서 QPixmap 생성하여 위젯에 전달."""
+        self._thumb_retry.pop(item_id, None)
         widget = self.widgets.get(item_id)
         if widget is None:
             return
@@ -422,28 +484,48 @@ class MainWindow(QMainWindow):
             pass
 
     def _on_thumb_failed(self, item_id: str, reason: str):
-        """썸네일 다운로드 실패 — 라벨은 기본 이모지 유지하고 조용히 무시."""
-        pass
-
-    def _cleanup_thumb_worker(self, worker):
         """
-        썸네일 워커 객체 소멸 — QThread 내장 finished 에 연결되어 호출.
-        dict 에서 빼고 deleteLater.
+        썸네일 다운로드 실패 — 최대 THUMB_MAX_RETRY 회에 한해 지연 후 재큐잉.
+        재시도 소진 시에는 라벨의 기본 이모지를 유지한 채 조용히 포기한다
+        (미리보기일 뿐이라 사용자에게 오류를 알리지 않는다 — ADR-001).
         """
-        if not hasattr(self, "_thumb_workers"):
-            try:
-                worker.deleteLater()
-            except Exception:
-                pass
+        tried = self._thumb_retry.get(item_id, 0)
+        if tried >= self.THUMB_MAX_RETRY:
+            self._thumb_retry.pop(item_id, None)
             return
-        for iid, w in list(self._thumb_workers.items()):
-            if w is worker:
-                self._thumb_workers.pop(iid, None)
-                break
+
+        self._thumb_retry[item_id] = tried + 1
+        # 지연 재큐잉. 항목이 그새 사라졌으면 _dispatch_thumb 가 건너뛴다.
+        QTimer.singleShot(self.THUMB_RETRY_DELAY_MS, lambda iid=item_id: self._requeue_thumb(iid))
+
+    def _requeue_thumb(self, item_id: str):
+        """지연 만료 후 재시도 — 항목이 아직 살아 있을 때만 대기열에 재삽입."""
+        if item_id not in self.items:
+            self._thumb_retry.pop(item_id, None)
+            return
+        if item_id in self._thumb_running or item_id in self._thumb_pending:
+            return
+        self._thumb_pending.append(item_id)
+        self._dispatch_thumb()
+
+    def _on_thumb_thread_finished(self, item_id: str, worker):
+        """
+        썸네일 워커의 QThread 내장 finished — 스레드가 진짜로 종료된 시점.
+        슬롯을 회수하고 다음 대기 항목을 깨운 뒤 객체를 소멸시킨다. dict 의
+        현재 워커가 넘겨받은 worker 와 동일할 때만 pop (재요청으로 새 워커가
+        붙은 경우 보존).
+        """
+        self._thumb_running.discard(item_id)
+
+        if isinstance(getattr(self, "_thumb_workers", None), dict):
+            if self._thumb_workers.get(item_id) is worker:
+                self._thumb_workers.pop(item_id, None)
         try:
             worker.deleteLater()
         except Exception:
             pass
+
+        self._dispatch_thumb()
 
     def _on_info_error(self, item_id: str, err: str):
         """
@@ -681,6 +763,13 @@ class MainWindow(QMainWindow):
                     tw.cancel()
                 except Exception:
                     pass
+
+        # 썸네일 게이트에서도 제거. 대기 중이면 빼고, 실행 중 슬롯은 내장
+        # finished 슬롯이 회수한다. 재시도 카운트도 함께 정리.
+        if item_id in self._thumb_pending:
+            self._thumb_pending.remove(item_id)
+        self._thumb_running.discard(item_id)
+        self._thumb_retry.pop(item_id, None)
 
         # 정보 추출 게이트에서 제거. InfoWorker 객체 소멸은 내장 finished
         # 슬롯이 처리하므로 여기서 강제 종료하지 않는다.
