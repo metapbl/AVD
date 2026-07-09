@@ -35,6 +35,65 @@ def _is_playlist_url(url: str) -> bool:
     return ("list=" in low) or ("/playlist" in low)
 
 
+# ── 오류 메시지 → 사용자 친화 안내 ───────────────────
+# yt-dlp 원문 오류(영어)는 사용자가 원인·대처를 알기 어렵다. 대표적인
+# 케이스를 인식해 한국어 제목·설명으로 바꿔 준다. 인식 안 되면 일반 안내.
+def _friendly_error(msg: str) -> tuple[str, str]:
+    """
+    (제목, 설명) 튜플 반환. 설명은 원인 + 대처법.
+    """
+    low = (msg or "").lower()
+
+    # YouTube 봇 감지 / 로그인 요구 — 가장 흔한 대량 실패 원인.
+    if "sign in to confirm" in low or "not a bot" in low or "confirm you" in low:
+        return (
+            "YouTube 봇 감지에 걸렸습니다",
+            "짧은 시간에 많은 영상을 받으면 YouTube 가 자동 접근(봇)으로 의심해 "
+            "일시 차단합니다.\n\n대처 방법:\n"
+            "  • 몇 분~몇 시간 뒤 다시 시도하세요 (차단은 시간이 지나면 풀립니다).\n"
+            "  • 한 번에 받는 영상 수를 줄이고, 동시 다운로드 수도 낮춰 보세요.\n"
+            "  • 계속된다면 브라우저 로그인 쿠키 사용 기능이 필요합니다 "
+            "(추후 지원 예정).",
+        )
+    if "private video" in low:
+        return (
+            "비공개 영상입니다",
+            "이 영상은 비공개로 설정되어 있어 다운로드할 수 없습니다. "
+            "접근 권한이 있는 계정의 쿠키가 필요합니다.",
+        )
+    if "members-only" in low or "join this channel" in low:
+        return (
+            "멤버십 전용 영상입니다",
+            "채널 멤버십 가입자만 볼 수 있는 영상이라 다운로드할 수 없습니다.",
+        )
+    if "age" in low and "restrict" in low:
+        return (
+            "연령 제한 영상입니다",
+            "연령 제한이 걸린 영상이라 로그인(쿠키) 없이는 다운로드할 수 없습니다.",
+        )
+    if "video unavailable" in low or "has been removed" in low or "was deleted" in low:
+        return (
+            "영상을 찾을 수 없습니다",
+            "삭제되었거나 더 이상 제공되지 않는 영상입니다.",
+        )
+    if "not available in your country" in low or "blocked it in your country" in low:
+        return (
+            "지역 차단된 영상입니다",
+            "현재 지역에서는 이 영상을 볼 수 없습니다.",
+        )
+    return (
+        "다운로드 중 오류가 발생했습니다",
+        "아래 '자세히' 를 눌러 원문 오류를 확인하세요. 일시적 문제라면 "
+        "수동 재시도 버튼으로 다시 시도할 수 있습니다.",
+    )
+
+
+def _is_bot_block_error(msg: str) -> bool:
+    """봇 감지/로그인 요구 오류인지 — 안내 쿨다운 판정용."""
+    low = (msg or "").lower()
+    return "sign in to confirm" in low or "not a bot" in low or "confirm you" in low
+
+
 class MainWindow(QMainWindow):
     """AV Downloader 메인 윈도우"""
 
@@ -72,6 +131,11 @@ class MainWindow(QMainWindow):
         self._thumb_running : set[str]       = set()
         # item_id → 재시도 횟수. 실패 시 1 회에 한해 지연 후 재큐잉한다.
         self._thumb_retry   : dict[str, int] = {}
+
+        # 봇 감지 안내 다이얼로그 쿨다운 플래그. 봇 차단은 여러 항목이
+        # 연달아 실패하므로, 한 번 안내한 뒤 잠깐 억제해 다이얼로그 폭주를
+        # 막는다. QTimer 로 일정 시간 뒤 해제.
+        self._bot_notice_suppressed = False
 
         # ── 플레이리스트 사전결정 항목 ──
         # item_id → (format_id, ext). 정보 추출 완료 시 화질 다이얼로그를
@@ -685,15 +749,34 @@ class MainWindow(QMainWindow):
         if widget:
             widget.update_status(DownloadStatus.ERROR)
 
+        # 봇 감지 오류는 대량으로 연달아 터지므로, 한 번 안내한 뒤 잠깐
+        # 억제해 다이얼로그 폭주를 막는다 (상태 라벨은 계속 ERROR 로 표시).
+        if _is_bot_block_error(err):
+            self.status_bar.showMessage(
+                "YouTube 봇 감지로 일부 다운로드가 차단되었습니다. 잠시 후 다시 시도하세요."
+            )
+            if self._bot_notice_suppressed:
+                return
+            self._bot_notice_suppressed = True
+            # 30초 뒤 억제 해제 — 다음 봇 차단 물결 때 다시 한 번 안내.
+            QTimer.singleShot(30000, self._reset_bot_notice)
+
+        title, desc = _friendly_error(err)
+
         dialog = QMessageBox(self)
-        dialog.setWindowTitle("다운로드 오류")
-        dialog.setIcon(QMessageBox.Icon.Critical)
-        dialog.setText("다운로드 중 오류가 발생했습니다.")
+        dialog.setWindowTitle(title)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setText(title)
+        dialog.setInformativeText(desc)
         dialog.setDetailedText(err)
         dialog.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         dialog.exec()
+
+    def _reset_bot_notice(self):
+        """봇 감지 안내 쿨다운 해제."""
+        self._bot_notice_suppressed = False
 
     def _on_download_cancelled(self, item_id: str):
         """다운로드 취소 완료 (매니저 시그널)"""
