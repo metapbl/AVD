@@ -23,7 +23,7 @@ class DownloadItem:
     # 기본 정보
     url         : str                          # 원본 URL
     title       : str  = "제목 가져오는 중..."  # 영상 제목
-    thumbnail   : str  = ""                    # 썸네일 URL
+    thumbnail   : str  = ""                    # 썸네일 URL (후보 리스트의 첫 항목)
     duration    : int  = 0                     # 영상 길이 (초)
     uploader    : str  = ""                    # 업로더 이름
 
@@ -41,6 +41,10 @@ class DownloadItem:
     file_size   : str   = ""                   # 전체 파일 크기 문자열
     error_msg   : str   = ""                   # 오류 발생 시 메시지
 
+    # 썸네일 후보 URL 리스트 (화질 내림차순). 단일 thumbnail 이 404 여도
+    # 다음 후보로 폴백해 미리보기를 채우기 위함. 비어 있으면 thumbnail 만 사용.
+    thumbnail_candidates: list = field(default_factory=list)
+
     # 고유 ID (항목 구분용)
     item_id     : str   = field(default_factory=lambda: "")
 
@@ -49,6 +53,9 @@ class DownloadItem:
         if not self.item_id:
             import uuid
             self.item_id = str(uuid.uuid4())[:8]
+        # 후보 리스트가 비었는데 단일 썸네일이 있으면 그것으로 보정
+        if not self.thumbnail_candidates and self.thumbnail:
+            self.thumbnail_candidates = [self.thumbnail]
 
     @property
     def is_done(self) -> bool:

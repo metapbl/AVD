@@ -36,6 +36,14 @@ class VideoInfo:
     duration    : int               # 초 단위
     uploader    : str
     formats     : list[FormatInfo]  # 선택 가능한 포맷 목록
+    # 썸네일 후보 URL 리스트 (화질 내림차순). thumbnail 은 이 리스트의 첫
+    # 후보와 같다. 단일 URL 이 404(예: YouTube maxresdefault 없음)여도
+    # 다음 후보로 폴백해 미리보기를 채우기 위함. 비어 있으면 [thumbnail].
+    thumbnail_candidates: list[str] = None  # __post_init__ 에서 보정
+
+    def __post_init__(self):
+        if self.thumbnail_candidates is None:
+            self.thumbnail_candidates = [self.thumbnail] if self.thumbnail else []
 
 
 class InfoFetcher:
@@ -62,35 +70,40 @@ class InfoFetcher:
         # 재귀적으로 NFC 가 보장된다.
         info = normalize_info_dict(info)
 
+        candidates = self._pick_thumbnail_candidates(info)
+
         return VideoInfo(
             url       = url,
             title     = info.get("title", "제목 없음"),
-            thumbnail = self._pick_thumbnail(info),
+            thumbnail = candidates[0] if candidates else "",
             duration  = info.get("duration", 0),
             uploader  = info.get("uploader", ""),
             formats   = self._parse_formats(info),
+            thumbnail_candidates = candidates,
         )
     
-    def _pick_thumbnail(self, info: dict) -> str:
+    def _pick_thumbnail_candidates(self, info: dict) -> list[str]:
         """
-        info dict 에서 가장 적절한 썸네일 URL 을 고른다.
+        info dict 에서 썸네일 후보 URL 리스트를 화질 내림차순으로 만든다.
 
-        yt-dlp 의 `info["thumbnail"]` 은 단일 best 후보 한 개만 들어 있고
-        YouTube 의 maxresdefault.jpg 처럼 실제로는 404 인 URL 이 들어오는
-        경우가 있다. 그래서 `info["thumbnails"]` 리스트(품질·preference 정보
-        포함)를 먼저 살펴 best 를 직접 고른다.
+        yt-dlp 의 `info["thumbnail"]`(단일 best) 은 YouTube maxresdefault.jpg
+        처럼 실제로는 404 인 URL 인 경우가 잦다. 단일 URL 하나만 쓰면 그 영상은
+        미리보기가 영영 비게 되므로, 여러 후보를 화질 내림차순으로 넘겨
+        ThumbnailWorker 가 성공할 때까지 폴백하도록 한다.
 
-        선정 규칙:
-            1. `thumbnails` 후보 중 url 이 문자열이고 http(s) 로 시작하는
-               항목만 추림.
-            2. 점수 = (preference, width*height, 원래 인덱스) 튜플로
-               내림차순 정렬해 1 위 채택. preference·해상도 정보가 없으면
-               0 으로 간주.
-            3. 후보가 비어 있으면 `info["thumbnail"]` 로 폴백.
-            4. 둘 다 없으면 빈 문자열.
+        구성 (앞이 우선):
+            (a) `info["thumbnails"]` 리스트를 (preference, 면적) 내림차순
+                정렬한 URL 들. yt-dlp 가 준 실제 후보라 가장 정확.
+            (b) YouTube 인 경우 videoid 로 조립한 표준 URL
+                (maxres→sd→hqdefault). hqdefault 는 모든 YouTube 영상에
+                존재하므로 (a) 가 전부 실패해도 최후의 보루가 된다.
+        중복 URL 은 순서를 지키며 제거한다.
         """
+        # (a) yt-dlp thumbnails 리스트 — 화질 내림차순.
+        #     정렬 키: preference → 면적 → .jpg 우선(.webp 는 Qt 미지원
+        #     가능성) → 원래 인덱스. .webp 는 후순위로 밀어 QPixmap 이
+        #     확실히 읽는 .jpg 를 먼저 시도한다.
         thumbnails = info.get("thumbnails") or []
-
         scored = []
         for idx, t in enumerate(thumbnails):
             if not isinstance(t, dict):
@@ -101,18 +114,37 @@ class InfoFetcher:
             preference = t.get("preference") or 0
             width      = t.get("width")  or 0
             height     = t.get("height") or 0
-            area       = width * height
-            scored.append((preference, area, idx, url))
+            is_jpg     = 0 if ".webp" in url.lower() else 1
+            scored.append((preference, width * height, is_jpg, -idx, url))
+        scored.sort(reverse=True)
 
-        if scored:
-            # preference → area → 원래 인덱스 순으로 내림차순. 정보가 전혀
-            # 없으면 (0, 0, idx) 가 되어 yt-dlp 가 마지막에 둔(보통 best)
-            # 후보가 채택된다.
-            scored.sort(reverse=True)
-            return scored[0][3]
+        primary = [u for *_, u in scored]
 
-        fallback = info.get("thumbnail", "")
-        return fallback if isinstance(fallback, str) else ""
+        # info["thumbnail"] 단일값도 후보에 포함 (리스트에 없을 수 있음)
+        single = info.get("thumbnail", "")
+        if isinstance(single, str) and single.startswith(("http://", "https://")):
+            primary.append(single)
+
+        # (a) 는 과도한 순회를 막기 위해 상위 N 개만 취한다.
+        primary = primary[:6]
+
+        # (b) YouTube videoid 기반 표준 URL 폴백. hqdefault 는 모든
+        #     YouTube 영상에 존재하는 최후의 보루라 반드시 뒤에 붙인다
+        #     (상위 N 컷과 무관하게 항상 포함).
+        fallback = []
+        vid = info.get("id") if str(info.get("extractor_key", "")).lower().startswith("youtube") else None
+        if isinstance(vid, str) and vid:
+            for q in ("maxresdefault", "sddefault", "hqdefault"):
+                fallback.append(f"https://i.ytimg.com/vi/{vid}/{q}.jpg")
+
+        # 순서 유지 중복 제거.
+        seen = set()
+        deduped = []
+        for u in primary + fallback:
+            if u and u not in seen:
+                seen.add(u)
+                deduped.append(u)
+        return deduped
 
     def _pick_best_audio(self, formats: list) -> tuple[str, float]:
         """

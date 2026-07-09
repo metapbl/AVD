@@ -327,13 +327,15 @@ class MainWindow(QMainWindow):
         item.uploader  = info.uploader
         item.duration  = info.duration
         item.thumbnail = info.thumbnail
+        item.thumbnail_candidates = list(info.thumbnail_candidates or [])
 
         widget.update_title(info.title)
         widget.update_meta(info.uploader, info.duration)
 
         # ── 썸네일 다운로드 (동시성 게이트에 태운다) ──
-        if info.thumbnail:
-            self._enqueue_thumb(item_id, info.thumbnail)
+        # 단일 URL 이 아니라 후보 리스트로 태운다 — 첫 후보 404 시 폴백.
+        if item.thumbnail_candidates:
+            self._enqueue_thumb(item_id, item.thumbnail_candidates)
 
         # ── 사전결정 항목 (플레이리스트 출신) ──
         predetermined = self._predetermined.pop(item_id, None)
@@ -411,14 +413,15 @@ class MainWindow(QMainWindow):
 
     # ── ThumbnailWorker 동시성 게이트 ─────────────────
 
-    def _enqueue_thumb(self, item_id: str, url: str):
+    def _enqueue_thumb(self, item_id: str, urls=None):
         """
         썸네일 대기열에 항목을 넣고 디스패치를 깨운다.
 
         같은 item_id 로 이미 진행/대기 중인 워커가 있으면 무효화한다
         (정보가 갱신되어 썸네일 URL 이 바뀐 재요청 케이스 방어).
-        URL 은 item.thumbnail 에 이미 저장되어 있으므로 디스패치 시점에
-        거기서 다시 읽는다 — 대기 중 갱신을 자연히 반영.
+        후보 URL 리스트는 item.thumbnail_candidates 에 이미 저장되어 있으므로
+        디스패치 시점에 거기서 다시 읽는다 — 대기 중 갱신을 자연히 반영.
+        (urls 인자는 하위호환용이며 무시된다.)
         """
         prev = self._thumb_workers.pop(item_id, None) if isinstance(
             getattr(self, "_thumb_workers", None), dict
@@ -446,14 +449,17 @@ class MainWindow(QMainWindow):
             item_id = self._thumb_pending.pop(0)
 
             item = self.items.get(item_id)
-            if item is None or not getattr(item, "thumbnail", ""):
+            candidates = list(getattr(item, "thumbnail_candidates", []) or []) if item else []
+            if not candidates and item and getattr(item, "thumbnail", ""):
+                candidates = [item.thumbnail]
+            if item is None or not candidates:
                 # 항목이 사라졌거나 썸네일 URL 이 없어졌으면 건너뛴다.
                 self._thumb_retry.pop(item_id, None)
                 continue
 
             self._thumb_running.add(item_id)
 
-            worker = ThumbnailWorker(item_id, item.thumbnail)
+            worker = ThumbnailWorker(item_id, candidates)
             worker.thumb_ready.connect(
                 self._on_thumb_ready, Qt.ConnectionType.QueuedConnection
             )

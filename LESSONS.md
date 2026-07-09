@@ -44,6 +44,7 @@
 - 기본 retry/timeout 짧음. GUI 에서는 `socket_timeout`, `retries`, `fragment_retries='infinite'`, `file_access_retries`, `retry_sleep_functions` 명시.
 - **`retries`(=세션 내 HTTP 재시도) 는 토큰 만료 403 을 못 고친다**. YouTube 403 은 시작 시점 세션/토큰 만료라 같은 `YoutubeDL` 세션 안에서는 계속 403 — 새 세션(새 `Downloader`, `extract_info` 재실행) 으로 다시 시작해야 새 토큰을 받는다. 자동 회복은 `retries` 위, 세션 전체를 다시 도는 계층에서. 오류 일시/영구 분류는 예외 타입 불가(대부분 `DownloadError`), 메시지 패턴으로. (ADR-007)
 - **영구성 4xx(400/401/404/410) 는 `Unable to download webpage: HTTP Error 404 ...` 로 포장돼 온다** — 일시 패턴 `unable to download webpage` 에 오분류돼 헛재시도할 수 있다. 실제 오류 문자열을 직접 뽑아 대조해야 잡힌다(Fake 시뮬레이션으론 못 봄). 영구 4xx 를 일시 패턴보다 먼저 검사하도록 명시. 단 403=토큰만료·429=rate-limit 은 일시 유지. (ADR-007)
+- **`info["thumbnail"]` 단일값(YouTube `maxresdefault.jpg`)은 최고화질 원본이 없는 영상에서 404**. 미리보기가 이 한 URL 만 시도하면 개인 업로드·가사영상 등에서 영영 빈다. 해법: `thumbnails` 리스트 상위 후보 + videoid 로 조립한 표준 URL(maxres→sd→`hqdefault`)을 후보 리스트로 넘겨 순차 폴백. `hqdefault` 는 모든 YouTube 영상에 존재하는 최후의 보루. (2026-07-09)
 - HLS 는 `total_bytes` / `total_bytes_estimate` 둘 다 없어 yt-dlp ETA 산식 불성립. `_eta_str` placeholder 감지 + `pct` × `elapsed` 추정으로 `~M:SS` 우회.
 - **`pre_process` 단계 커스텀 PostProcessor 가 info dict 사전 가공의 정공법**. `ydl.add_post_processor(MyPP(), when="pre_process")`. NFC 정규화, `meta_<key>` 사전 주입, 사용자 정의 메타 가공은 이 단계. `MetadataParserPP` INTERPRET 는 기존 값 재해석 도구일 뿐 외부 값 주입 불가. (출처: ADR-004)
 - `FFmpegMetadataPP` 는 info dict 의 `title` / `artist` / `description` 을 직접 읽음. 메타 통제는 ffmpeg 인자 우회보다 info dict 정규화 + `pre_process` PP 가 단순·견고.

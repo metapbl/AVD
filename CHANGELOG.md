@@ -25,6 +25,11 @@
 
 ## 2026-07-09
 
+- **`fix(thumbnail)`**: 미리보기 썸네일 누락 근본 해소 — 후보 URL 폴백 체인.
+    - 실기 검증에서 다운로드는 완료되나 리스트 썸네일이 일부(약 44%) 비는 증상 확인. 원인은 앱이 `info["thumbnail"]` 단일 URL(YouTube `maxresdefault.jpg`)만 시도하는데, 최고화질 원본이 없는 영상(개인 업로드·가사영상 등)은 그 URL 이 404 라 재시도해도 영영 실패였음. #1 의 동시성 게이트는 "요청 폭주 타임아웃" 만 완화했을 뿐 이 404 원인은 별개였음.
+    - 해법: `InfoFetcher` 가 `thumbnail` 단일값 대신 `thumbnail_candidates`(화질 내림차순 리스트)를 만든다. (a) yt-dlp `thumbnails` 리스트 상위 후보 + (b) YouTube videoid 로 조립한 표준 URL(maxres→sd→**hqdefault**). `hqdefault` 는 모든 YouTube 영상에 존재하는 최후의 보루. `ThumbnailWorker` 가 후보를 순서대로 시도해 첫 성공에서 멈춘다. 모든 후보 실패 시 마지막 사유를 콘솔에 진단 로그로 남긴다.
+    - 검증: 실제 영상 후보 리스트 7개 생성·hqdefault 폴백 포함 확인, 워커 통합(첫 404→다음 후보 성공, 전부 404→failed, 단일 문자열 하위호환) 통과, Qt webp 지원 확인, ruff/compile/app-boot OK.
+
 - **`feat(worker)`**: 다운로드 일시적 오류 자동 재시도·백오프 (무인 회복). **(ADR-007)**
     - `DownloadWorker.run()` 이 `Downloader.download()` 전체를 세션 레벨 재시도 루프로 감쌈. 매 시도 `Downloader` 를 새로 생성(=새 `YoutubeDL` 세션, `extract_info` 재실행)해 만료 토큰을 갱신 — yt-dlp 내부 `retries=10` 이 못 고치는 시작 시점 토큰 만료 403 을 회복.
     - 오류 분류 `_is_transient_error`: 영구 패턴(비공개·삭제·지역차단·연령제한 등) 우선 검사 후 일시 패턴(403·429·5xx·타임아웃·연결 오류 등), 어디에도 안 걸리면 보수적으로 영구(즉시 ERROR). 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 최종 실패 시에만 `error` 1회.
