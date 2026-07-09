@@ -613,8 +613,21 @@ class DownloadItemWidget(QWidget):
         # 활성 상태로 (재)진입할 때 ERROR 시 적용된 빨간 색을 원복
         self.lbl_status.setStyleSheet("")
 
+        # ✕(삭제) 버튼 가시성 규약 (2026-07-10):
+        #   활성 상태(FETCHING/DOWNLOADING/MERGING) 에서는 ✕ 를 숨긴다.
+        #   "취소"(중단) 버튼과 ✕(취소+제거) 가 나란히 보이면 사용자가
+        #   "둘 다 그만두는 버튼인데 왜 둘인가" 로 혼란스러워하기 때문.
+        #   진행 중에는 '취소' 단일 경로로 통일하고, 비활성 상태
+        #   (WAITING/DONE/ERROR/CANCELLED) 에서만 ✕ 로 목록에서 제거한다.
+        active = status in (
+            DownloadStatus.FETCHING,
+            DownloadStatus.DOWNLOADING,
+            DownloadStatus.MERGING,
+        )
+        self.btn_remove.setVisible(not active)
+
         if status == DownloadStatus.WAITING:
-            # 큐 대기 — 취소·열기 모두 숨김, ✕ 만 노출.
+            # 큐 대기 — 취소·열기 숨김, ✕ 만 노출.
             # 순번 라벨("대기 중 (N번째)") 은 MainWindow 가 dispatch 직후
             # update_waiting_position 으로 주입한다. 그때까지는 enum 의
             # 기본 라벨("대기중") 이 표시된다.
