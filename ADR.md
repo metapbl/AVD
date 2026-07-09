@@ -118,6 +118,10 @@ A. `process_ie_result` 유지 + 토큰만 재발급 — 사적 API 호출 필요
 
 ADR-001 (후처리 체인). LESSONS yt-dlp 항목의 `process_ie_result` 함정.
 
+**후기 (2026-07-10, 부분 번복)**
+
+위 결정 중 `info["meta_comment"] = info.get("description") or ""` 부분만 번복 — `meta_comment` 를 **빈 문자열**로 변경(커밋 `d273280`). `webpage_url → comment` 자동 매핑을 차단한다는 목적은 유지되지만, description 을 넣으면 FFmpeg 가 이를 비표준 `TXXX:comment` (UTF-16) 프레임으로 써 한글 Windows '주석' 열에서 mojibake 가 됐다. 빈 값이면 comment 프레임 자체가 안 생겨(실측) 문제 소멸. 영상 URL 은 `purl` 태그가 보관하므로 정보 손실 없음. `pre_process` PP 정공법과 자동 매핑 차단 메커니즘은 그대로 유효.
+
 ---
 
 ### ADR-005: (예약됨) 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일

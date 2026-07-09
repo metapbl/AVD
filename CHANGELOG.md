@@ -25,6 +25,10 @@
 
 ## 2026-07-10
 
+- **`fix(downloader)`** `d273280`: MP3 '주석(comment)' 태그 깨짐 해소 — `meta_comment` 빈 값 **(ADR-004 부분 번복)**.
+    - ID3v1 제거(아래 항목) 뒤에도 MP3 '주석' 열만 `?뱀떊怨쇱쓽…` 로 계속 깨진다는 실기 재보고. 제목·아티스트·장르·날짜는 정상. 원인은 별개 문제였다: `_NFCNormalizePP` 가 `meta_comment` 에 YouTube description 을 넣으면 `FFmpegMetadataPP` 가 이를 **비표준 `TXXX:comment` 프레임에 UTF-16 으로** 쓰는데, 한글 Windows 탐색기 '주석' 열이 이 프레임을 CP949 로 오해석해 깨졌다. 표준 `TIT2`/`TPE1`(제목·아티스트)은 영향 없어 "주석만" 깨진 것.
+    - 해법: `meta_comment` 를 빈 문자열로 둔다. 빈 값이면 ffmpeg 가 comment 프레임 자체를 만들지 않아(실측 확인) 깨질 텍스트가 남지 않는다. 영상 URL 은 별도로 박히는 `purl` 태그가 보관하므로 정보 손실 없음. (ADR-004 는 여기 description 을 넣도록 했었음 — 그 부분만 번복.)
+
 - **`fix(ui)`** `2d830e6`: yt-dlp 업데이트 진행바 100% 굳음 해소 — 결정 진행바 + 단계 기반 진행률.
     - 실기에서 업데이트 진행바가 0~100% 로 차오르지 않고 100% 만 보였다. 원인은 busy 인디케이터(`setRange(0,0)`) 가 Fusion 스타일 + 모달 `exec()` 환경의 Windows 에서 애니메이션이 안 돌고 꽉 찬 막대로 굳어 보인 것.
     - 해법: 결정(0~100) 진행바로 바꾸고 pip 출력 단계를 인식해 계단식으로 올린다(Collecting 10 → Downloading 15, 받은/전체 MB 파싱 시 15~55% → Installing 60 → Uninstalled 85 → Installed 95 → done 100). 다운로드 진행 라인이 'downloading' 단어 없이 `1.6/3.2 MB` 형태로만 오는 경우가 많아 크기 패턴을 단어와 무관하게 검사. 단조 증가만 허용하고, 정체 구간은 400ms heartbeat 로 +1 씩 기어가 '멈추지 않음' 을 보장.
