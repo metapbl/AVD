@@ -19,15 +19,25 @@ class _NFCNormalizePP(PostProcessor):
     한글 메타가 ID3 TIT2 / m4a ©nam atom / 파일명에 NFD 로 박히는 것을 차단.
 
     동시에 FFmpegMetadataPP 의 webpage_url → comment 자동 매핑도 차단 —
-    yt-dlp 소스의 _get_metadata_opts 가 add() 호출 뒤에 도는 meta_<key>
-    regex 루프가 우리 meta_comment 값을 최종으로 덮어쓰는 메커니즘 이용.
-    description 이 있으면 그것을, 없으면 빈 문자열. URL 보관은 별도로 박히는
-    purl 태그가 담당하므로 정보 손실 없음.
+    yt-dlp 소스의 _get_metadata_opts 가 add(('purl','comment'),'webpage_url')
+    로 comment 에 영상 URL 을 박는데, 그 뒤에 도는 meta_<key> regex 루프가
+    우리 meta_comment 값을 최종으로 덮어쓰는 메커니즘을 이용한다.
+
+    meta_comment 를 "빈 문자열" 로 둔다(2026-07-10 개정). 빈 값이면 ffmpeg 가
+    comment 프레임 자체를 만들지 않아(실측 확인) URL 도, 깨질 텍스트도 남지
+    않는다. URL 보관은 별도로 박히는 purl 태그가 담당하므로 정보 손실 없음.
+
+    ⚠ 과거엔 여기 description 을 넣었으나(ADR-004), FFmpeg 가 comment 를
+      비표준 TXXX:comment 프레임에 UTF-16 으로 쓰는 탓에 한글 Windows 의
+      일부 플레이어·탐색기 '주석' 열에서 "?뱀떊怨쇱쓽…" mojibake 로 보였다.
+      제목/아티스트(표준 TIT2/TPE1)는 멀쩡한데 주석만 깨진 원인이 이것.
+      YouTube description 은 링크·해시태그 범벅이라 태그로서 가치도 낮아 뺀다.
     """
 
     def run(self, info):
         self._normalize_in_place(info)
-        info["meta_comment"] = info.get("description") or ""
+        # description 이 아니라 빈 문자열. 위 docstring 의 근거 참고.
+        info["meta_comment"] = ""
         return [], info
 
     @staticmethod
