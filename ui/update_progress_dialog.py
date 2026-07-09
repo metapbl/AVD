@@ -8,9 +8,18 @@
 #   - UpdateWorker.progress_text 를 실시간 상태 라벨에 흘려
 #     "멈춘 게 아니라 진행 중"임을 눈으로 보여 준다.
 #
-# pip 은 정확한 % 를 주지 않으므로 진행바는 '분주(busy)' 인디케이터로 둔다.
+# 진행바 정책 (2026-07-10 개정):
+#   초기 구현은 busy 인디케이터(setRange(0,0))였는데, Fusion 스타일 +
+#   모달 exec() 환경의 Windows 에서 애니메이션이 안 돌고 100% 로 꽉 찬
+#   막대처럼 보였다. pip 은 신뢰할 % 를 주지 않으므로(다운로드는 순식간,
+#   설치 단계는 % 없음) 결정(0~100) 진행바 + "단계 기반 의사 진행률" 로
+#   바꾼다. pip 출력 단계를 인식해 막대를 계단식으로 올려, Windows 에서도
+#   막대가 왼쪽→오른쪽으로 실제로 차오르는 것이 보이게 한다. 다운로드
+#   라인의 "받은/전체 MB" 는 있으면 그 구간(15~55%) 안에서 반영한다.
 
-from PySide6.QtCore import Qt
+import re
+
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -19,6 +28,10 @@ from PySide6.QtWidgets import (
     QPushButton,
     QHBoxLayout,
 )
+
+
+# pip 다운로드 진행 라인의 "3.2/3.2 MB" 같은 받은/전체 용량 패턴.
+_SIZE_RE = re.compile(r"([\d.]+)\s*/\s*([\d.]+)\s*(k|K|M|G)?i?B", re.IGNORECASE)
 
 
 class UpdateProgressDialog(QDialog):
@@ -47,6 +60,13 @@ class UpdateProgressDialog(QDialog):
 
         # 업데이트가 끝나기 전에는 닫힐 수 없음을 표시하는 내부 플래그
         self._finished = False
+        # 단계 기반 의사 진행률의 현재 값(단조 증가만 허용 — 뒤로 안 감).
+        self._pct = 0
+        # 완료 전까지 막대가 절대 굳어 보이지 않도록, 진행이 없어도 아주
+        # 조금씩 기어가게 하는 heartbeat 타이머(살아 있음 신호).
+        self._heartbeat = QTimer(self)
+        self._heartbeat.setInterval(400)
+        self._heartbeat.timeout.connect(self._creep)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 20, 20, 16)
@@ -58,16 +78,23 @@ class UpdateProgressDialog(QDialog):
         self.lbl_title.setWordWrap(True)
         layout.addWidget(self.lbl_title)
 
-        # 분주(busy) 진행바: 최소=최대=0 이면 Qt 가 좌우로 흐르는 애니메이션을 준다.
+        # 결정(0~100) 진행바. busy 모드는 Windows/Fusion 에서 100% 로 굳어
+        # 보였기에 쓰지 않는다. 값은 _bump/_set_pct 로 단조 증가시킨다.
         self.bar = QProgressBar(self)
-        self.bar.setRange(0, 0)
-        self.bar.setTextVisible(False)
+        self.bar.setRange(0, 100)
+        self.bar.setValue(0)
+        self.bar.setTextVisible(True)
+        self.bar.setFormat("%p%")
         layout.addWidget(self.bar)
 
         self.lbl_status = QLabel("준비 중…")
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setStyleSheet("color: #9aa0a6; font-size: 12px;")
         layout.addWidget(self.lbl_status)
+
+        # 다이얼로그가 뜨는 즉시 heartbeat 시작(막대가 살아 움직이도록).
+        self._set_pct(3)
+        self._heartbeat.start()
 
         # 하단 버튼: 진행 중에는 비활성. 완료되면 '닫기' 로 바뀐다.
         btn_row = QHBoxLayout()
@@ -81,18 +108,54 @@ class UpdateProgressDialog(QDialog):
     # ── 워커 시그널 슬롯 ─────────────────────────────
 
     def append_line(self, line: str):
-        """UpdateWorker.progress_text → 상태 라벨 갱신(마지막 줄만 표시)."""
-        # pip 출력이 길 수 있어 한 줄만 잘라 보여 준다.
-        text = line.strip()
-        if len(text) > 80:
-            text = text[:77] + "…"
-        self.lbl_status.setText(text)
+        """UpdateWorker.progress_text → 상태 라벨 + 단계 기반 진행률 갱신.
+
+        pip 은 신뢰할 전체 % 를 주지 않으므로, 출력 단계를 인식해 막대를
+        계단식으로 올린다. 각 단계의 목표 하한(floor)까지 _set_pct 로 올리고,
+        그 사이 heartbeat 가 조금씩 더 채운다. 단조 증가만 허용.
+        """
+        raw = line.strip()
+        low = raw.lower()
+
+        # 다운로드 진행 라인은 "downloading" 단어 없이 "1.6/3.2 MB 27 MB/s"
+        # 형태로만 오는 경우가 많다. 그래서 크기 패턴을 단어보다 먼저,
+        # 단어와 무관하게 검사해 15~55% 구간에 매핑한다.
+        size_m = _SIZE_RE.search(raw)
+
+        # 단계 인식 → 목표 진행률 하한. pip 표준 출력 문구 기준.
+        if "collecting" in low or "requirement already satisfied" in low:
+            self._bump(10)
+        elif "downloading" in low or size_m is not None:
+            # 다운로드 구간. 받은/전체 MB 가 있으면 15~55% 로 매핑, 없으면 15%.
+            self._bump(15)
+            if size_m is not None:
+                try:
+                    got = float(size_m.group(1))
+                    total = float(size_m.group(2))
+                    if total > 0:
+                        frac = max(0.0, min(1.0, got / total))
+                        self._bump(15 + int(frac * 40))  # 15→55
+                except ValueError:
+                    pass
+        elif "installing" in low or "attempting uninstall" in low:
+            self._bump(60)
+        elif "uninstalling" in low:
+            self._bump(70)
+        elif "successfully uninstalled" in low:
+            self._bump(85)
+        elif "successfully installed" in low:
+            self._bump(95)
+
+        # 상태 라벨: 한 줄만, 길면 잘라서.
+        if raw:
+            text = raw if len(raw) <= 80 else raw[:77] + "…"
+            self.lbl_status.setText(text)
 
     def on_done(self, success: bool, message: str):
         """UpdateWorker.done → 진행 종료. 닫기 허용 + 결과 표시."""
         self._finished = True
-        self.bar.setRange(0, 1)
-        self.bar.setValue(1)
+        self._heartbeat.stop()
+        self._set_pct(100)
         self.lbl_status.setText(message)
         self.lbl_status.setStyleSheet(
             "color: %s; font-size: 12px;" % ("#4caf50" if success else "#e57373")
@@ -100,16 +163,45 @@ class UpdateProgressDialog(QDialog):
         self.btn_close.setText("닫기")
         self.btn_close.setEnabled(True)
 
+    # ── 진행률 헬퍼 ──────────────────────────────────
+
+    def _set_pct(self, value: int):
+        """진행률을 value 로 설정(0~100, 단조 증가만)."""
+        value = max(0, min(100, int(value)))
+        if value < self._pct:
+            return
+        self._pct = value
+        self.bar.setValue(value)
+
+    def _bump(self, floor: int):
+        """현재 진행률을 최소 floor 까지 끌어올린다(이미 크면 유지)."""
+        if floor > self._pct:
+            self._set_pct(floor)
+
+    def _creep(self):
+        """heartbeat: 완료 전이면 막대를 아주 조금씩 전진시켜 '살아 있음' 표시.
+
+        다음 단계 하한을 넘지 않도록 최대 95% 까지만, 매 틱 +1 로 기어간다.
+        단계 이벤트가 오면 _bump 가 훌쩍 끌어올리므로, creep 은 '정체 구간에
+        서도 막대가 미세하게 움직인다'는 인상만 담당한다.
+        """
+        if self._finished:
+            return
+        if self._pct < 95:
+            self._set_pct(self._pct + 1)
+
     # ── 강제 종료 방지 ───────────────────────────────
 
     def reject(self):
         # ESC 등으로 닫으려는 시도. 완료 전에는 무시한다.
         if self._finished:
+            self._heartbeat.stop()
             super().reject()
 
     def closeEvent(self, event):
         # 창 닫기(X) 시도. 완료 전에는 막는다.
         if self._finished:
+            self._heartbeat.stop()
             event.accept()
         else:
             event.ignore()
