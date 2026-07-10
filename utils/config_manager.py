@@ -9,7 +9,6 @@ from pathlib import Path
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
 
 # 기본 설정값
-# 기본 설정값
 DEFAULT_CONFIG = {
     "save_path"         : str(Path.home() / "Downloads"),  # 기본 저장 경로
     "max_concurrent"    : 2,       # 동시 다운로드 최대 개수
@@ -19,6 +18,8 @@ DEFAULT_CONFIG = {
     "auto_update_ytdlp" : True,    # yt-dlp 자동 업데이트 여부
     "theme"             : "dark",  # UI 테마 (dark / light)
     "language"          : "ko",    # 언어 설정
+    "mp3_gain_enabled"  : False,   # MP3 다운로드 시 음량 정규화 여부
+    "mp3_gain_db"       : 89.0,    # 목표 음량 (dB). 75.0~105.0 범위, 기본 89.0
 }
 
 

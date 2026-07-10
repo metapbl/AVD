@@ -7,13 +7,14 @@ from enum import Enum
 
 class DownloadStatus(Enum):
     """다운로드 상태값 정의"""
-    WAITING    = "대기중"
-    FETCHING   = "정보 가져오는 중"
+    WAITING     = "대기중"
+    FETCHING    = "정보 가져오는 중"
     DOWNLOADING = "다운로드 중"
-    MERGING    = "병합 중"
-    DONE       = "완료"
-    ERROR      = "오류"
-    CANCELLED  = "취소됨"
+    MERGING     = "병합 중"
+    NORMALIZING = "음량 조정 중"
+    DONE        = "완료"
+    ERROR       = "오류"
+    CANCELLED   = "취소됨"
 
 
 @dataclass
@@ -67,4 +68,5 @@ class DownloadItem:
             DownloadStatus.FETCHING,
             DownloadStatus.DOWNLOADING,
             DownloadStatus.MERGING,
+            DownloadStatus.NORMALIZING,
         )
