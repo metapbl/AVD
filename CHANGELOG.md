@@ -25,6 +25,15 @@
 
 ## 2026-07-10
 
+- **`chore`** `e1a8a26`: GaindB 패키지 벤더링 (mp3gain 클린룸 재구현) — MP3 음량 정규화용. **(ADR-008)**
+    - `gaindb/` 8개 파일(`__init__`·`analysis`·`decode`·`frame`·`id3`·`tag`·`writer`·`apply_gain`)을 별도 프로젝트(GaindB)에서 AVD 루트로 복사. MIT(AVD) 안에 클린룸 재구현 코드를 담되 출처·라이선스 근거는 GaindB 의 `LICENSE_REVIEW.md` 로 소급.
+
+- **`feat`** `17c8933`: NORMALIZING 상태 + mp3 게인 설정 키 추가 (음량 정규화 토대). **(ADR-008)**
+    - `models/download_item.py` 의 `DownloadStatus` 에 `NORMALIZING = "음량 조정 중"` 추가, `is_active` 에 포함(진행 중으로 카운트). `utils/config_manager.py` `DEFAULT_CONFIG` 에 `mp3_gain_enabled`(bool, 기본 False)·`mp3_gain_db`(float, 기본 89.0, 범위 75.0~105.0) 두 키 추가.
+
+- **`feat`** `51a071f`: 다운로드 후 MP3 음량 정규화 적용 + 병합·정규화 시 동시성 슬롯 해제. **(ADR-008)**
+    - `workers/download_worker.py` 에 `normalizing`/`normalize_failed(str)` 시그널과 `_apply_gain_normalization()` 추가. MP3(`ext == "mp3"`) + `gain_enabled` 일 때만 트랙 모드로 `apply_track_gain()` 호출(`db_gain_mod = gain_db - 89.0`). 실패 시 `normalize_failed` emit 후에도 `download_finished` 는 그대로 emit(게인은 부가 기능). `controllers/download_manager.py` 가 `active_count()` 에서 MERGING·NORMALIZING 을 제외해 슬롯을 풀고, `item_normalize_failed` 로 실패를 중계. numpy 2.5.1·scipy 1.18.0(BSD) 을 `requirements.txt` 에 추가(GaindB ReplayGain 분석용).
+
 - **`fix(downloader)`** `d273280`: MP3 '주석(comment)' 태그 깨짐 해소 — `meta_comment` 빈 값 **(ADR-004 부분 번복)**.
     - ID3v1 제거(아래 항목) 뒤에도 MP3 '주석' 열만 `?뱀떊怨쇱쓽…` 로 계속 깨진다는 실기 재보고. 제목·아티스트·장르·날짜는 정상. 원인은 별개 문제였다: `_NFCNormalizePP` 가 `meta_comment` 에 YouTube description 을 넣으면 `FFmpegMetadataPP` 가 이를 **비표준 `TXXX:comment` 프레임에 UTF-16 으로** 쓰는데, 한글 Windows 탐색기 '주석' 열이 이 프레임을 CP949 로 오해석해 깨졌다. 표준 `TIT2`/`TPE1`(제목·아티스트)은 영향 없어 "주석만" 깨진 것.
     - 해법: `meta_comment` 를 빈 문자열로 둔다. 빈 값이면 ffmpeg 가 comment 프레임 자체를 만들지 않아(실측 확인) 깨질 텍스트가 남지 않는다. 영상 URL 은 별도로 박히는 `purl` 태그가 보관하므로 정보 손실 없음. (ADR-004 는 여기 description 을 넣도록 했었음 — 그 부분만 번복.)

@@ -47,6 +47,13 @@
 
 ### 3.1. 진행 중 (In Progress)
 
+- **GaindB 음량 정규화 — 클리핑 판정 선작업 후 UI·완료 표시 재개 (ADR-008 후속)**
+    - 상태: 핵심 로직·설정 키·벤더링까지 push 완료(`e1a8a26`/`17c8933`/`51a071f`). 설정 UI·완료 라벨 표시는 방향 재설정으로 미착수(작성했던 SpinBox 초안은 창 레이아웃 깨짐·화살표 미표시로 폐기, `git restore` 로 원복함).
+    - 선행 과제(별도 프로젝트): GaindB 본체 `apply_track_gain` 반환에 클리핑 판정 필드(`predicted_peak`/`will_clip`) 추가. 방침 확정 — 클리핑이 나더라도 목표 dB 를 강제 적용하고 여부만 표시(자동 클립 방지 -k 안 함). 판정식: `predicted_peak = peak * 2**(steps/4)`, `will_clip = predicted_peak > 1.0`. GaindB 에서 정리 후 AVD 벤더링본에 반영.
+    - UI 재작업: 환경설정 게인 그룹을 동시 다운로드 다이얼(`ConcurrentSlider`) 방식 폐기 → 일반 유틸리티 버튼형 컨트롤로. 목표 dB 최소/최대/기본값(75.0/105.0/89.0)은 텍스트로 안내 표기. SpinBox 채택 시 다크 테마 화살표 미표시 문제 해결 필요(버튼 제거 vs 스타일 수정 미정).
+    - 완료 표시: 워커가 `apply_track_gain` 반환에서 `steps`(→ 적용 dB ≈ `steps*1.5`)·`will_clip` 을 받아 시그널로 전달, 위젯이 완료 라벨을 `완료 · 음량 +4.5dB` 또는 `완료 · 음량 +6.0dB (클리핑)` 로 표시. 실패는 기존 `완료(음량 조정 실패)` 라벨 자리 공유(팝업 없음).
+    - 문서 잔여: 위 3건 완료 후 CHANGELOG 항목 추가, README 에 게인 기능·numpy/scipy 의존 한 줄, LICENSE_REVIEW 에 벤더링본 클리핑 필드 추가 내역 반영.
+
 - **2026-07-09 작업분 Windows 실환경 검증** — 썸네일 게이트·다운로드 자동 재시도(ADR-007)·썸네일 폴백 체인·봇 차단 안내·yt-dlp 업데이트 비동기 모달(`1fd5c95`) 을 실기에서 확인. 절차서: [`docs/VERIFY_2026-07-09.md`](./docs/VERIFY_2026-07-09.md). 사용자 검증 완료 후 이 항목 삭제.
 
 ### 3.2. 단기 (Short-term, 1~2 세션 내)
@@ -155,6 +162,7 @@
 - **ADR-005** 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일 (Proposed, TBD) — `FFmpegExtractAudio` 의 192 kbps 일괄 적용이 고음질 원본을 다운컨버트하는 문제. 네 갈래 검토 (환경설정 노출 / 컨테이너만 변경 / 다이얼로그 드롭다운 / 조건부 확인). → [ADR.md#adr-005](./ADR.md#adr-005)
 - **ADR-006** 플레이리스트 일괄 다운로드 — 글로벌 포맷 선택과 워커 시그널 규율 (Accepted, 2026-06-02) — 한 URL → 상한 500 경량 목록(`extract_flat`) → 체크박스 선택 다이얼로그 → 영상/음원 단일 선택 전체 적용. 정보추출은 다운로드 `max_concurrent` 공유 게이트. 워커 커스텀 시그널이 QThread 내장 `finished` 를 가리던 크래시를 시그널 개명(`download_finished`/`info_ready`/`thumb_ready`)으로 해소. → [ADR.md#adr-006](./ADR.md#adr-006)
 - **ADR-007** 다운로드 자동 재시도 — yt-dlp retries 위의 세션 레벨 재시도 (Accepted, 2026-07-09) — `DownloadWorker.run()` 이 `Downloader.download()` 전체를 재시도 루프로 감싸 매 시도 새 `YoutubeDL` 세션으로 만료 토큰을 갱신. 메시지 패턴 오류 분류(`_is_transient_error`, 판단 불가는 영구 취급), 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 백오프 대기 중 취소 폴링. `retrying` 시그널 → "재시도 중 (N/M)" 라벨. → [ADR.md#adr-007](./ADR.md#adr-007)
+- **ADR-008** GaindB(mp3gain 클린룸) 통합 — MP3 다운로드 후 음량 정규화 (Accepted 부분, 2026-07-10) — GaindB 벤더링으로 MP3 완료 직후 트랙 모드 음량 정규화(목표 89dB, 75.0~105.0). MP3 한정, 게인 실패해도 다운로드는 성공+실패 표시, MERGING·NORMALIZING 슬롯 해제. numpy/scipy(BSD) 추가. UI·클리핑 표시는 진행 중. → [ADR.md#adr-008](./ADR.md#adr-008)
 
 ---
 
