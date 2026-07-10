@@ -8,11 +8,20 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
+from gaindb.apply_gain import apply_track_gain
 from utils.file_utils import (
     strip_ansi,
     snapshot_child_pids,
     terminate_pids,
 )
+
+
+# ── MP3 음량 정규화 목표 기준값 ──────────────────────
+# GaindB(mp3gain clean-room)의 ReplayGain 분석은 89dB 기준으로 조정량을
+# 산출한다. 사용자가 목표 음량을 바꾸면 (목표 - 89) 를 db_gain_mod 로 넘겨
+# 기준선을 이동시킨다. apply_track_gain 이 이 값을 dB 에 더한 뒤 스텝으로
+# 양자화한다. 이 상수는 GaindB analysis.py 의 89dB 표준과 짝을 이룬다.
+_GAIN_REFERENCE_DB = 89.0
 
 
 # yt-dlp 가 ETA / 크기 자리에 "값 없음" 의미로 박는 placeholder 들.
@@ -230,6 +239,15 @@ class DownloadWorker(QThread):
         eta                  : 남은 시간 문자열 (예: "0:42", HLS 폴백 시 "~0:42")
         file_size            : 파일 크기 문자열 (예: "128.5 MiB")
         merging              : 영상+음성 병합 시작 알림
+        normalizing          : MP3 음량 정규화 시작 알림. 다운로드·후처리가
+                               모두 끝난 mp3 파일에 GaindB 게인 적용을 시작할
+                               때 발사. 매니저가 위젯을 NORMALIZING 상태로
+                               전이시키고 동시성 슬롯을 회수하는 트리거로 쓴다.
+        normalize_failed     : MP3 음량 정규화 실패 알림 (사유 문자열). 파일
+                               자체는 정상적으로 받아졌으므로 다운로드는 완료로
+                               처리하되, 게인 적용이 실패했음을 사용자에게
+                               알리는 부가 신호. 이 시그널 뒤에도
+                               download_finished 는 정상 발사된다.
         codec_info_resolved  : 다운로드/후처리 진행 중 확정된 코덱·비트레이트
                                (vcodec, acodec, ext, abr, tbr) — 여러 번 발사
                                될 수 있으며 마지막 값이 최종 진실. 위젯은 매번
@@ -253,6 +271,8 @@ class DownloadWorker(QThread):
     eta                  = Signal(str)                          # 남은 시간
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
+    normalizing          = Signal()                             # 음량 정규화 시작
+    normalize_failed     = Signal(str)                          # 음량 정규화 실패 (사유)
     codec_info_resolved  = Signal(str, str, str, float, float)  # vcodec, acodec, ext, abr, tbr
     retrying             = Signal(int, int)                     # 자동 재시도 (현재 시도, 최대)
     download_finished    = Signal(str)                          # 완료 (파일 경로)
@@ -261,16 +281,20 @@ class DownloadWorker(QThread):
 
     def __init__(
         self,
-        url         : str,
-        format_id   : str,
-        ext         : str,
-        save_dir    : str,
+        url          : str,
+        format_id    : str,
+        ext          : str,
+        save_dir     : str,
+        gain_enabled : bool  = False,
+        gain_db      : float = _GAIN_REFERENCE_DB,
     ):
         super().__init__()
-        self.url        = url
-        self.format_id  = format_id
-        self.ext        = ext
-        self.save_dir   = save_dir
+        self.url          = url
+        self.format_id    = format_id
+        self.ext          = ext
+        self.save_dir     = save_dir
+        self.gain_enabled = gain_enabled
+        self.gain_db      = gain_db
         self._downloader = Downloader()
         self._output_path = ""  # 완료된 파일 경로 저장용
 
@@ -320,6 +344,10 @@ class DownloadWorker(QThread):
         자동 재시도하되, 매 시도마다 Downloader 를 새로 만들어(=새 YoutubeDL
         세션) 만료 토큰을 새로 받게 한다. 영구 오류·판단 불가·취소는 즉시
         해당 결과로 종료한다.
+
+        다운로드가 성공하면(취소·에러 아님), mp3 이고 음량 정규화가 켜진
+        경우에 한해 _apply_gain_normalization() 을 호출한다. 게인 적용은
+        "덤" 이라 실패해도 다운로드 자체는 성공으로 처리한다.
         """
         try:
             from yt_dlp.utils import DownloadCancelled
@@ -399,7 +427,48 @@ class DownloadWorker(QThread):
         elif errored:
             self.error.emit(error_msg)
         else:
+            # 다운로드 성공 — mp3 이고 음량 정규화가 켜졌으면 게인 적용.
+            self._apply_gain_normalization()
             self.download_finished.emit(self._output_path)
+
+    def _apply_gain_normalization(self):
+        """
+        완성된 mp3 파일에 GaindB Track 음량 정규화를 적용한다.
+
+        대상 조건: 확장자가 mp3 이고, 음량 정규화가 켜져 있고, 출력 경로가
+        실제 존재하는 파일일 때만. (mp3 로 명시 다운로드한 경우에만 — "최고
+        화질 자동" 으로 m4a 가 나온 경우는 ext != "mp3" 라 대상 아님.)
+
+        목표 음량 조절: GaindB 의 ReplayGain 은 89dB 기준으로 조정량을
+        산출하므로, 사용자 목표(gain_db) 에서 89 를 뺀 값을 db_gain_mod 로
+        넘겨 기준선을 이동시킨다.
+
+        실패 처리: 게인 적용은 "덤" 이므로 어떤 예외가 나도 다운로드 자체는
+        성공으로 남긴다. 실패 시 normalize_failed 로 사유만 알리고, 파일은
+        받아진 원본 그대로 둔다(GaindB apply_track_gain 은 실패 시 파일을
+        변형하지 않거나, 변형 전 단계에서 예외를 던진다).
+        """
+        if not self.gain_enabled:
+            return
+        if (self.ext or "").lower() != "mp3":
+            return
+        path = self._output_path
+        if not path or not Path(path).is_file():
+            return
+
+        # 음량 조정 시작 알림 — 매니저가 NORMALIZING 상태 전이 + 슬롯 회수.
+        self.normalizing.emit()
+
+        try:
+            db_gain_mod = float(self.gain_db) - _GAIN_REFERENCE_DB
+            result = apply_track_gain(path, db_gain_mod=db_gain_mod)
+            status = result.get("status")
+            if status == "not_enough_samples":
+                self.normalize_failed.emit(
+                    "음량 분석에 필요한 샘플이 부족합니다."
+                )
+        except Exception as e:
+            self.normalize_failed.emit(str(e))
 
     def _is_cancelled(self) -> bool:
         """현재 Downloader 가 취소 요청을 받았는지."""

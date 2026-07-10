@@ -19,6 +19,16 @@ class DownloadManager(QObject):
       읽기·순회 용도로 참조를 받는다.
     - 진행률·속도·ETA·병합 시그널은 워커→위젯을 직접 연결한다.
 
+    동시성 슬롯 정책 (2026-07-10):
+    - 다운로드 슬롯(max_concurrent) 은 실제 네트워크 다운로드만 점유한다.
+      병합(MERGING)·음량 정규화(NORMALIZING) 는 다운로드가 아니라 후처리
+      (CPU·디스크 작업) 이므로 슬롯에서 제외한다. active_count() 가 이 두
+      상태를 세지 않으므로, 항목이 병합/정규화 단계에 진입하는 순간 슬롯이
+      풀려 다음 WAITING 항목이 출발한다. 진입 시점 트리거는 워커의
+      merging / normalizing 시그널에 붙인 매니저 슬롯이 _dispatch_next() 를
+      호출해 만든다. 병합·정규화 동시 실행에는 별도 한도를 두지 않는다
+      (디스크 I/O 포화가 실측되면 별도 한도 도입을 ADR 로 검토).
+
     워커 수명 관리 (크래시 방지):
     - DownloadWorker 의 "작업 결과" 는 download_finished/error/cancelled 로
       받는다 (QThread 내장 finished 를 가리지 않는 이름).
@@ -34,17 +44,19 @@ class DownloadManager(QObject):
         cancel(item_id)    : 단건 취소 시그널을 워커에 송신
         cancel_all()       : 진행 중 워커 일괄 취소
         is_active(item_id) : 해당 항목의 워커가 isRunning() 인지
-        active_count()     : 진행 중 워커 수
+        active_count()     : 다운로드 슬롯을 점유 중인 워커 수
 
     매니저가 발사하는 시그널 (라이프사이클만):
         item_done(item_id, path)
         item_error(item_id, message)
         item_cancelled(item_id)
+        item_normalize_failed(item_id, reason)
     """
 
-    item_done      = Signal(str, str)
-    item_error     = Signal(str, str)
-    item_cancelled = Signal(str)
+    item_done             = Signal(str, str)
+    item_error            = Signal(str, str)
+    item_cancelled        = Signal(str)
+    item_normalize_failed = Signal(str, str)
 
     def __init__(
         self,
@@ -67,8 +79,25 @@ class DownloadManager(QObject):
         return w is not None and w.isRunning()
 
     def active_count(self) -> int:
-        """현재 진행 중인 워커 수."""
-        return sum(1 for w in self.dl_workers.values() if w.isRunning())
+        """
+        현재 다운로드 슬롯을 점유 중인 워커 수.
+
+        병합(MERGING)·음량 정규화(NORMALIZING) 단계의 항목은 다운로드가 아니라
+        후처리이므로 슬롯에서 제외한다. 이 두 상태로 넘어간 항목은
+        isRunning() 이 True 라도 세지 않아, 다음 WAITING 항목이 출발할 수 있다.
+        """
+        count = 0
+        for item_id, w in self.dl_workers.items():
+            if not w.isRunning():
+                continue
+            item = self.items.get(item_id)
+            if item is not None and item.status in (
+                DownloadStatus.MERGING,
+                DownloadStatus.NORMALIZING,
+            ):
+                continue
+            count += 1
+        return count
 
     # ── 공개 라이프사이클 진입점 ──────────────────────
 
@@ -156,21 +185,43 @@ class DownloadManager(QObject):
         save_dir = self.config.get("save_path", "")
         item.save_path = save_dir
 
+        # MP3 음량 정규화 설정 — 매니저가 config 에서 뽑아 워커에 값으로 넘긴다
+        # (워커가 config 의존을 갖지 않게). 목표 dB 는 워커가 89 기준으로
+        # 환산한다.
+        gain_enabled = bool(self.config.get("mp3_gain_enabled", False))
+        gain_db      = float(self.config.get("mp3_gain_db", 89.0))
+
         widget.update_status(DownloadStatus.DOWNLOADING)
 
         worker = DownloadWorker(
-            url       = item.url,
-            format_id = item.format_id,
-            ext       = item.ext,
-            save_dir  = save_dir,
+            url          = item.url,
+            format_id    = item.format_id,
+            ext          = item.ext,
+            save_dir     = save_dir,
+            gain_enabled = gain_enabled,
+            gain_db      = gain_db,
         )
-        # 진행률·속도·ETA·크기·병합·코덱정보는 워커→위젯 직접 연결.
+        # 진행률·속도·ETA·크기·코덱정보는 워커→위젯 직접 연결.
         worker.progress.connect(widget.update_progress)
         worker.speed.connect(widget.update_speed)
         worker.eta.connect(widget.update_eta)
         worker.file_size.connect(widget.update_file_size)
+        # 병합·정규화 시작: 위젯 상태 전이(직결) + 매니저 슬롯 회수(별도 슬롯).
+        # ADR-003 정합 — 위젯 직결은 유지하고 매니저는 라이프사이클(_dispatch_next)만.
         worker.merging.connect(
             lambda: widget.update_status(DownloadStatus.MERGING)
+        )
+        worker.merging.connect(
+            lambda iid=item_id: self._on_worker_merging(iid)
+        )
+        worker.normalizing.connect(
+            lambda: widget.update_status(DownloadStatus.NORMALIZING)
+        )
+        worker.normalizing.connect(
+            lambda iid=item_id: self._on_worker_normalizing(iid)
+        )
+        worker.normalize_failed.connect(
+            lambda reason, iid=item_id: self._on_worker_normalize_failed(iid, reason)
         )
         worker.codec_info_resolved.connect(widget.update_format_meta_resolved)
         worker.retrying.connect(widget.update_retrying)
@@ -195,6 +246,27 @@ class DownloadManager(QObject):
         worker.start()
 
     # ── 워커 시그널 수신 → 매니저 시그널 재발사 ────────
+
+    def _on_worker_merging(self, item_id: str):
+        """
+        병합 시작 — 다운로드 슬롯이 풀렸으므로 다음 WAITING 항목을 출발시킨다.
+        위젯 상태 전이는 별도 직결 슬롯이 이미 처리한다.
+        """
+        self._dispatch_next()
+
+    def _on_worker_normalizing(self, item_id: str):
+        """
+        음량 정규화 시작 — 병합과 동일하게 슬롯이 풀렸으므로 다음 항목 출발.
+        위젯 상태 전이는 별도 직결 슬롯이 이미 처리한다.
+        """
+        self._dispatch_next()
+
+    def _on_worker_normalize_failed(self, item_id: str, reason: str):
+        """
+        음량 정규화 실패 — 매니저 시그널로 재발사. 다운로드 자체는 곧이어
+        download_finished 로 완료 처리되므로 여기서는 실패 사실만 전달한다.
+        """
+        self.item_normalize_failed.emit(item_id, reason)
 
     def _on_worker_finished(self, item_id: str, path: str):
         """다운로드 작업 결과(완료). 다음 항목 출발."""
