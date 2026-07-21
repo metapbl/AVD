@@ -112,6 +112,12 @@ def apply_track_gain(
     wrap: bool = False,
     skip_tag: bool = False,
     use_id3: bool = False,
+    seed_db_gain: float = None,
+    seed_peak: float = None,
+    seed_min_gain: int = None,
+    seed_max_gain: int = None,
+    should_cancel=None,
+    on_progress=None,
 ) -> dict:
     """
     한 MP3 파일에 Track ReplayGain 을 무손실 적용한다(원본 applyTrack 순서).
@@ -122,6 +128,19 @@ def apply_track_gain(
 
     use_id3 면 APE 대신 ID3v2 경로로 태그를 읽고/쓴다(원본 -s i).
 
+    씨앗 주입(GUI 이중 디코딩 제거): seed_db_gain·seed_peak·seed_min_gain·
+    seed_max_gain 을 모두 주면 decode/analyze/track_peak/scan_gain 을 건너뛰고
+    그 값을 그대로 쓴다. GUI 는 Track Analysis(또는 태그 읽기)에서 이미 이
+    값들을 확보하므로, 적용 시 같은 곡을 다시 디코딩하지 않는다. 결과 수치는
+    재계산과 동일하다(같은 값 재사용). 씨앗을 안 주면(기본 None) 종전대로
+    디코딩·분석·scan 을 수행한다 → CLI 경로 동작 불변.
+    (seed_min_gain/seed_max_gain 은 None 이 유효 값일 수 있어 '주어졌는지'는
+     db_gain·peak 유무로 판단하고, min/max 는 그때만 씨앗을 신뢰한다.)
+
+    should_cancel/on_progress: 적용 단계(scan_gain·apply_gain·change_gain_and_tag)
+    로 통과한다. 초장시간 곡의 프레임 순회 중 취소·진행률을 위해서다. 취소 시
+    writer.GainCancelled 가 전파되며, 그 시점에 파일은 원본 그대로다.
+
     반환 dict:
       - status: "ok" | "no_change" | "not_enough_samples"
       - db_gain: 분석 dB(89dB 기준). not_enough_samples 면 None.
@@ -129,21 +148,34 @@ def apply_track_gain(
       - frames_changed: 실제 수정한 프레임 수.
       - tag_written: 태그를 기록했으면 True.
     """
-    left, right, sample_rate = decode_pcm(path)
+    have_seed = (seed_db_gain is not None) and (seed_peak is not None)
 
-    db_gain = analyze_track(left, right, sample_rate)
-    if db_gain is NOT_ENOUGH_SAMPLES:
-        return {
-            "status": "not_enough_samples",
-            "db_gain": None,
-            "steps": None,
-            "frames_changed": 0,
-            "tag_written": False,
-        }
+    if have_seed:
+        # 이미 분석된 값 재사용: 디코딩·분석·track_peak 을 건너뛴다.
+        db_gain = seed_db_gain
+        peak = seed_peak
+        # min/max 도 씨앗이 있으면 scan_gain 을 생략. 없으면 여기서만 스캔.
+        if seed_min_gain is not None and seed_max_gain is not None:
+            min_gain, max_gain = seed_min_gain, seed_max_gain
+        else:
+            min_gain, max_gain = scan_gain(
+                path, should_cancel=should_cancel, on_progress=on_progress)
+    else:
+        left, right, sample_rate = decode_pcm(path)
 
-    peak = track_peak(left, right)
-    del left, right
-    min_gain, max_gain = scan_gain(path)
+        db_gain = analyze_track(left, right, sample_rate)
+        if db_gain is NOT_ENOUGH_SAMPLES:
+            return {
+                "status": "not_enough_samples",
+                "db_gain": None,
+                "steps": None,
+                "frames_changed": 0,
+                "tag_written": False,
+            }
+
+        peak = track_peak(left, right)
+        del left, right
+        min_gain, max_gain = scan_gain(path)
 
     # 태그 기록 모드면 기존 태그를 읽어 track 값으로 채운다(원본 순서).
     info = None
@@ -170,7 +202,8 @@ def apply_track_gain(
         }
 
     if skip_tag:
-        changed = apply_gain(path, steps, wrap=wrap)
+        changed = apply_gain(path, steps, wrap=wrap,
+                             should_cancel=should_cancel, on_progress=on_progress)
         return {
             "status": "ok",
             "db_gain": db_gain,
@@ -181,7 +214,8 @@ def apply_track_gain(
 
     # change_gain_and_tag 가 게인 적용 + undo 누적 + 적용분 재차감 + 태그 기록.
     change_gain_and_tag(path, steps, steps, info, file_tags, wrap=wrap,
-                        use_id3=use_id3)
+                        use_id3=use_id3,
+                        should_cancel=should_cancel, on_progress=on_progress)
     return {
         "status": "ok",
         "db_gain": db_gain,

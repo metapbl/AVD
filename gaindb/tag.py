@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import BinaryIO, Optional
 
 # 원본: enum { MAX_FIELD_SIZE = 1024*1024 } — 이보다 큰 필드는 오류로 간주.
@@ -710,6 +710,8 @@ def change_gain_and_tag(
     wrap: bool = False,
     save_timestamp: bool = False,
     use_id3: bool = False,
+    should_cancel=None,
+    on_progress=None,
 ) -> bool:
     """원본 mp3gain.c 의 changeGainAndTag 동등.
 
@@ -721,6 +723,10 @@ def change_gain_and_tag(
     표준 mp3gain 과 수치를 일치시키기 위해 같은 값을 쓴다.
     태그 쓰기는 _write_mp3gain_tag 래퍼로 분기(use_id3 에 따라 ID3/APE).
 
+    should_cancel/on_progress: apply_gain 으로 그대로 통과한다(초장시간 곡의
+    프레임 순회 중 취소·진행률). 취소되면 apply_gain 이 GainCancelled 를 던지며,
+    그 시점에 파일은 원본 그대로이고 태그도 아직 쓰지 않았다(안전).
+
     반환: 게인을 적용하고 태그를 갱신했으면 True, 변화량이 0이면 False.
     """
     # writer 는 순환 import 회피를 위해 함수 내부에서 import.
@@ -730,7 +736,9 @@ def change_gain_and_tag(
         return False
 
     # 실제 프레임 게인 적용. 예외 없이 반환되면 성공(원본의 !changeGain 대응).
-    apply_gain(filename, left_change, right_change, wrap)
+    # 취소 시 apply_gain 이 GainCancelled 를 던지고, 파일·태그 모두 미변경이다.
+    apply_gain(filename, left_change, right_change, wrap,
+               should_cancel=should_cancel, on_progress=on_progress)
 
     # --- undo 누적 (항상) ---
     if not info.have_undo:

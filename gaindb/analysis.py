@@ -48,6 +48,9 @@ PINK_REF = 64.82             # 캘리브레이션 기준값(dB)
 # 디코더가 global_gain 을 2^(gain/4) 로 적용 → 1스텝 = 20*log10(2^0.25) = 5*log10(2) dB.
 _DB_PER_STEP_DIVISOR = 5.0 * math.log10(2.0)
 
+# 공개 별칭: 1 스텝당 dB(정밀값). api/GUI/AVD 가 import 해 쓰는 표시·계산 상수.
+DB_PER_STEP = _DB_PER_STEP_DIVISOR
+
 # --- 필터 계수 ---
 # lfilter(b, a, x) 규약: a[0]=1.0. Yulewalk: b=[b0..b10], a=[1.0, a1..a10].
 # Butterworth: b=[b0, b1, b2], a=[1.0, a1, a2].
@@ -279,6 +282,127 @@ def analyze_track(
     hist = _loudness_histogram(left, right, sample_rate)
     return _gain_from_histogram(hist)
 
+
+class TrackAnalyzer:
+    """스트리밍(청크 누적) 라우드니스 분석기.
+
+    곡 전체를 메모리에 올리지 않고 청크를 순차로 먹여 히스토그램·peak 을
+    누적한다. 초장시간 곡(수 시간)도 청크 하나 크기의 메모리로 처리하기 위한
+    것이며, 결과는 일괄 처리(_loudness_histogram)와 수학적으로 동일하다.
+
+    동일성의 근거:
+      - 필터: lfilter 의 zi(초기 조건)를 청크마다 이어받아 연속으로 통과시킨다.
+        전체를 한 번에 lfilter 한 것과 부동소수 연산까지 동일하다. 최초 상태는
+        0(일괄 경로가 zi 없이 부를 때의 내부 초기값과 동일)으로 시작한다.
+      - RMS 윈도우: 필터 '출력'을 윈도우(50ms)로 자르는 것은 일괄 경로와 같다.
+        청크 경계가 윈도우 경계와 어긋날 수 있으므로, 완전한 윈도우만 이번에
+        처리하고 남는 자투리(필터 출력)는 버퍼에 남겨 다음 feed 에 이어붙인다.
+        곡 끝의 마지막 불완전 윈도우는 일괄 경로처럼 버려진다(result 에서 처리
+        안 함).
+      - peak: 필터 전 원샘플의 좌우 abs 최댓값을 청크마다 갱신(전체 최댓값 =
+        청크별 최댓값의 최댓값). track_peak 과 동일 정의(/32768).
+
+    사용:
+      an = TrackAnalyzer(sample_rate)
+      an.feed(left_chunk, right_chunk)   # 여러 번
+      db = an.result()                   # 최종 게인(dB) 또는 NOT_ENOUGH_SAMPLES
+      peak = an.peak_normalized()        # 정규화 peak(0~1)
+      hist = an.histogram()              # Album 누적용 히스토그램
+    """
+
+    def __init__(self, sample_rate: int) -> None:
+        if sample_rate not in _FILTER_COEFFS:
+            raise ValueError(
+                f"Unsupported sample rate: {sample_rate} Hz "
+                f"(currently supported: {sorted(_FILTER_COEFFS)})"
+            )
+        self._sample_rate = sample_rate
+        self._yb, self._ya, self._bb, self._ba = _FILTER_COEFFS[sample_rate]
+
+        self._window = int(np.ceil(sample_rate * RMS_WINDOW_MS / 1000.0))
+        self._nbins = STEPS_PER_DB * MAX_DB
+        self._hist = np.zeros(self._nbins, dtype=np.int64)
+
+        # 필터 zi 상태(좌/우 × yule/butter). 0 으로 시작 = 일괄 경로와 동일.
+        n_yule = max(len(self._yb), len(self._ya)) - 1
+        n_butter = max(len(self._bb), len(self._ba)) - 1
+        self._zi_ly = np.zeros(n_yule)
+        self._zi_lb = np.zeros(n_butter)
+        self._zi_ry = np.zeros(n_yule)
+        self._zi_rb = np.zeros(n_butter)
+
+        # 필터 출력의 윈도우 자투리 버퍼(다음 feed 에 이어붙일 제곱합용 원신호).
+        self._buf_l = np.empty(0, dtype=np.float64)
+        self._buf_r = np.empty(0, dtype=np.float64)
+
+        self._peak_raw = 0.0  # 필터 전 원샘플 abs 최댓값(±32768 스케일)
+
+    def feed(self, left: np.ndarray, right: np.ndarray) -> None:
+        """오디오 청크(±32768 스케일 float)를 누적한다. 좌우 길이는 같아야 한다."""
+        if left.size == 0:
+            return
+
+        # peak: 필터 전 원샘플 기준(track_peak 정의와 동일).
+        lmax = float(np.abs(left).max())
+        rmax = float(np.abs(right).max())
+        if lmax > self._peak_raw:
+            self._peak_raw = lmax
+        if rmax > self._peak_raw:
+            self._peak_raw = rmax
+
+        # 필터: zi 를 이어받아 연속 통과(전체 lfilter 와 동일 결과).
+        ly, self._zi_ly = lfilter(self._yb, self._ya, left, zi=self._zi_ly)
+        lo, self._zi_lb = lfilter(self._bb, self._ba, ly, zi=self._zi_lb)
+        ry, self._zi_ry = lfilter(self._yb, self._ya, right, zi=self._zi_ry)
+        ro, self._zi_rb = lfilter(self._bb, self._ba, ry, zi=self._zi_rb)
+
+        # 직전 자투리 + 이번 필터 출력을 이어붙인다.
+        lout = np.concatenate((self._buf_l, lo)) if self._buf_l.size else lo
+        rout = np.concatenate((self._buf_r, ro)) if self._buf_r.size else ro
+
+        window = self._window
+        n_windows = lout.size // window
+        if n_windows == 0:
+            # 완전한 윈도우 없음: 전부 자투리로 보관.
+            self._buf_l = lout
+            self._buf_r = rout
+            return
+
+        trim = n_windows * window
+        lsq = lout[:trim] ** 2
+        rsq = rout[:trim] ** 2
+
+        lsum = lsq.reshape(n_windows, window).sum(axis=1)
+        rsum = rsq.reshape(n_windows, window).sum(axis=1)
+
+        mean_sq = (lsum + rsum) / window * 0.5 + 1.0e-37
+        db = STEPS_PER_DB * 10.0 * np.log10(mean_sq)
+
+        ival = db.astype(np.int64)
+        np.clip(ival, 0, self._nbins - 1, out=ival)
+        np.add.at(self._hist, ival, 1)
+
+        # 남는 자투리는 다음 feed 로 이월.
+        self._buf_l = lout[trim:]
+        self._buf_r = rout[trim:]
+
+    def histogram(self) -> np.ndarray:
+        """누적 히스토그램(0.01dB 해상도)을 반환한다(Album 누적용)."""
+        return self._hist
+
+    def result(self):
+        """누적 히스토그램에서 Track replay gain(dB)을 산출한다.
+
+        충분한 샘플이 없으면 NOT_ENOUGH_SAMPLES 를 반환한다. 곡 끝의 마지막
+        불완전 윈도우(_buf 에 남은 자투리)는 일괄 경로와 동일하게 버린다.
+        """
+        return _gain_from_histogram(self._hist)
+
+    def peak_normalized(self) -> float:
+        """정규화 peak(0~1, 1.0 초과 가능)를 반환한다(track_peak 과 동일 정의)."""
+        return self._peak_raw / 32768.0
+
+
 def track_histogram(
     left: np.ndarray, right: np.ndarray, sample_rate: int
 ) -> np.ndarray:
@@ -341,3 +465,4 @@ def track_peak(left: np.ndarray, right: np.ndarray) -> float:
     lmax = float(np.abs(left).max()) if left.size else 0.0
     rmax = float(np.abs(right).max()) if right.size else 0.0
     return max(lmax, rmax) / 32768.0
+
