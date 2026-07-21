@@ -220,6 +220,10 @@ class DownloadManager(QObject):
         worker.normalizing.connect(
             lambda iid=item_id: self._on_worker_normalizing(iid)
         )
+        # 정규화 결과는 위젯에 직결(완료 라벨 병기용) — merging 패턴과 동일.
+        # DONE 전이보다 먼저 도착하므로 위젯이 값만 보관했다가 완료 시 반영한다.
+        worker.normalize_done.connect(widget.update_normalize_done)
+        worker.normalize_failed.connect(widget.update_normalize_failed)
         worker.normalize_failed.connect(
             lambda reason, iid=item_id: self._on_worker_normalize_failed(iid, reason)
         )

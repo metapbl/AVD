@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
-from gaindb.apply_gain import apply_track_gain
+from gaindb.api import apply_file_track_gain, DB_PER_STEP
 from utils.file_utils import (
     strip_ansi,
     snapshot_child_pids,
@@ -17,10 +17,13 @@ from utils.file_utils import (
 
 
 # ── MP3 음량 정규화 목표 기준값 ──────────────────────
-# GaindB(mp3gain clean-room)의 ReplayGain 분석은 89dB 기준으로 조정량을
-# 산출한다. 사용자가 목표 음량을 바꾸면 (목표 - 89) 를 db_gain_mod 로 넘겨
-# 기준선을 이동시킨다. apply_track_gain 이 이 값을 dB 에 더한 뒤 스텝으로
-# 양자화한다. 이 상수는 GaindB analysis.py 의 89dB 표준과 짝을 이룬다.
+# GaindB(mp3gain clean-room)의 ReplayGain 분석은 89dB 기준이다. 사용자 목표
+# 음량(target_db)은 gaindb.api.apply_file_track_gain 에 그대로 넘긴다 —
+# 목표→89 기준 오프셋(target - 89) 변환은 api 안에 가둬져 있어, 표시(analyze_file)
+# 와 실제 적용 스텝이 같은 offset·db_to_steps 를 쓰므로 항상 일치한다.
+# (예전엔 워커가 직접 (목표 - 89) 를 db_gain_mod 로 계산해 넘겼으나, GaindB
+#  리팩터로 api 래퍼가 그 책임을 흡수했다. — 벤더링 aea6955 이후.)
+# 이 상수는 gain_db 의 기본 목표값(89dB)으로만 남는다.
 _GAIN_REFERENCE_DB = 89.0
 
 
@@ -272,6 +275,7 @@ class DownloadWorker(QThread):
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
     normalizing          = Signal()                             # 음량 정규화 시작
+    normalize_done       = Signal(float, bool)                  # 음량 정규화 완료 (적용 dB, 클리핑 여부)
     normalize_failed     = Signal(str)                          # 음량 정규화 실패 (사유)
     codec_info_resolved  = Signal(str, str, str, float, float)  # vcodec, acodec, ext, abr, tbr
     retrying             = Signal(int, int)                     # 자동 재시도 (현재 시도, 최대)
@@ -439,14 +443,24 @@ class DownloadWorker(QThread):
         실제 존재하는 파일일 때만. (mp3 로 명시 다운로드한 경우에만 — "최고
         화질 자동" 으로 m4a 가 나온 경우는 ext != "mp3" 라 대상 아님.)
 
-        목표 음량 조절: GaindB 의 ReplayGain 은 89dB 기준으로 조정량을
-        산출하므로, 사용자 목표(gain_db) 에서 89 를 뺀 값을 db_gain_mod 로
-        넘겨 기준선을 이동시킨다.
+        흐름(GaindB 최신 api 기준):
+          1) analyze_file(target_db) — 비파괴 분석. steps·clip_state 를 얻는다.
+             clip_state 는 "none"(안전)/"possible"/"definite"(클리핑 위험).
+          2) apply_file_track_gain(target_db, seed=분석결과) — 실제 적용.
+             seed 로 1) 의 분석값을 재사용해 곡을 두 번 디코딩하지 않는다.
+        목표→89 기준 오프셋 변환은 api 내부가 처리하므로 워커는 target_db(=
+        사용자 목표 음량)만 넘긴다.
+
+        방침(ADR-008): 클리핑이 예상돼도 목표 dB 를 그대로 강제 적용하고,
+        클리핑 여부만 완료 라벨에 표시한다(자동 클립 방지 -k 안 함).
+
+        완료 알림: normalize_done(적용 dB, 클리핑 여부) 를 emit 한다. 적용 dB 는
+        steps * DB_PER_STEP, 클리핑 여부는 clip_state == "definite".
 
         실패 처리: 게인 적용은 "덤" 이므로 어떤 예외가 나도 다운로드 자체는
         성공으로 남긴다. 실패 시 normalize_failed 로 사유만 알리고, 파일은
-        받아진 원본 그대로 둔다(GaindB apply_track_gain 은 실패 시 파일을
-        변형하지 않거나, 변형 전 단계에서 예외를 던진다).
+        받아진 원본 그대로 둔다(GaindB 는 실패 시 파일을 변형하지 않거나,
+        변형 전 단계에서 예외를 던진다).
         """
         if not self.gain_enabled:
             return
@@ -460,13 +474,28 @@ class DownloadWorker(QThread):
         self.normalizing.emit()
 
         try:
-            db_gain_mod = float(self.gain_db) - _GAIN_REFERENCE_DB
-            result = apply_track_gain(path, db_gain_mod=db_gain_mod)
+            from gaindb.api import analyze_file
+
+            target_db = float(self.gain_db)
+
+            # 1) 비파괴 분석 — steps·clip_state 확보.
+            probe = analyze_file(path, target_db=target_db)
+            if probe.get("status") == "not_enough_samples":
+                self.normalize_failed.emit("음량 분석에 필요한 샘플이 부족합니다.")
+                return
+
+            # 2) 실제 적용 — 분석결과를 seed 로 재사용(이중 디코딩 방지).
+            result = apply_file_track_gain(path, target_db=target_db, seed=probe)
             status = result.get("status")
             if status == "not_enough_samples":
-                self.normalize_failed.emit(
-                    "음량 분석에 필요한 샘플이 부족합니다."
-                )
+                self.normalize_failed.emit("음량 분석에 필요한 샘플이 부족합니다.")
+                return
+
+            # 적용 dB = steps * DB_PER_STEP. no_change(steps 0) 면 0dB.
+            steps = result.get("steps") or 0
+            applied_db = steps * DB_PER_STEP
+            will_clip = probe.get("clip_state") == "definite"
+            self.normalize_done.emit(applied_db, will_clip)
         except Exception as e:
             self.normalize_failed.emit(str(e))
 

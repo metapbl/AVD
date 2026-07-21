@@ -194,6 +194,14 @@ class DownloadItemWidget(QWidget):
         self._fmt_tbr       : float = 0.0
         self._fmt_is_audio  : bool  = False
 
+        # 음량 정규화 결과(완료 라벨 표시용). normalize_done 이 채우고,
+        # update_status(DONE) 가 라벨에 반영한다. normalize_failed 는
+        # _gain_failed 를 켜서 "완료(음량 조정 실패)" 로 표시한다.
+        self._gain_applied  : bool  = False   # normalize_done 수신 여부
+        self._gain_db       : float = 0.0     # 적용 dB
+        self._gain_clip     : bool  = False   # 클리핑 여부
+        self._gain_failed   : bool  = False   # 정규화 실패
+
         self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
         self._apply_style()
@@ -646,6 +654,11 @@ class DownloadItemWidget(QWidget):
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")
+            # 음량 정규화 결과를 완료 라벨에 병기한다(ADR-008).
+            #   실패     : "완료 (음량 조정 실패)"
+            #   적용됨   : "완료 · 음량 +4.5dB"  /  "…(클리핑)"
+            #   변화없음 : 그냥 "완료" (0dB 는 표기 생략)
+            self.lbl_status.setText(self._done_label_text())
 
         elif status == DownloadStatus.ERROR:
             # 에러 — 버튼을 "재시도" 라벨로 전환 (숨기지 않음)
@@ -686,6 +699,43 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setText("취소")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
+
+    def update_normalize_done(self, applied_db: float, will_clip: bool):
+        """
+        음량 정규화 완료 결과 수신(worker.normalize_done → 매니저 중계).
+
+        DONE 상태 전이보다 먼저 도착하므로 값만 보관해 두고, 실제 라벨 반영은
+        update_status(DONE) 이 _done_label_text 로 처리한다.
+        """
+        self._gain_applied = True
+        self._gain_failed  = False
+        self._gain_db      = applied_db
+        self._gain_clip    = will_clip
+
+    def update_normalize_failed(self, reason: str):
+        """
+        음량 정규화 실패 수신. 다운로드 자체는 성공이므로 완료 라벨에 실패
+        사실만 병기한다("완료 (음량 조정 실패)"). reason 은 툴팁으로 노출.
+        """
+        self._gain_applied = False
+        self._gain_failed  = True
+        self.lbl_status.setToolTip(reason or "")
+
+    def _done_label_text(self) -> str:
+        """완료 라벨 문자열. 음량 정규화 결과를 반영한다(ADR-008)."""
+        base = DownloadStatus.DONE.value
+        if self._gain_failed:
+            return f"{base} (음량 조정 실패)"
+        if self._gain_applied:
+            # 0dB(변화 없음)는 표기 생략 — "완료" 로만 둔다.
+            if abs(self._gain_db) < 0.05:
+                return base
+            sign = "+" if self._gain_db >= 0 else "−"
+            txt = f"{base} · 음량 {sign}{abs(self._gain_db):.1f}dB"
+            if self._gain_clip:
+                txt += " (클리핑)"
+            return txt
+        return base
 
     def update_waiting_position(self, n: int):
         """
