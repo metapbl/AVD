@@ -4,12 +4,22 @@
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QLineEdit,
-    QSlider, QCheckBox,
+    QSlider, QCheckBox, QWidget,
     QFileDialog, QGroupBox
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor
+from PySide6.QtGui import QPainter, QColor, QDoubleValidator
 from utils.config_manager import ConfigManager
+
+
+# ── MP3 음량 정규화 목표 dB 범위 ──────────────────────
+# 슬라이더는 정수 스텝만 다루므로 dB 값을 2배 스케일한 정수로 저장한다
+# (예: 89.0dB → 178). 0.5dB 단위를 슬라이더 1스텝으로 표현하기 위함.
+# 표시·저장 시 GAIN_SCALE 로 나눠 실제 dB(float)로 환산한다.
+_GAIN_DB_MIN     = 75.0
+_GAIN_DB_MAX     = 105.0
+_GAIN_DB_DEFAULT = 89.0
+_GAIN_SCALE      = 2          # 1 슬라이더 스텝 = 0.5dB
 
 
 class ConcurrentSlider(QSlider):
@@ -79,11 +89,14 @@ class PreferencesDialog(QDialog):
         self.config = config
 
         self.setWindowTitle("환경설정")
-        self.setFixedSize(480, 400)
+        # 게인 그룹이 체크 상태에 따라 접혔다 펴지므로 고정 높이 대신 폭만
+        # 고정하고 높이는 내용에 맞춰 자동 조정한다(adjustSize).
+        self.setFixedWidth(480)
         self.setModal(True)
         self._build_ui()
         self._load_values()
         self._apply_style()
+        self.adjustSize()
 
     def _build_ui(self):
         """UI 구성"""
@@ -187,6 +200,80 @@ class PreferencesDialog(QDialog):
 
         root.addWidget(grp_dl)
 
+        # ── MP3 음량 정규화 그룹 ──
+        # 체크박스를 켜면 접혀 있던 게인 컨트롤(슬라이더+입력창)이 펼쳐진다.
+        # 목표 dB 는 0.5dB 단위(슬라이더 정수 스텝 = 0.5dB, GAIN_SCALE=2).
+        grp_gain = QGroupBox("MP3 음량 정규화")
+        grp_gain.setObjectName("settingsGroup")
+        gain_layout = QVBoxLayout(grp_gain)
+        gain_layout.setSpacing(8)
+
+        self.chk_gain = QCheckBox("MP3 다운로드 시 음량 정규화")
+        self.chk_gain.setToolTip(
+            "MP3 로 저장할 때 곡별 음량을 목표 dB 로 맞춥니다(무손실 ReplayGain).\n"
+            "여러 곡의 음량 편차를 줄여 재생 시 볼륨을 다시 만질 필요를 덜어줍니다."
+        )
+        self.chk_gain.toggled.connect(self._on_gain_toggled)
+        gain_layout.addWidget(self.chk_gain)
+
+        # 접히는 컨테이너 — 체크 시에만 보인다.
+        self.gain_detail = QWidget()
+        detail_layout = QVBoxLayout(self.gain_detail)
+        detail_layout.setContentsMargins(0, 4, 0, 0)
+        detail_layout.setSpacing(6)
+
+        # 상단 행: "목표 음량" 라벨 + 입력창(dB)
+        gain_top = QHBoxLayout()
+        gain_top.addWidget(QLabel("목표 음량"))
+        gain_top.addStretch()
+        self.input_gain_db = QLineEdit()
+        self.input_gain_db.setObjectName("gainInput")
+        self.input_gain_db.setFixedSize(72, 28)
+        self.input_gain_db.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # 75.0~105.0, 소수 1자리. 슬라이더가 0.5 단위라 1자리면 충분.
+        gain_validator = QDoubleValidator(_GAIN_DB_MIN, _GAIN_DB_MAX, 1, self)
+        gain_validator.setNotation(QDoubleValidator.Notation.StandardNotation)
+        self.input_gain_db.setValidator(gain_validator)
+        self.input_gain_db.editingFinished.connect(self._on_gain_input_edited)
+        gain_top.addWidget(self.input_gain_db)
+        gain_top.addWidget(QLabel("dB"))
+        detail_layout.addLayout(gain_top)
+
+        # 슬라이더 — 정수 스텝(0.5dB). 값은 GAIN_SCALE 배 정수로 다룬다.
+        self.slider_gain = QSlider(Qt.Orientation.Horizontal)
+        self.slider_gain.setObjectName("gainSlider")
+        self.slider_gain.setMinimum(int(_GAIN_DB_MIN * _GAIN_SCALE))   # 150
+        self.slider_gain.setMaximum(int(_GAIN_DB_MAX * _GAIN_SCALE))   # 210
+        self.slider_gain.setSingleStep(1)   # 0.5dB
+        self.slider_gain.setPageStep(2)     # 1.0dB
+        self.slider_gain.valueChanged.connect(self._on_gain_slider_changed)
+        detail_layout.addWidget(self.slider_gain)
+
+        # 범위 안내 — 최소/기본/최대 텍스트(WORKLOG 방침: 값 텍스트 표기).
+        hint_row = QHBoxLayout()
+        hint_row.setContentsMargins(0, 0, 0, 0)
+        lbl_min = QLabel(f"{_GAIN_DB_MIN:.0f} 조용")
+        lbl_min.setObjectName("gainHint")
+        lbl_mid = QLabel(f"{_GAIN_DB_DEFAULT:.0f} 표준")
+        lbl_mid.setObjectName("gainHint")
+        lbl_mid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl_max = QLabel(f"{_GAIN_DB_MAX:.0f} 크게")
+        lbl_max.setObjectName("gainHint")
+        lbl_max.setAlignment(Qt.AlignmentFlag.AlignRight)
+        hint_row.addWidget(lbl_min, stretch=1)
+        hint_row.addWidget(lbl_mid, stretch=1)
+        hint_row.addWidget(lbl_max, stretch=1)
+        detail_layout.addLayout(hint_row)
+
+        # 클리핑 주의 안내 — 높은 값일수록 음이 깨질(클리핑) 수 있음.
+        lbl_clip = QLabel("값이 높을수록 음량이 커지지만 클리핑(왜곡) 위험이 있습니다.")
+        lbl_clip.setObjectName("gainClipNote")
+        lbl_clip.setWordWrap(True)
+        detail_layout.addWidget(lbl_clip)
+
+        gain_layout.addWidget(self.gain_detail)
+        root.addWidget(grp_gain)
+
         # ── 업데이트 설정 그룹 ──
         grp_update = QGroupBox("업데이트 설정")
         grp_update.setObjectName("settingsGroup")
@@ -251,6 +338,43 @@ class PreferencesDialog(QDialog):
             w.style().unpolish(w)
             w.style().polish(w)
 
+    # ── MP3 음량 정규화 컨트롤 ──────────────────────
+
+    def _on_gain_toggled(self, checked: bool):
+        """
+        체크 상태에 따라 게인 상세(슬라이더+입력창)를 펼치거나 접는다.
+        접힘/펼침으로 다이얼로그 높이가 달라지므로 adjustSize 로 재조정한다.
+        """
+        self.gain_detail.setVisible(checked)
+        # 레이아웃이 즉시 반영되도록 다음 이벤트 루프가 아니라 지금 재계산.
+        self.adjustSize()
+
+    def _on_gain_slider_changed(self, raw: int):
+        """
+        슬라이더(정수, GAIN_SCALE 배) 변경 → 입력창에 dB(소수1자리) 반영.
+        입력창과의 순환 갱신을 막기 위해 editingFinished 만 역방향으로 쓴다
+        (valueChanged→setText 는 시그널을 쏘지 않으므로 순환 없음).
+        """
+        db = raw / _GAIN_SCALE
+        self.input_gain_db.setText(f"{db:.1f}")
+
+    def _on_gain_input_edited(self):
+        """
+        입력창 편집 완료 → 값을 클램프·0.5 단위 양자화 후 슬라이더에 반영.
+        슬라이더 setValue 가 valueChanged 를 쏘면 입력창이 정규화된 값으로
+        다시 채워진다(예: 89.3 → 89.5). 빈 값이면 기본값으로 되돌린다.
+        """
+        text = self.input_gain_db.text().strip()
+        try:
+            db = float(text)
+        except ValueError:
+            db = _GAIN_DB_DEFAULT
+        db = max(_GAIN_DB_MIN, min(_GAIN_DB_MAX, db))
+        # 0.5 단위로 양자화(반올림) 후 슬라이더 정수 스텝으로 환산.
+        raw = round(db * _GAIN_SCALE)
+        self.slider_gain.setValue(raw)          # valueChanged → 입력창 정규화
+        self._on_gain_slider_changed(raw)       # 동일 값일 때도 표시 갱신 보장
+
     def _load_values(self):
         """현재 설정값을 UI 에 반영"""
         self.input_path.setText(
@@ -267,6 +391,18 @@ class PreferencesDialog(QDialog):
         self.chk_auto_update.setChecked(
             self.config.get("auto_update_ytdlp", True)
         )
+
+        # MP3 음량 정규화 — 목표 dB 를 슬라이더(정수 스텝)로 환산해 반영,
+        # 슬라이더 핸들러가 입력창까지 동기화한다. 체크 상태로 상세 펼침 결정.
+        gain_db = float(self.config.get("mp3_gain_db", _GAIN_DB_DEFAULT) or _GAIN_DB_DEFAULT)
+        gain_db = max(_GAIN_DB_MIN, min(_GAIN_DB_MAX, gain_db))   # 구설정 방어
+        raw = round(gain_db * _GAIN_SCALE)
+        self.slider_gain.setValue(raw)
+        self._on_gain_slider_changed(raw)   # 동일 값 경계에서도 입력창 채움
+
+        gain_on = bool(self.config.get("mp3_gain_enabled", False))
+        self.chk_gain.setChecked(gain_on)
+        self.gain_detail.setVisible(gain_on)   # 초기 접힘/펼침
 
     def _browse_path(self):
         """저장 경로 탐색기 열기"""
@@ -290,6 +426,9 @@ class PreferencesDialog(QDialog):
             "save_path"         : self.input_path.text(),
             "max_concurrent"    : self.slider_concurrent.value(),
             "auto_update_ytdlp" : self.chk_auto_update.isChecked(),
+            "mp3_gain_enabled"  : self.chk_gain.isChecked(),
+            # 슬라이더는 GAIN_SCALE 배 정수 → 실제 dB(float, 0.5 단위)로 환산.
+            "mp3_gain_db"       : self.slider_gain.value() / _GAIN_SCALE,
         }
 
         # ConfigManager 에 저장
@@ -389,6 +528,45 @@ class PreferencesDialog(QDialog):
                 color: #cccccc;
                 font-size: 12px;
             }
+
+            /* 게인 목표 dB 입력창 */
+            QLineEdit#gainInput {
+                background: #1e1e1e;
+                color: #ffffff;
+                border: 1px solid #555;
+                border-radius: 4px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QLineEdit#gainInput:focus { border: 1px solid #4a90d9; }
+
+            /* 게인 슬라이더 — 파란 핸들(동시성 슬라이더의 위험색과 구분) */
+            QSlider#gainSlider::groove:horizontal {
+                background: #1e1e1e;
+                border: 1px solid #555;
+                height: 6px;
+                border-radius: 3px;
+            }
+            QSlider#gainSlider::handle:horizontal {
+                background: #4a90d9;
+                width: 16px;
+                height: 16px;
+                margin: -6px 0;
+                border-radius: 8px;
+                border: 2px solid #1e1e1e;
+            }
+            QSlider#gainSlider::handle:horizontal:hover { background: #5aa0e9; }
+
+            /* 게인 범위 안내 라벨 */
+            QLabel#gainHint {
+                color: #888888;
+                font-size: 10px;
+            }
+            QLabel#gainClipNote {
+                color: #b58900;
+                font-size: 10px;
+            }
+
             QPushButton#btnBrowse {
                 background: #444;
                 color: #ccc;
