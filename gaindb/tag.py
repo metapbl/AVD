@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import BinaryIO, Optional
 
 # 원본: enum { MAX_FIELD_SIZE = 1024*1024 } — 이보다 큰 필드는 오류로 간주.

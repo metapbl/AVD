@@ -225,6 +225,66 @@ def apply_track_gain(
     }
 
 
+def _apply_one_album_file(
+    path: str,
+    steps: int,
+    db_gain,
+    album_db,
+    track_db,
+    peak,
+    min_gain,
+    max_gain,
+    album_peak,
+    album_min,
+    album_max,
+    wrap: bool = False,
+    skip_tag: bool = False,
+    use_id3: bool = False,
+    should_cancel=None,
+    on_progress=None,
+) -> dict:
+    """앨범 게인 적용의 곡별 본체(CLI apply_album_gain 과 GUI api 가 공유).
+
+    원본 album 곡별 루프와 동일: 태그 기록 모드면 기존 태그를 읽어 track 값과
+    album 값을 둘 다 채운 뒤(track 먼저, album 다음), 정해진 그룹 공통 steps 를
+    적용한다. steps==0 이면 dirty 태그만 기록하고 오디오는 안 건드린다.
+
+    steps 는 그룹 공통값(호출자가 db_to_steps(album_db + mod)로 미리 계산해
+    넘긴다) — 전 곡 동일 스텝이 원본 앨범 게인의 핵심(상대 음량 보존).
+
+    track_db 가 NOT_ENOUGH_SAMPLES 면 그 곡의 track 값은 채우지 않고 album 값만
+    채운다(원본 동일: track 분석 실패해도 album 은 진행).
+
+    should_cancel/on_progress: 적용 프레임 순회로 통과(초장시간 곡 취소·진행률).
+
+    반환 dict: {"path", "frames_changed", "tag_written"}.
+    """
+    info = None
+    file_tags = None
+    if not skip_tag:
+        info, file_tags = read_mp3gain_tags(path, use_id3)
+        if track_db is not NOT_ENOUGH_SAMPLES:
+            _fill_track_info(info, track_db, peak, min_gain, max_gain)
+        _fill_album_info(info, album_db, album_peak, album_min, album_max)
+
+    if steps == 0:
+        tag_written = False
+        if (not skip_tag) and info.dirty:
+            _write_mp3gain_tag(path, info, file_tags, use_id3=use_id3)
+            tag_written = True
+        return {"path": path, "frames_changed": 0, "tag_written": tag_written}
+
+    if skip_tag:
+        changed = apply_gain(path, steps, wrap=wrap,
+                             should_cancel=should_cancel, on_progress=on_progress)
+        return {"path": path, "frames_changed": changed, "tag_written": False}
+
+    change_gain_and_tag(path, steps, steps, info, file_tags, wrap=wrap,
+                        use_id3=use_id3,
+                        should_cancel=should_cancel, on_progress=on_progress)
+    return {"path": path, "frames_changed": None, "tag_written": True}
+
+
 def apply_album_gain(
     paths,
     db_gain_mod: float = 0.0,
@@ -240,6 +300,10 @@ def apply_album_gain(
     album dB(누적) + album_peak(곡별 peak 의 max) + album_min/max(곡별 min/max
     의 min/max) → 각 곡 read 로 track+album 값 채우기 → 스텝 양자화 →
     전 곡에 동일 스텝을 change_gain_and_tag(또는 skip_tag 시 apply_gain) 적용.
+
+    곡별 적용 본체는 _apply_one_album_file 로 추출해 GUI api 경로와 공유한다
+    (태그 결과가 정확히 일치하도록). 이 CLI 경로는 종전대로 통짜 decode_pcm 을
+    쓴다(결과 불변). 스트리밍·씨앗·취소가 필요한 GUI 는 api 계층이 담당한다.
 
     use_id3 면 APE 대신 ID3v2 경로로 태그를 읽고/쓴다(원본 -s i).
 
@@ -277,6 +341,36 @@ def apply_album_gain(
         }
 
     # album peak = 곡별 track_peak 의 max, album min/max = 곡별 min/max 의 min/max.
+    album_peak, album_min, album_max = _album_aggregate(per)
+
+    steps = db_to_steps(db_gain + db_gain_mod) + mp3_gain_mod
+
+    per_file = []
+    for item in per:
+        per_file.append(_apply_one_album_file(
+            item["path"], steps, db_gain, db_gain, item["track_db"],
+            item["peak"], item["min"], item["max"],
+            album_peak, album_min, album_max,
+            wrap=wrap, skip_tag=skip_tag, use_id3=use_id3,
+        ))
+
+    status = "no_change" if steps == 0 else "ok"
+    return {
+        "status": status,
+        "db_gain": db_gain,
+        "steps": steps,
+        "per_file": per_file,
+    }
+
+
+def _album_aggregate(per):
+    """곡별 결과 리스트에서 앨범 peak/min/max 를 집계한다.
+
+    album_peak = 곡별 track_peak 의 max(정규화).
+    album_min/max = 곡별 min/max 의 min/max(global_gain 0~255).
+    per 각 항목은 "peak"/"min"/"max" 키를 가진 dict. min/max 가 None 인 곡은
+    집계에서 제외한다. 반환: (album_peak, album_min, album_max).
+    """
     album_peak = 0.0
     album_max = 0
     album_min = 255
@@ -287,49 +381,7 @@ def apply_album_gain(
             album_max = item["max"]
         if item["min"] is not None and item["min"] < album_min:
             album_min = item["min"]
-
-    steps = db_to_steps(db_gain + db_gain_mod) + mp3_gain_mod
-
-    per_file = []
-    for item in per:
-        path = item["path"]
-        # 각 곡 태그에 track 값 + album 값을 채운다(원본 순서: track 먼저, album 다음).
-        info = None
-        file_tags = None
-        if not skip_tag:
-            info, file_tags = read_mp3gain_tags(path, use_id3)
-            # 곡별 track 분석값이 not_enough 가 아니면 track 값도 채움.
-            if item["track_db"] is not NOT_ENOUGH_SAMPLES:
-                _fill_track_info(info, item["track_db"], item["peak"],
-                                 item["min"], item["max"])
-            _fill_album_info(info, db_gain, album_peak, album_min, album_max)
-
-        if steps == 0:
-            tag_written = False
-            if (not skip_tag) and info.dirty:
-                _write_mp3gain_tag(path, info, file_tags, use_id3=use_id3)
-                tag_written = True
-            per_file.append({"path": path, "frames_changed": 0,
-                             "tag_written": tag_written})
-            continue
-
-        if skip_tag:
-            changed = apply_gain(path, steps, wrap=wrap)
-            per_file.append({"path": path, "frames_changed": changed,
-                             "tag_written": False})
-        else:
-            change_gain_and_tag(path, steps, steps, info, file_tags, wrap=wrap,
-                                use_id3=use_id3)
-            per_file.append({"path": path, "frames_changed": None,
-                             "tag_written": True})
-
-    status = "no_change" if steps == 0 else "ok"
-    return {
-        "status": status,
-        "db_gain": db_gain,
-        "steps": steps,
-        "per_file": per_file,
-    }
+    return album_peak, album_min, album_max
 
 
 def _run_manual(change: int, path: str) -> int:
