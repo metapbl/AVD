@@ -47,12 +47,11 @@
 
 ### 3.1. 진행 중 (In Progress)
 
-- **GaindB 음량 정규화 — 클리핑 판정 선작업 후 UI·완료 표시 재개 (ADR-008 후속)**
-    - 상태: 핵심 로직·설정 키·벤더링까지 push 완료(`e1a8a26`/`17c8933`/`51a071f`). 설정 UI·완료 라벨 표시는 방향 재설정으로 미착수(작성했던 SpinBox 초안은 창 레이아웃 깨짐·화살표 미표시로 폐기, `git restore` 로 원복함).
-    - 선행 과제(별도 프로젝트): GaindB 본체 `apply_track_gain` 반환에 클리핑 판정 필드(`predicted_peak`/`will_clip`) 추가. 방침 확정 — 클리핑이 나더라도 목표 dB 를 강제 적용하고 여부만 표시(자동 클립 방지 -k 안 함). 판정식: `predicted_peak = peak * 2**(steps/4)`, `will_clip = predicted_peak > 1.0`. GaindB 에서 정리 후 AVD 벤더링본에 반영.
-    - UI 재작업: 환경설정 게인 그룹을 동시 다운로드 다이얼(`ConcurrentSlider`) 방식 폐기 → 일반 유틸리티 버튼형 컨트롤로. 목표 dB 최소/최대/기본값(75.0/105.0/89.0)은 텍스트로 안내 표기. SpinBox 채택 시 다크 테마 화살표 미표시 문제 해결 필요(버튼 제거 vs 스타일 수정 미정).
-    - 완료 표시: 워커가 `apply_track_gain` 반환에서 `steps`(→ 적용 dB ≈ `steps*1.5`)·`will_clip` 을 받아 시그널로 전달, 위젯이 완료 라벨을 `완료 · 음량 +4.5dB` 또는 `완료 · 음량 +6.0dB (클리핑)` 로 표시. 실패는 기존 `완료(음량 조정 실패)` 라벨 자리 공유(팝업 없음).
-    - 문서 잔여: 위 3건 완료 후 CHANGELOG 항목 추가, README 에 게인 기능·numpy/scipy 의존 한 줄, LICENSE_REVIEW 에 벤더링본 클리핑 필드 추가 내역 반영.
+- **GaindB 음량 정규화 — 실환경 검증 + 문서 잔여 (ADR-008 후속)**
+    - 완료: 벤더링본을 GaindB api 계층으로 교체(`aea6955`), 새 api 연동·완료 라벨 dB/클리핑 표시(`1cbb6bc`), 환경설정 접이식 슬라이더+입력창 UI(`82ca735`), GaindB v2 안정본 재벤더링(`5d392bd`). 클리핑 판정은 GaindB 본체가 `analyze_file` 의 `clip_state`("none"/"possible"/"definite")로 제공 → AVD 는 `definite` 만 클리핑으로 표시(강제 적용·표시Only 방침 유지). SpinBox 초안 폐기 후 `QLineEdit`+`QDoubleValidator`+`QSlider`(0.5dB, ×2 스케일) 조합으로 정착.
+    - 실환경 검증 잔여(Windows): 환경설정에서 게인 켜고 목표 dB 조절 → MP3 다운로드 완료 후 실제 음량 반영·완료 라벨(`완료 · 음량 +NdB`/`(클리핑)`)·실패 라벨 표시를 실기에서 확인.
+    - 문서 잔여: README 에 게인 기능·numpy/scipy 의존 한 줄, LICENSE_REVIEW 에 v2 벤더링본(앨범 모드 api 추가 포함) 내역 반영.
+    - 벤더링 lint 메모: v2 원본에 unused import 3건(`api.py` 의 `analyze_track`·`track_peak`, `tag.py` 의 `dataclasses.field`)이 있으나 벤더링 원본 보존 원칙상 임의 수정하지 않음(향후 upstream 재동기화 diff 최소화). 연동부(AVD 자체 코드)는 ruff 통과.
 
 - **2026-07-09 작업분 Windows 실환경 검증** — 썸네일 게이트·다운로드 자동 재시도(ADR-007)·썸네일 폴백 체인·봇 차단 안내·yt-dlp 업데이트 비동기 모달(`1fd5c95`) 을 실기에서 확인. 절차서: [`docs/VERIFY_2026-07-09.md`](./docs/VERIFY_2026-07-09.md). 사용자 검증 완료 후 이 항목 삭제.
 

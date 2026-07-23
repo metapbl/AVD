@@ -23,6 +23,20 @@
 
 ---
 
+## 2026-07-23
+
+- **`chore(gaindb)`** `5d392bd`: 벤더링본을 GaindB v2 안정본으로 갱신 (api·apply_gain·tag). **(ADR-008)**
+    - GaindB 가 일부 개정되어(당분간 고정 예정) 변경된 3개 파일만 재벤더링. `api.py` 에 앨범 모드 공개 함수 6종(`group_by_album`·`analyze_album_file`·`album_gain_from_files`·`compute_album_display`·`apply_file_album_gain`·`result_from_album_raw`) 이 신설됐으나 AVD 가 쓰는 트랙 모드 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 동일 → 완전 하위 호환. `apply_gain.py` 는 `_apply_one_album_file` 추출 등 앨범 경로 공유 리팩터. 벤더링 교정(`from apply_gain` → `from gaindb.apply_gain`) 재적용. `__init__`·`analysis`·`decode`·`frame`·`id3`·`writer` 는 v2 와 동일해 변경 없음.
+
+- **`feat(ui)`** `82ca735`: 환경설정에 MP3 음량 정규화 컨트롤 추가 (접이식 슬라이더+입력창). **(ADR-008)**
+    - `ui/preferences_dialog.py` 에 "MP3 음량 정규화" 그룹 추가. 체크박스 ON 시에만 상세(접이식 `QWidget`)가 펼쳐지며 다이얼로그가 `adjustSize()` 로 늘어난다. 목표 dB 는 슬라이더와 입력창(`QLineEdit`+`QDoubleValidator`)이 공존해 서로 동기화하고 0.5dB 단위로 양자화(정수 슬라이더를 ×2 스케일링, 범위 150~210 = 75.0~105.0dB). 이전 `QSpinBox` 초안은 다크 테마 화살표 미표시·레이아웃 깨짐으로 폐기했던 방향을 대체.
+
+- **`feat(gain)`** `1cbb6bc`: 새 GaindB api 연동 + 완료 라벨에 적용 dB·클리핑 표시. **(ADR-008)**
+    - `workers/download_worker.py` 가 `gaindb.api.analyze_file`(비파괴 분석, `clip_state` 확보) → `apply_file_track_gain`(seed 재사용 적용) 2단계로 전환. `normalize_done(float, bool)` 시그널로 적용 dB(`steps*DB_PER_STEP`)·클리핑 여부(`clip_state == "definite"`)를 전달. `controllers/download_manager.py` 가 이를 위젯에 배선하고, `ui/download_item_widget.py` 가 완료 라벨을 `완료 · 음량 +4.5dB` / `…(클리핑)` / `완료 (음량 조정 실패)` / `완료` 로 표시(음수는 U+2212 사용). 목표→89 오프셋 변환은 api 안에 캡슐화돼 GUI 는 목표 dB 만 넘긴다.
+
+- **`chore(gaindb)`** `aea6955`: 벤더링본을 GaindB 최신 리팩터로 교체 (api.py 도입). **(ADR-008)**
+    - GaindB 가 CLI·GUI·AVD 공유 순수 함수 API 계층(`gaindb/api.py`)을 도입해 벤더링본 전체를 최신 리팩터로 교체. 원본 루트 모듈 `apply_gain.py` 를 `gaindb/` 패키지 안으로 벤더링하고, `api.py` 의 `from apply_gain import …` 를 `from gaindb.apply_gain import …` 로 교정.
+
 ## 2026-07-10
 
 - **`chore`** `e1a8a26`: GaindB 패키지 벤더링 (mp3gain 클린룸 재구현) — MP3 음량 정규화용. **(ADR-008)**
