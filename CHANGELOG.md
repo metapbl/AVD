@@ -25,6 +25,9 @@
 
 ## 2026-07-23
 
+- **`docs`** `a58d797`: GaindB 음량 정규화 Windows 실환경 검증 완료 + yt-dlp 핀 정책 명문화. **(ADR-008)**
+    - 게인 On/Off·목표 dB 조절·MP3 다운로드 후 음량 반영·완료 라벨을 실기에서 확인(정상). `requirements.txt` 의 yt-dlp 저버전 핀(2026.3.17)은 의도적 유지로 결정 — `pip install` 이 항상 저버전을 설치하게 두면 앱 기동 시 자동 업데이트(`1fd5c95`)가 반드시 발동해 최신화하므로, 매 설치가 "구버전 설치 → 자동 업데이트 → 최신화" 경로의 리허설이 된다(실기 최신화 확인). WORKLOG 3 에 근거 기록.
+
 - **`chore(gaindb)`** `5d392bd`: 벤더링본을 GaindB v2 안정본으로 갱신 (api·apply_gain·tag). **(ADR-008)**
     - GaindB 가 일부 개정되어(당분간 고정 예정) 변경된 3개 파일만 재벤더링. `api.py` 에 앨범 모드 공개 함수 6종(`group_by_album`·`analyze_album_file`·`album_gain_from_files`·`compute_album_display`·`apply_file_album_gain`·`result_from_album_raw`) 이 신설됐으나 AVD 가 쓰는 트랙 모드 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 동일 → 완전 하위 호환. `apply_gain.py` 는 `_apply_one_album_file` 추출 등 앨범 경로 공유 리팩터. 벤더링 교정(`from apply_gain` → `from gaindb.apply_gain`) 재적용. `__init__`·`analysis`·`decode`·`frame`·`id3`·`writer` 는 v2 와 동일해 변경 없음.
 

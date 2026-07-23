@@ -47,11 +47,15 @@
 
 ### 3.1. 진행 중 (In Progress)
 
-- **GaindB 음량 정규화 — 실환경 검증 + 문서 잔여 (ADR-008 후속)**
+- **GaindB 음량 정규화 — 문서 잔여 (ADR-008 후속)**
     - 완료: 벤더링본을 GaindB api 계층으로 교체(`aea6955`), 새 api 연동·완료 라벨 dB/클리핑 표시(`1cbb6bc`), 환경설정 접이식 슬라이더+입력창 UI(`82ca735`), GaindB v2 안정본 재벤더링(`5d392bd`). 클리핑 판정은 GaindB 본체가 `analyze_file` 의 `clip_state`("none"/"possible"/"definite")로 제공 → AVD 는 `definite` 만 클리핑으로 표시(강제 적용·표시Only 방침 유지). SpinBox 초안 폐기 후 `QLineEdit`+`QDoubleValidator`+`QSlider`(0.5dB, ×2 스케일) 조합으로 정착.
-    - 실환경 검증 잔여(Windows): 환경설정에서 게인 켜고 목표 dB 조절 → MP3 다운로드 완료 후 실제 음량 반영·완료 라벨(`완료 · 음량 +NdB`/`(클리핑)`)·실패 라벨 표시를 실기에서 확인.
+    - Windows 실환경 검증 **완료(2026-07-23)**: 환경설정 게인 On/Off·목표 dB 조절·MP3 다운로드 후 음량 반영·완료 라벨 표시를 실기에서 확인. 부수 확인 — `requirements.txt` yt-dlp 핀(2026.3.17)이 앱 자동 업데이트로 최신화되는 흐름까지 함께 검증됨(아래 별도 항목 참조).
     - 문서 잔여: README 에 게인 기능·numpy/scipy 의존 한 줄, LICENSE_REVIEW 에 v2 벤더링본(앨범 모드 api 추가 포함) 내역 반영.
     - 벤더링 lint 메모: v2 원본에 unused import 3건(`api.py` 의 `analyze_track`·`track_peak`, `tag.py` 의 `dataclasses.field`)이 있으나 벤더링 원본 보존 원칙상 임의 수정하지 않음(향후 upstream 재동기화 diff 최소화). 연동부(AVD 자체 코드)는 ruff 통과.
+
+- **`requirements.txt` yt-dlp 핀 정책 — 의도적 저버전 유지 (자동 업데이트 리허설)**
+    - 결정: `requirements.txt` 의 yt-dlp 핀을 최신으로 올리지 않고 저버전(현재 2026.3.17)으로 둔다. 근거 — `pip install -r requirements.txt` 가 항상 저버전을 설치하면, 앱 기동 시 자동 업데이트(비동기 모달 `1fd5c95`, ADR-007 계열)가 반드시 발동해 최신화한다. 즉 낮은 핀은 버그가 아니라 매 설치마다 "구버전 설치 → 자동 업데이트 발동 → 최신화" 경로를 실환경에서 리허설하게 만드는 장치다(2026-07-23 실기에서 정상 최신화 확인).
+    - 함의: 향후 "yt-dlp 핀이 왜 낮지? 올려야 하나?" 라는 의문이 재등장하면 이 항목을 근거로 유지. 실제 다운로드 동작은 자동 업데이트 후 최신 yt-dlp 로 수행되므로 저버전 핀이 기능을 저해하지 않는다.
 
 - **2026-07-09 작업분 Windows 실환경 검증** — 썸네일 게이트·다운로드 자동 재시도(ADR-007)·썸네일 폴백 체인·봇 차단 안내·yt-dlp 업데이트 비동기 모달(`1fd5c95`) 을 실기에서 확인. 절차서: [`docs/VERIFY_2026-07-09.md`](./docs/VERIFY_2026-07-09.md). 사용자 검증 완료 후 이 항목 삭제.
 
