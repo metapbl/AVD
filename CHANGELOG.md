@@ -25,7 +25,7 @@
 
 ## 2026-07-23
 
-- **`docs`** `a58d797`: GaindB 음량 정규화 Windows 실환경 검증 완료 + yt-dlp 핀 정책 명문화. **(ADR-008)**
+- **`docs`** `7d46f7b`: GaindB 음량 정규화 Windows 실환경 검증 완료 + yt-dlp 핀 정책 명문화. **(ADR-008)**
     - 게인 On/Off·목표 dB 조절·MP3 다운로드 후 음량 반영·완료 라벨을 실기에서 확인(정상). `requirements.txt` 의 yt-dlp 저버전 핀(2026.3.17)은 의도적 유지로 결정 — `pip install` 이 항상 저버전을 설치하게 두면 앱 기동 시 자동 업데이트(`1fd5c95`)가 반드시 발동해 최신화하므로, 매 설치가 "구버전 설치 → 자동 업데이트 → 최신화" 경로의 리허설이 된다(실기 최신화 확인). WORKLOG 3 에 근거 기록.
 
 - **`chore(gaindb)`** `5d392bd`: 벤더링본을 GaindB v2 안정본으로 갱신 (api·apply_gain·tag). **(ADR-008)**
