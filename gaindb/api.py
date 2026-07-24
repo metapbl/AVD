@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
 """gaindb/api.py — CLI·GUI·AVD 공유 순수 함수 API 계층.
 
 비파괴·무출력. 분석 결과를 dict 로만 반환한다(파일 수정·stdout 출력 없음).
@@ -6,8 +8,8 @@ GUI 편의를 위해 apply_file_track_gain 래퍼로 감싼다(목표 dB→offse
 이 계층에 가둔다).
 
 파괴적 파일 액션(undo·태그 제거)도 GUI 편의를 위해 얇게 감싼다:
-  undo_file_gain    : 원본 mp3gain -u / GUI UndoFileGain 대응.
-  remove_file_tags  : 원본 mp3gain -s d / GUI DeleteFileTags 대응.
+  undo_file_gain    : mp3gain -u 와 동일한 undo(GUI Undo File Gain 배선용).
+  remove_file_tags  : mp3gain -s d 와 동일한 태그 제거(GUI Delete File Tags 배선용).
 
 Album 계층(GUI Album Analysis/Album Gain 배선용):
   group_by_album         : 경로들을 폴더(또는 전체) 단위 앨범으로 묶는다.
@@ -15,7 +17,7 @@ Album 계층(GUI Album Analysis/Album Gain 배선용):
   album_gain_from_files  : 곡별 원재료를 모아 앨범 dB·peak·min/max 를 산출.
   compute_album_display  : 곡별 result 에 album_* 표시 키를 추가.
   apply_file_album_gain  : 한 곡에 그룹 공통 스텝을 적용하며 track+album 태그
-                           를 둘 다 기록(원본 앨범 게인 곡별 루프 재현).
+                           를 둘 다 기록(앨범 게인 곡별 적용).
 
 표시 조정(근거 CLAUDE.md 10):
   1) Track Gain 표시 제수는 정밀값 5*log10(2).
@@ -48,19 +50,16 @@ from gaindb.tag import (
     change_gain_and_tag,
     remove_mp3gain_ape_tag,
 )
-# AVD 벤더링: 원본은 apply_gain.py 가 리포 루트 모듈이라 `from apply_gain ...`
-# 이지만, AVD 는 apply_gain.py 를 gaindb/ 패키지 안으로 벤더링하므로
-# 패키지 절대 경로로 교정한다.
 from gaindb.apply_gain import apply_track_gain, _apply_one_album_file
 
 
-# 목표 음량 기준: mp3gain 내부 89 dB ReplayGain 레퍼런스.
+# 목표 음량 기준: 89 dB ReplayGain 레퍼런스.
 DEFAULT_TARGET_DB = 89.0
 
 
 def _compute_display(track_db: float, curr_max_amp,
                      target_db: float) -> dict:
-    """표시값 계산의 유일한 출처(원본 DispJunk / RadioMp3Gain 재현)."""
+    """표시값 계산의 유일한 출처(Volume/Gain/clip 표시값 산출)."""
     modify_db = target_db - DEFAULT_TARGET_DB
 
     volume = DEFAULT_TARGET_DB - track_db
@@ -299,7 +298,7 @@ _ALL_ALBUM_KEY = "<all>"
 def group_by_album(paths, each_folder_is_album: bool = True) -> dict:
     """경로들을 앨범 그룹으로 묶어 {album_key: [paths]} 를 반환한다(순수 함수).
 
-    원본 mnuEachAlbum(Each folder is album) 토글 재현:
+    "Each folder is album" 토글 동작:
       each_folder_is_album=True  : 폴더(os.path.dirname)별로 묶는다.
       each_folder_is_album=False : 전체를 단일 그룹(_ALL_ALBUM_KEY)으로 묶는다.
     입력 순서를 그룹 안에서 보존한다.
@@ -352,7 +351,7 @@ def analyze_album_file(
 def album_gain_from_files(per_file_results: list) -> dict:
     """곡별 원재료(analyze_album_file 결과)를 모아 앨범 집계를 산출한다.
 
-    원본 apply_album_gain 누적부와 동일: album_db=gain_from_histograms(합),
+    앨범 게인 누적과 동일: album_db=gain_from_histograms(합),
     album_peak=곡별 peak 의 max, album_min/max=곡별 min/max 의 min/max.
     """
     histograms = [r["histogram"] for r in per_file_results]
@@ -389,9 +388,9 @@ def compute_album_display(result: dict, album_db: float,
                           target_db: float = DEFAULT_TARGET_DB) -> dict:
     """곡별 표시 result 에 앨범 표시값(album_* 키)을 추가한다(재분석 없음).
 
-    원본 DispJunk 가 AlbumdBGain 있을 때 Album Volume/Gain/clip 을 Track 과
-    같은 수식(입력만 앨범 dB)으로 계산하던 동작 재현. Track 키는 보존하고
-    album 키만 보탠다. clip 판정 curr_max_amp 는 곡별 값(원본 동일).
+    Album dB Gain 이 있을 때 Album Volume/Gain/clip 을 Track 과 같은 수식(입력만
+    앨범 dB)으로 계산한다. Track 키는 보존하고 album 키만 보탠다. clip 판정
+    curr_max_amp 는 곡별 값을 쓴다(mp3gain 과 동일).
     """
     updated = dict(result)
     updated["album_db"] = album_db
@@ -422,10 +421,10 @@ def apply_file_album_gain(
 ) -> dict:
     """한 곡에 앨범 게인을 적용한다(파괴적). track+album 태그를 둘 다 기록.
 
-    원본 앨범 게인 곡별 루프 재현: 그룹 공통 스텝(db_to_steps(album_db + mod))
-    을 적용하며 track 값(씨앗)과 album 값(그룹 집계)을 둘 다 채운다. 실제 적용
-    본체는 apply_gain._apply_one_album_file 을 호출해 CLI album 경로와 태그
-    결과가 정확히 일치한다. track_seed 로 재디코딩을 생략한다(이중 디코딩 제거).
+    앨범 게인 곡별 적용: 그룹 공통 스텝(db_to_steps(album_db + mod))을 적용하며
+    track 값(씨앗)과 album 값(그룹 집계)을 둘 다 채운다. 실제 적용 본체는
+    apply_gain._apply_one_album_file 을 호출해 CLI album 경로와 태그 결과가
+    정확히 일치한다. track_seed 로 재디코딩을 생략한다(이중 디코딩 제거).
     """
     db_gain_mod = target_db - DEFAULT_TARGET_DB
     steps = db_to_steps(album_db + db_gain_mod)
@@ -462,7 +461,7 @@ def result_from_album_raw(raw: dict, target_db: float = DEFAULT_TARGET_DB) -> di
 
     raw 의 track_db 가 NOT_ENOUGH_SAMPLES 면(단곡 판정 실패) track 표시값을
     만들 수 없으므로 status="not_enough_samples" 로 돌려준다. 이 경우에도 앨범
-    표시는 그룹 dB 로 별도로 얹을 수 있으나(원본은 track 실패해도 album 진행),
+    표시는 그룹 dB 로 별도로 얹을 수 있으나(track 실패해도 album 은 진행),
     MVP 에서는 track 표시가 없는 곡은 그대로 둔다(합의된 단순화).
 
     반환: analyze_file 과 동일 키 구조의 track 표시 result dict.

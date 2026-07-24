@@ -1,10 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
 """
 gaindb.writer - MP3 global_gain 무손실 조정 (쓰기)
 
 각 프레임의 global_gain 필드를 ±N 하여 음량을 조정한다.
 재인코딩 없음 -> 무손실. CRC 보호 프레임은 헤더 CRC를 재계산한다.
 
-clean-room: MPEG 사이드 정보 레이아웃과 게인 적용 규칙(사양)만 참조해 독립 구현.
+MPEG 사이드 정보 레이아웃과 게인 적용 규칙(공개 사양)만 참조해 독립 구현.
 
 취소·진행률(GUI/워커 대응):
   apply_gain·scan_gain 은 순수 파이썬 프레임 순회라 디코딩이 없다. 초장시간
@@ -43,7 +45,7 @@ class GainCancelled(Exception):
 
 
 def _apply_one(gain: int, change: int, wrap: bool) -> int:
-    """게인 적용 규칙(사양 1.4)."""
+    """게인 적용 규칙(무손실 조정 원리)."""
     if wrap:
         return (gain + change) & 0xFF
     if gain == 0:
@@ -119,7 +121,7 @@ def apply_gain(path: str, left_change: int, right_change: int = None,
     MP3 파일의 모든 프레임 global_gain 을 무손실 조정한다.
     right_change 가 None 이면 좌우 동일 게인으로 적용한다.
     채널별(left != right) 적용은 stereo/dual 채널 파일에서만 허용된다
-    (원본 changeGain: joint stereo·mono 는 거부 — mode 1·3).
+    (joint stereo·mono 는 거부 — mode 1·3. mp3gain 과 동일한 동작).
     반환값: 수정한 프레임 수.
 
     should_cancel: 인자 없는 콜백. 순회 중 _CALLBACK_INTERVAL 프레임마다 호출해
@@ -159,7 +161,7 @@ def apply_gain(path: str, left_change: int, right_change: int = None,
         first = False
 
         # 단일 채널(좌우 비대칭) 게인은 stereo(0)·dual channel(2) 에서만 허용.
-        # 원본 changeGain 은 mode 비트 & 0x01 이 참인 joint stereo(1)·mono(3) 를 거부.
+        # mode 비트 & 0x01 이 참인 joint stereo(1)·mono(3) 는 거부(mp3gain 과 동일).
         if single_channel and frame.mode in (1, 3):
             raise ValueError(
                 "per-channel gain cannot be applied to mono or joint stereo files"
@@ -200,9 +202,8 @@ def apply_gain(path: str, left_change: int, right_change: int = None,
 def scan_gain(path: str, should_cancel=None, on_progress=None):
     """모든 프레임의 global_gain 최소/최대값을 수정 없이 수집한다.
 
-    원본 mp3gain.c 의 scanFrameGain 동등. 디코딩 없이 사이드 정보의
-    global_gain 필드만 읽어 파일 전체의 min/max 를 구한다. 0-gain 프레임도
-    포함한다(원본 동작).
+    디코딩 없이 사이드 정보의 global_gain 필드만 읽어 파일 전체의 min/max 를
+    구한다. 0-gain 프레임도 포함한다(mp3gain 과 동일한 동작).
 
     should_cancel/on_progress: apply_gain 과 동일(순회 중 간격마다 취소 확인·
       진행률 방출). 취소 시 GainCancelled. 읽기만 하므로 파일은 안 바뀐다.

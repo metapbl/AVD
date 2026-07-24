@@ -1,8 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
 """
 gaindb.frame - MP3 Layer III 프레임 파서 (읽기 전용)
 
 MP3 파일을 순회하며 각 프레임의 global_gain 값을 읽는다.
-clean-room: 공개된 MPEG 오디오 프레임 구조 사양만 참조해 독립 구현.
+공개된 MPEG 오디오 프레임 구조 사양만 참조해 독립 구현.
 이 단계는 디코딩이 아니라 사이드 정보의 게인 필드만 읽으므로 외부 의존성 없음.
 """
 

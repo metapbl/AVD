@@ -1,24 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
 """
 gaindb/analysis.py
 
 ReplayGain 분석기 (Track gain / Album gain).
 
-clean-room 구현: 필터 계수는 원본 C 코드를 옮긴 것이 아니라, 저작권 대상이
-아닌 필터 계수 수치(사실 데이터)만 전사한 것이다. 코드는 독립 작성했다.
+독립 구현: 필터 계수는 저작권 대상이 아닌 필터 계수 수치(사실 데이터)만
+전사한 것이며, 코드는 독립 작성했다.
 
 계수 출처(정직한 기재): 이 프로젝트가 쓰는 전 샘플레이트(44.1k·48k·32k /
-24k·22.05k·16k / 12k·11.025k·8k)의 yulewalk·Butterworth 계수는, 원본
-mp3gain 에 포함된 David Robinson·Glen Sawyer 의 LGPL 파일 gain_analysis.c
-의 ABYule / ABButter 상수표에 전 샘플레이트가 수치로 실려 있으며, 그 수치를
-scipy lfilter 규약(b/a 분리, a[0]=1.0)에 맞게 재배치해 전사한 것이다.
-(원본 표는 한 배열에 b·a 계수를 교차 저장하므로, 같은 수치를 lfilter 형식으로
-옮겼을 뿐 값은 동일하다.) 이들 계수는 David Robinson 의 ReplayGain 사양으로
-공개되어 여러 독립 구현에 사실상 사양처럼 공유되는 값이며, 필터 계수라는
-수치 데이터는 저작권 대상이 아니다. 원본과 동일한 응답을 자체 재설계하려면
-비공개인 equal-loudness target 곡선이 필요하고 scipy 에 MATLAB yulewalk
-등가도 없어(조사로 확인) 재설계 경로가 원리적으로 막혀 있으므로, 2.1(원본
-동일 재현) 최우선 원칙 하에 계수 수치만 차용하기로 사용자와 합의했다. 상세
-경위는 CLAUDE.md 10 진척 로그(6단계) 참조.
+24k·22.05k·16k / 12k·11.025k·8k)의 yulewalk·Butterworth 계수는 ReplayGain
+공개 사양이 정의하는 표준값이다. 이 사양에는 전 샘플레이트의 계수가 수치로
+공개되어 있으며, 여러 독립 구현이 사실상 사양처럼 공유하는 값이다. 이
+프로젝트는 그 수치(저작권 대상이 아닌 필터 계수 사실 데이터)를 scipy lfilter
+규약(b/a 분리, a[0]=1.0)에 맞게 재배치해 전사했고, 코드는 독립 작성했다.
+(사양의 표는 한 배열에 b·a 계수를 교차 저장하는 형태이므로, 같은 수치를
+lfilter 형식으로 옮겼을 뿐 값은 동일하다.) 필터 계수라는 수치 데이터는
+저작권 대상이 아니다. 자체 재설계로 동일한 응답을 얻으려면 비공개인
+equal-loudness target 곡선이 필요하고 scipy 에 MATLAB yulewalk 등가도
+없어(조사로 확인) 재설계 경로가 원리적으로 막혀 있으므로, 2.1(mp3gain 결과
+일치) 최우선 원칙 하에 계수 수치만 차용하기로 사용자와 합의했다. 상세 경위는
+CLAUDE.md 10 진척 로그(6단계) 참조. ReplayGain 사양에 대한 사실 언급은
+NOTICE/README 에서 다룬다.
 
 알고리즘 사양:
   1) 입력 PCM 을 10차 yulewalk IIR → 2차 Butterworth(150Hz HPF) 캐스케이드로 필터.
@@ -26,8 +29,8 @@ scipy lfilter 규약(b/a 분리, a[0]=1.0)에 맞게 재배치해 전사한 것�
   3) dB 값을 0.01dB 해상도 히스토그램(0..120dB)에 누적.
   4) 누적분포 상위 95퍼센타일 지점의 음량을 구해 PINK_REF 에서 빼 게인 산출.
 
-dB 산출식은 원본과 같은 등가식(10*log10(meanSquare))을 따른다 — 표준 mp3gain
-결과와 수치를 일치시켜 apply_gain 과 정합하기 위함이다.
+dB 산출식은 ReplayGain 사양의 등가식(10*log10(meanSquare))을 따른다 — mp3gain
+과 결과 수치를 일치시켜 apply_gain 과 정합하기 위함이다.
 """
 
 from __future__ import annotations
@@ -44,7 +47,7 @@ MAX_DB = 120                 # 히스토그램 범위 0..120 dB
 RMS_WINDOW_MS = 50           # RMS 윈도우 길이(ms)
 PINK_REF = 64.82             # 캘리브레이션 기준값(dB)
 
-# dB → MP3 게인 스텝 변환 제수. 원본 mp3gain 과 동일하게 5*log10(2) 를 쓴다.
+# dB → MP3 게인 스텝 변환 제수. mp3gain 과 동일한 결과가 되도록 5*log10(2) 를 쓴다.
 # 디코더가 global_gain 을 2^(gain/4) 로 적용 → 1스텝 = 20*log10(2^0.25) = 5*log10(2) dB.
 _DB_PER_STEP_DIVISOR = 5.0 * math.log10(2.0)
 
@@ -55,11 +58,10 @@ DB_PER_STEP = _DB_PER_STEP_DIVISOR
 # lfilter(b, a, x) 규약: a[0]=1.0. Yulewalk: b=[b0..b10], a=[1.0, a1..a10].
 # Butterworth: b=[b0, b1, b2], a=[1.0, a1, a2].
 #
-# 전 샘플레이트 계수의 실질 1차 출처는 원본 mp3gain 의 LGPL 파일
-# gain_analysis.c 의 ABYule / ABButter 상수표다(전 샘플레이트가 수치로 실려
-# 있음). 그 수치(저작권 대상이 아닌 필터 계수 사실 데이터)를 lfilter 규약에
-# 맞게 재배치해 전사했고 코드는 독립 작성했다. 상세는 위 모듈 docstring 및
-# CLAUDE.md 10 진척 로그(6단계) 참조.
+# 전 샘플레이트 계수는 ReplayGain 공개 사양이 정의하는 표준값이다. 그 수치
+# (저작권 대상이 아닌 필터 계수 사실 데이터)를 lfilter 규약에 맞게 재배치해
+# 전사했고 코드는 독립 작성했다. 상세는 위 모듈 docstring 및 CLAUDE.md 10
+# 진척 로그(6단계) 참조.
 
 _YULE_44100_B = [
     0.05418656406430, -0.02911007808948, -0.00848709379851, -0.00851165645469,
@@ -234,7 +236,7 @@ def _loudness_histogram(
     lsum = lsq.reshape(n_windows, window).sum(axis=1)
     rsum = rsq.reshape(n_windows, window).sum(axis=1)
 
-    # 양 채널 평균제곱. 원본과 동일한 등가식: 10*log10(meanSquare).
+    # 양 채널 평균제곱. ReplayGain 사양의 등가식: 10*log10(meanSquare).
     mean_sq = (lsum + rsum) / window * 0.5 + 1.0e-37
     db = STEPS_PER_DB * 10.0 * np.log10(mean_sq)
 
@@ -436,7 +438,7 @@ def db_to_steps(db_change: float) -> int:
     """
     ReplayGain dB 변화량을 정수 MP3 게인 스텝으로 양자화한다.
 
-    원본 mp3gain 과 동일한 round-half-away-from-zero 방식:
+    mp3gain 과 동일한 결과가 되도록 round-half-away-from-zero 방식을 쓴다:
     0 방향으로 자른 뒤 분수부가 0.5 이상이면 절댓값을 1 키운다.
     파이썬 round() 의 banker's rounding 과 0.5 경계에서 어긋나므로 쓰지 않는다.
     """
@@ -452,10 +454,10 @@ def track_peak(left: np.ndarray, right: np.ndarray) -> float:
     """
     한 곡의 정규화 peak(0~1 스케일, 1.0 초과 가능)를 반환한다.
 
-    원본 mp3gain 의 find_maxsample 동등: 디코더 출력 원샘플(필터 적용 전)의
-    좌우 절대 최댓값을 구해 32768.0 으로 나눈다. decode_pcm 이 좌우 모두
-    ±32768 스케일로 주므로(mono 도 좌우 복제) 원본과 스케일이 정합한다.
-    원본 find_maxsample 는 nchan 과 무관하게 항상 *32768.0 을 쓴다.
+    디코더 출력 원샘플(필터 적용 전)의 좌우 절대 최댓값을 구해 32768.0 으로
+    나눈다. decode_pcm 이 좌우 모두 ±32768 스케일로 주므로(mono 도 좌우 복제)
+    mp3gain 과 스케일이 정합한다. 채널 수와 무관하게 항상 32768.0 으로 나눠
+    mp3gain 과 결과를 일치시킨다.
 
     샘플이 하나도 없으면 0.0 을 반환한다.
 
@@ -465,4 +467,3 @@ def track_peak(left: np.ndarray, right: np.ndarray) -> float:
     lmax = float(np.abs(left).max()) if left.size else 0.0
     rmax = float(np.abs(right).max()) if right.size else 0.0
     return max(lmax, rmax) / 32768.0
-

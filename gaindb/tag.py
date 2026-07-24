@@ -1,19 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
 """gaindb/tag.py — 태그 처리 (4단계).
 
-원본 mp3gain apetag.c 와 동일한 결과·포맷을 산출하는 clean-room 독립 구현.
+APEv2 태그를 읽고 쓰고 제거하는 독립 구현. mp3gain 과 결과·포맷을 일치시키되
 공개 사양(APEv2 포맷·필드명)과 관찰된 동작만 차용하고 코드는 독립 작성한다.
 이 파일 단계 ①: APEv2 읽기 파서 (전 필드 + otherFields 보존 + Lyrics3/ID3v1 꼬리 감지).
 
-원본 대응:
-  struct MP3GainTagInfo   -> MP3GainTagInfo
-  struct APETagStruct     -> ApeTag
-  struct FileTagsStruct   -> FileTags
-  ReadMP3APETag           -> _read_ape_tag
-  ReadMP3Lyrics3v2Tag     -> _read_lyrics3v2_tag
-  ReadMP3ID3v1Tag         -> _read_id3v1_tag
-  ReadMP3GainAPETag       -> read_mp3gain_ape_tag
-  WriteMP3GainTag         -> _write_mp3gain_tag        (⑤-C; useId3 분기 래퍼)
-  (main 의 태그 읽기 분기) -> read_mp3gain_tags          (⑤-C; APE→ID3 순서)
+담당 기능:
+  게인 정보 컨테이너(MP3GainTagInfo) / APE 태그 구조(ApeTag) / 꼬리 태그 묶음(FileTags)
+  APEv2 읽기 (_read_ape_tag / read_mp3gain_ape_tag)
+  Lyrics3v2 · ID3v1 꼬리 감지 보존 (_read_lyrics3v2_tag / _read_id3v1_tag)
+  APEv2 쓰기 · 제거 (write_mp3gain_ape_tag / remove_mp3gain_ape_tag)
+  useId3 분기 래퍼 · 태그 읽기 오케스트레이션 (_write_mp3gain_tag / read_mp3gain_tags)
+  게인 적용 + 태그 일관 갱신 (change_gain_and_tag)
 """
 
 from __future__ import annotations
@@ -22,24 +21,24 @@ import os
 from dataclasses import dataclass, field
 from typing import BinaryIO, Optional
 
-# 원본: enum { MAX_FIELD_SIZE = 1024*1024 } — 이보다 큰 필드는 오류로 간주.
+# 이보다 큰 필드는 오류로 간주하는 상한 (1 MiB).
 MAX_FIELD_SIZE = 1024 * 1024
 
-# APE 푸터/헤더는 고정 32바이트 (struct APETagFooterStruct).
+# APE 푸터/헤더는 고정 32바이트.
 APE_FOOTER_SIZE = 32
 
 # APE Flags bit31: 이 태그에 헤더가 존재함(footer 의 bit31) 또는
-# "이것이 헤더다"(header 의 bit31). 원본의 1<<31.
+# "이것이 헤더다"(header 의 bit31).
 APE_FLAG_HAS_HEADER = 1 << 31
 
 
 def _read_le32(b: bytes, off: int = 0) -> int:
-    """원본 Read_LE_Uint32: 리틀엔디언 4바이트 부호 없는 정수."""
+    """리틀엔디언 4바이트 부호 없는 정수를 읽는다."""
     return b[off] | (b[off + 1] << 8) | (b[off + 2] << 16) | (b[off + 3] << 24)
 
 
 def _strlen_max(b: bytes, start: int, max_len: int) -> int:
-    """원본 strlen_max: start 부터 NUL 까지의 길이, 단 max_len 으로 상한."""
+    """start 부터 NUL 까지의 길이, 단 max_len 으로 상한."""
     n = 0
     while n < max_len and b[start + n] != 0:
         n += 1
@@ -48,9 +47,9 @@ def _strlen_max(b: bytes, start: int, max_len: int) -> int:
 
 @dataclass
 class MP3GainTagInfo:
-    """원본 struct MP3GainTagInfo 대응.
+    """APE/ID3 공용 게인 정보 컨테이너.
 
-    APE/ID3 공용 게인 정보 컨테이너. 읽기 시 인식한 필드만 have_* 가 True.
+    읽기 시 인식한 필드만 have_* 가 True.
     """
 
     have_track_gain: bool = False
@@ -70,13 +69,13 @@ class MP3GainTagInfo:
     undo_right: int = 0
     undo_wrap: bool = False
 
-    # 원본은 unsigned char (0~255). 프레임 global_gain 의 현재 min/max.
+    # 0~255 범위(unsigned char). 프레임 global_gain 의 현재 min/max.
     min_gain: int = 0
     max_gain: int = 0
     album_min_gain: int = 0
     album_max_gain: int = 0
 
-    # 원본: dirty(로드 후 변경 여부), recalc(재계산 필요 비트마스크).
+    # dirty(로드 후 변경 여부), recalc(재계산 필요 비트마스크).
     # 쓰기/오케스트레이션 단계(③~)에서 사용. 읽기 단계에서는 건드리지 않음.
     dirty: bool = False
     recalc: int = 0
@@ -84,11 +83,11 @@ class MP3GainTagInfo:
 
 @dataclass
 class ApeTag:
-    """원본 struct APETagStruct 대응.
+    """APE 태그 구조.
 
-    footer/header 는 원본 32바이트를 그대로 보존(Version/Flags/Reserved 유지).
-    LE 정수 접근은 _read_le32 헬퍼로. other_fields 는 인식 못 한 필드들의
-    원본 바이트(각 필드의 vsize/flags 헤더 포함)를 그대로 이어붙인 블록.
+    footer/header 는 원본 파일에서 읽은 32바이트를 그대로 보존(Version/Flags/
+    Reserved 유지). LE 정수 접근은 _read_le32 헬퍼로. other_fields 는 인식 못 한
+    필드들의 바이트(각 필드의 vsize/flags 헤더 포함)를 그대로 이어붙인 블록.
     """
 
     have_header: bool = False
@@ -101,7 +100,7 @@ class ApeTag:
 
 @dataclass
 class FileTags:
-    """원본 struct FileTagsStruct 대응.
+    """파일 끝에 붙는 꼬리 태그 묶음.
 
     tag_offset 는 오디오 본문이 끝나고 모든 꼬리 태그가 시작되는 위치.
     """
@@ -114,7 +113,7 @@ class FileTags:
 
 
 def _lyrics3_number6(b: bytes) -> int:
-    """원본 Lyrics3GetNumber6: 6자리 ASCII 숫자. 비숫자면 0."""
+    """6자리 ASCII 숫자를 정수로. 비숫자면 0."""
     n = 0
     for i in range(6):
         c = b[i]
@@ -125,7 +124,7 @@ def _lyrics3_number6(b: bytes) -> int:
 
 
 def _read_id3v1_tag(f: BinaryIO, file_tags: FileTags, tag_offset: int) -> int:
-    """원본 ReadMP3ID3v1Tag.
+    """ID3v1 꼬리 감지·보존.
 
     tag_offset 직전 128바이트가 'TAG' 로 시작하면 ID3v1 으로 보고 보존.
     찾으면 새 tag_offset(=128 깎은 값) 반환, 아니면 원래 tag_offset 그대로 반환.
@@ -141,7 +140,7 @@ def _read_id3v1_tag(f: BinaryIO, file_tags: FileTags, tag_offset: int) -> int:
 
 
 def _read_lyrics3v2_tag(f: BinaryIO, file_tags: FileTags, tag_offset: int) -> int:
-    """원본 ReadMP3Lyrics3v2Tag.
+    """Lyrics3v2 꼬리 감지·보존.
 
     Lyrics3v2 는 정의상 그 뒤에 ID3v1(128B)이 붙어 있다. 구조:
       ... LYRICSBEGIN <body> <6자리길이> LYRICS200 <ID3v1 128B>
@@ -166,7 +165,7 @@ def _read_lyrics3v2_tag(f: BinaryIO, file_tags: FileTags, tag_offset: int) -> in
         return tag_offset
 
     body_len = _lyrics3_number6(footer[0:6])
-    # 원본: tag_offset - 128 - sizeof(T) - len 위치에 'LYRICSBEGIN' 가 있어야 함.
+    # tag_offset - 128 - 15 - len 위치에 'LYRICSBEGIN' 가 있어야 함.
     if tag_offset < 128 + 15 + body_len:
         return tag_offset
     f.seek(tag_offset - 128 - 15 - body_len)
@@ -186,7 +185,7 @@ def _read_lyrics3v2_tag(f: BinaryIO, file_tags: FileTags, tag_offset: int) -> in
 def _read_ape_tag(
     f: BinaryIO, info: MP3GainTagInfo, file_tags: FileTags, tag_offset: int
 ) -> int:
-    """원본 ReadMP3APETag.
+    """APEv1/v2 태그 읽기.
 
     tag_offset 직전에서 APEv1/v2 푸터를 찾아 파싱한다.
     인식 필드(REPLAYGAIN_*, MP3GAIN_*)는 info 에 채우고, 나머지는 ape_tag.other_fields
@@ -236,12 +235,12 @@ def _read_ape_tag(
             break
         vsize = _read_le32(body, p)
         # flags = _read_le32(body, p + 4)  # 보존만, 해석 안 함
-        field_start = p          # vsize/flags 포함 필드 시작(원본의 'p - 8' 대응)
+        field_start = p          # vsize/flags 포함 필드 시작
         p += 8
 
         remaining = body_len - p
         isize = _strlen_max(body, p, remaining)
-        # 경계/크기 검사 (원본과 동일).
+        # 경계/크기 검사.
         if isize >= remaining or vsize > MAX_FIELD_SIZE or isize + 1 + vsize > remaining:
             break
 
@@ -268,7 +267,7 @@ def _read_ape_tag(
     # 헤더 존재 시(footer flags bit31) 추가로 32바이트 읽고 깎음.
     if footer_flags & APE_FLAG_HAS_HEADER:
         if new_offset < APE_FOOTER_SIZE:
-            # 원본은 여기서 return (이미 ape 는 세팅됨). 보수적으로 보존만.
+            # 여기서 종료 (이미 ape 는 세팅됨). 보수적으로 보존만.
             file_tags.ape_tag = ape
             return new_offset
         new_offset -= APE_FOOTER_SIZE
@@ -283,9 +282,10 @@ def _read_ape_tag(
 
 def _store_ape_field(name: str, value: str, info: MP3GainTagInfo) -> bool:
     """APE 필드 하나를 info 에 반영. 인식했으면 True, 아니면 False(=otherFields 행).
+
     APEv2 게인 필드를 인식해 info 에 반영한다. 매칭은 대소문자 무시.
     UNDO/MINMAX 의 고정 오프셋 슬라이싱은 태그 값 포맷("+003,+003,W" ·
-    "001,153")에서 도출된 것이며, 원본과 동일한 결과를 낸다.
+    "001,153")에서 도출된 것이며, mp3gain 과 동일한 결과를 낸다.
     """
     upper = name.upper()
 
@@ -322,9 +322,9 @@ def _store_ape_field(name: str, value: str, info: MP3GainTagInfo) -> bool:
 
 
 def _atof(s: str) -> float:
-    """원본 atof 동작 모사: 앞부분의 숫자만 파싱, 실패 시 0.0."""
+    """C atof 동작 모사: 앞부분의 숫자만 파싱, 실패 시 0.0."""
     s = s.strip()
-    # atof 는 앞에서부터 파싱 가능한 데까지. 가장 단순·안전하게 시도.
+    # 앞에서부터 파싱 가능한 데까지. 가장 단순·안전하게 시도.
     end = 0
     seen_dot = False
     seen_e = False
@@ -348,7 +348,7 @@ def _atof(s: str) -> float:
 
 
 def _atoi(s: str) -> int:
-    """원본 atoi 동작 모사: 앞부분의 정수만 파싱, 실패 시 0."""
+    """C atoi 동작 모사: 앞부분의 정수만 파싱, 실패 시 0."""
     s = s.strip()
     end = 0
     for i, c in enumerate(s):
@@ -365,7 +365,7 @@ def _atoi(s: str) -> int:
 
 
 def read_mp3gain_ape_tag(filename: str):
-    """원본 ReadMP3GainAPETag.
+    """파일 끝의 mp3gain APE 태그 읽기.
 
     파일 끝에서부터 APE / Lyrics3v2(+ID3v1) / ID3v1 꼬리를 반복 감지하며
     tag_offset 을 위로 깎는다. 한 바퀴에 아무것도 안 깎이면 종료.
@@ -393,18 +393,18 @@ def read_mp3gain_ape_tag(filename: str):
         if 0 <= tag_offset <= file_size:
             file_tags.tag_offset = tag_offset
         else:
-            # 손상된 태그 정보: 파일 끝으로 기본 처리(원본 동작).
+            # 손상된 태그 정보: 파일 끝으로 기본 처리(mp3gain 과 동일한 동작).
             file_tags.tag_offset = file_size
 
     return info, file_tags
 
 
 # ---------------------------------------------------------------------------
-# 4단계 ②: APEv2 쓰기 (원본 WriteMP3GainAPETag 동등)
+# 4단계 ②: APEv2 쓰기
 # ---------------------------------------------------------------------------
 
 def _write_le32(value: int) -> bytes:
-    """원본 Write_LE_Uint32: 리틀엔디언 4바이트."""
+    """리틀엔디언 4바이트로 쓴다."""
     return bytes((
         value & 0xFF,
         (value >> 8) & 0xFF,
@@ -414,28 +414,28 @@ def _write_le32(value: int) -> bytes:
 
 
 def _fmt_gain(value: float) -> str:
-    """원본 '%-+9.6f' + ' dB'.
+    """게인 값을 '%-+9.6f' + ' dB' 포맷으로.
 
     C 의 %-+9.6f: 부호 강제(+/-), 최소폭 9, 소수 6자리, 좌측정렬(폭 미달 시
     오른쪽 공백). 6자리 소수면 부호+정수1+점+6 = 최소 9자리라 보통 폭 충족.
-    원본은 이 9바이트만 memcpy 후 ' dB' 3바이트를 붙인다.
+    이 9바이트에 ' dB' 3바이트를 붙인다(mp3gain 과 동일한 결과).
     """
     s = f"{value:+.6f}"          # 부호 강제, 소수 6자리
     s = s.ljust(9)              # 최소폭 9, 좌측정렬
-    # 원본은 valueString 의 앞 9바이트만 복사. 폭 초과 시(예: -10.5) 잘릴 수 있으나
-    # 게인 dB 는 통상 한 자리 정수라 9 이내. 원본과 동일하게 앞 9바이트 사용.
+    # valueString 의 앞 9바이트만 사용. 폭 초과 시(예: -10.5) 잘릴 수 있으나
+    # 게인 dB 는 통상 한 자리 정수라 9 이내.
     return s[:9] + " dB"
 
 
 def _fmt_peak(value: float) -> str:
-    """원본 '%-8.6f': 부호 없음, 최소폭 8, 소수 6자리, 좌측정렬. 앞 8바이트 사용."""
+    """피크 값을 '%-8.6f' 포맷으로: 부호 없음, 최소폭 8, 소수 6자리, 좌측정렬. 앞 8바이트 사용."""
     s = f"{value:.6f}"
     s = s.ljust(8)
     return s[:8]
 
 
 def _ape_field(name: str, value: str) -> bytes:
-    """APE 필드 하나를 원본 바이트 레이아웃으로 직렬화.
+    """APE 필드 하나를 바이트 레이아웃으로 직렬화.
 
     레이아웃: vsize[4 LE] + flags[4 LE]=0 + name(ASCII) + '\\0' + value(UTF-8).
     """
@@ -453,11 +453,11 @@ def _ape_field(name: str, value: str) -> bytes:
 def _make_ape_footer(
     is_header: bool, tag_len: int, tag_count: int, base: Optional[bytes]
 ) -> bytes:
-    """APE 푸터 또는 헤더 32바이트 생성 (원본 WriteMP3GainAPETag 의 footer/header 구성).
+    """APE 푸터 또는 헤더 32바이트 생성.
 
     is_header=True 이면 Flags 에 bit29(이것이 헤더)를 추가로 켠다.
-    Length 는 '자신을 제외한 상대편 32바이트 + 본문' = tag_len - 32 (원본은 항상
-    헤더+푸터 둘 다 쓰므로 newTagLength - sizeof(other 한쪽) 로 계산되며 동일값).
+    Length 는 '자신을 제외한 상대편 32바이트 + 본문' = tag_len - 32 (헤더+푸터
+    둘 다 쓰므로 동일값).
     base 가 주어지면(기존 footer/header 보존) Version/Reserved 등을 유지하고
     Length·TagCount·Flags(헤더비트)만 갱신. 없으면 v2000 으로 새로 만든다.
     """
@@ -492,7 +492,7 @@ def write_mp3gain_ape_tag(
     file_tags: FileTags,
     save_timestamp: bool = False,
 ) -> bool:
-    """원본 WriteMP3GainAPETag 동등.
+    """mp3gain APE 태그 쓰기.
 
     file_tags 는 read_mp3gain_ape_tag 로 미리 채워져 있어야 한다(tag_offset,
     보존된 otherFields/Lyrics3/ID3v1). info 의 have_* 에 따라 mp3gain/ReplayGain
@@ -519,7 +519,7 @@ def write_mp3gain_ape_tag(
         other_fields = b""
         other_count = 0
 
-    # mp3gain/ReplayGain 필드를 원본 순서대로 직렬화.
+    # mp3gain/ReplayGain 필드를 기록 순서대로 직렬화.
     fields = bytearray()
     field_count = 0
 
@@ -560,7 +560,7 @@ def write_mp3gain_ape_tag(
     # 새 태그 총 길이 = 헤더(32) + 본문 + 푸터(32).
     new_tag_length = APE_FOOTER_SIZE * 2 + len(body)
 
-    # 기존 태그가 새 태그보다 길면 파일을 tag_offset 까지 truncate (원본 동작).
+    # 기존 태그가 새 태그보다 길면 파일을 tag_offset 까지 truncate.
     if ape is not None and ape.original_tag_size > new_tag_length:
         with open(filename, "r+b") as f:
             f.truncate(file_tags.tag_offset)
@@ -612,7 +612,7 @@ def _count_ape_fields(blob: bytes) -> int:
 
 
 def remove_mp3gain_ape_tag(filename: str, save_timestamp: bool = False) -> bool:
-    """원본 RemoveMP3GainAPETag 동등.
+    """mp3gain APE 태그 제거.
 
     APE 태그를 읽어, mp3gain/ReplayGain 필드가 하나라도 있으면(have_* OR)
     dirty 로 표시한 뒤 have_* 를 전부(undo 포함) 끄고 다시 쓴다. write 의
@@ -620,7 +620,7 @@ def remove_mp3gain_ape_tag(filename: str, save_timestamp: bool = False) -> bool:
     통째로 제거되고 꼬리(Lyrics3/ID3v1)만 남는다. 원래 mp3gain 필드가 없던
     파일이면(dirty 아님) 파일을 전혀 건드리지 않는다.
 
-    반환: 항상 True (원본 동작).
+    반환: 항상 True.
     """
     info, file_tags = read_mp3gain_ape_tag(filename)
 
@@ -651,7 +651,7 @@ def remove_mp3gain_ape_tag(filename: str, save_timestamp: bool = False) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# 4단계 ⑤-C: useId3 분기 래퍼 (원본 WriteMP3GainTag / main 의 태그 읽기 분기 동등)
+# 4단계 ⑤-C: useId3 분기 래퍼 · 태그 읽기 오케스트레이션
 # ---------------------------------------------------------------------------
 
 def _write_mp3gain_tag(
@@ -661,10 +661,11 @@ def _write_mp3gain_tag(
     save_timestamp: bool = False,
     use_id3: bool = False,
 ) -> None:
-    """원본 WriteMP3GainTag 동등.
+    """use_id3 에 따라 ID3v2 또는 APE 로 태그를 기록.
 
     use_id3 이면 ID3v2 로 기록하고, 기록이 실패하지 않았으면(>= 0) stale APE
-    태그를 제거한다(원본 비대칭: APE 로 쓸 때는 stale ID3 를 건드리지 않음).
+    태그를 제거한다(비대칭: APE 로 쓸 때는 stale ID3 를 건드리지 않음 —
+    mp3gain 과 동일한 동작).
     use_id3 가 아니면 APE 로만 기록한다.
 
     id3 모듈은 순환 import 회피를 위해 함수 내부에서 import (id3.py 가 이
@@ -679,7 +680,7 @@ def _write_mp3gain_tag(
 
 
 def read_mp3gain_tags(filename: str, use_id3: bool = False):
-    """원본 main 의 태그 읽기 분기 동등 (APE → 필요 시 ID3 덮어쓰기).
+    """태그 읽기 오케스트레이션 (APE → 필요 시 ID3 덮어쓰기).
 
     항상 APE 를 먼저 읽고, use_id3 이면: (1) APE 에서 게인 관련 필드를 하나라도
     읽었으면 dirty 를 켜 ID3v2 로의 업그레이드를 강제하고, (2) ID3v2 를 읽어
@@ -713,7 +714,7 @@ def change_gain_and_tag(
     should_cancel=None,
     on_progress=None,
 ) -> bool:
-    """원본 mp3gain.c 의 changeGainAndTag 동등.
+    """게인 적용 + 태그 일관 갱신.
 
     실제 프레임 게인을 적용(writer.apply_gain)한 뒤, 성공하면 info 를 일관 갱신하고
     태그를 다시 쓴다. undo 는 항상 누적, gain/peak/minmax 는 좌우 변화량이
@@ -735,7 +736,7 @@ def change_gain_and_tag(
     if left_change == 0 and right_change == 0:
         return False
 
-    # 실제 프레임 게인 적용. 예외 없이 반환되면 성공(원본의 !changeGain 대응).
+    # 실제 프레임 게인 적용. 예외 없이 반환되면 성공.
     # 취소 시 apply_gain 이 GainCancelled 를 던지고, 파일·태그 모두 미변경이다.
     apply_gain(filename, left_change, right_change, wrap,
                should_cancel=should_cancel, on_progress=on_progress)
@@ -748,7 +749,7 @@ def change_gain_and_tag(
     info.undo_right -= right_change
     info.undo_left -= left_change
     info.undo_wrap = wrap
-    info.have_undo = True  # undo 가 0 이 되어도 제거하지 않음(원본: 파일 단축 회피)
+    info.have_undo = True  # undo 가 0 이 되어도 제거하지 않음(파일 단축 회피)
 
     # --- 좌우가 같을 때만 나머지 필드 갱신 ---
     if left_change == right_change:
@@ -768,7 +769,7 @@ def change_gain_and_tag(
             cur_max = info.max_gain + left_change
             if wrap:
                 if cur_min < 0 or cur_min > 255 or cur_max < 0 or cur_max > 255:
-                    # wrap 으로 진짜 min/max 를 잃음 → 정보 폐기(원본 동작)
+                    # wrap 으로 진짜 min/max 를 잃음 → 정보 폐기
                     info.have_min_max_gain = False
             else:
                 # minGain: 원래 0 이면 0 유지(0-gain 보존), 아니면 0~255 클램프

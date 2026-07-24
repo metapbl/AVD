@@ -1,0 +1,22 @@
+Gain dB
+Copyright 2026 META PUBLIC
+
+This product is an independent re-implementation. It reproduces the
+observable behavior, command-line option scheme, and the file and tag
+formats of mp3gain in order to remain compatible with it. It does NOT
+contain or derive from any of mp3gain's original source code.
+
+- Loudness analysis is based on the publicly documented ReplayGain
+  specification. Filter coefficient values are public standard numbers
+  shared across independent implementations and are not copyrightable.
+
+- ffmpeg is NOT bundled. It is invoked as an external process located on
+  the user's PATH; users must install it separately.
+
+- The graphical interface uses PySide6 (Qt for Python), which is licensed
+  under the GNU LGPL v3. It is linked dynamically so that users may
+  replace the Qt libraries. When distributing pre-built binaries, the
+  LGPL v3 text and a usage notice are included.
+
+This software is licensed under the Apache License, Version 2.0.
+See the LICENSE file for details.

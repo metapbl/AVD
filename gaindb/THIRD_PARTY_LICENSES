@@ -1,0 +1,118 @@
+THIRD-PARTY LICENSES
+====================
+
+Gain dB depends on the following third-party Python packages. Gain dB
+itself is licensed under the Apache License 2.0 (see LICENSE and NOTICE).
+The packages below are NOT bundled with the Gain dB source distribution;
+they are installed separately via pip (see requirements.txt). Their
+license texts are reproduced or referenced here for convenience and to
+satisfy attribution requirements when Gain dB is redistributed together
+with these packages (for example, in a packaged binary release).
+
+ffmpeg / ffprobe are external programs invoked from the user's PATH and
+are neither bundled nor listed here; install them separately (see README).
+
+--------------------------------------------------------------------------
+NumPy
+--------------------------------------------------------------------------
+License: BSD 3-Clause "New" or "Revised" License
+Homepage: https://numpy.org/
+License text: https://numpy.org/doc/stable/license.html
+
+Copyright (c) 2005-2025, NumPy Developers.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of the NumPy Developers nor the names of any
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------
+SciPy
+--------------------------------------------------------------------------
+License: BSD 3-Clause "New" or "Revised" License
+Homepage: https://scipy.org/
+License text: https://github.com/scipy/scipy/blob/main/LICENSE.txt
+
+Copyright (c) 2001-2002 Enthought, Inc. 2003-2025, SciPy Developers.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of the copyright holders nor the names of any
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+--------------------------------------------------------------------------
+PySide6 (Qt for Python)
+--------------------------------------------------------------------------
+License: GNU Lesser General Public License version 3 (LGPLv3)
+Homepage: https://doc.qt.io/qtforpython-6/
+License details: https://doc.qt.io/qtforpython-6/licenses.html
+LGPLv3 full text: https://www.gnu.org/licenses/lgpl-3.0.html
+GPLv3 full text (referenced by LGPLv3): https://www.gnu.org/licenses/gpl-3.0.html
+
+Copyright (C) The Qt Company Ltd. and other contributors.
+
+PySide6 is used by Gain dB's graphical interface under the terms of the
+LGPLv3. The LGPLv3 is a long standard license; its full text is not
+reproduced here but is available at the URLs above and is included within
+the PySide6 package itself.
+
+Key LGPLv3 obligations relevant to Gain dB:
+  - PySide6 (and the underlying Qt libraries) are used via dynamic linking;
+    they are not statically linked into Gain dB.
+  - Users retain the ability to replace the PySide6 / Qt libraries with
+    their own compatible versions.
+  - When distributing a pre-built binary that bundles PySide6 / Qt, the
+    LGPLv3 (and the GPLv3 it references) license texts and a notice of use
+    are included with that binary.
+
+Because Gain dB is distributed as source (users install PySide6 themselves
+via pip), the PySide6 package carries its own license texts, and these
+obligations are addressed at the point a binary release is produced.

@@ -1,9 +1,11 @@
-"""ID3v2 (RVA2 + TXXX) 태그 읽기/쓰기 — 원본 mp3gain id3tag.c 와 동일한 결과·
-포맷을 산출하는 clean-room 독립 구현. 공개 사양(ID3v2.4·RVA2·TXXX)만 차용.
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 META PUBLIC
+"""ID3v2 (RVA2 + TXXX) 태그 읽기/쓰기 — mp3gain 과 동일한 결과·포맷을 산출하는
+독립 구현. 공개 사양(ID3v2.4·RVA2·TXXX)만 차용한다.
 
 이 모듈은 ⑤-A(읽기) + ⑤-B(쓰기)를 담당한다. 결선(⑤-C)은 이어서 추가한다.
 
-원본 동작 요약:
+동작 요약:
   - 읽기: 파일 앞 ID3v2 → 없으면 끝 ID3v2.4 footer → 없으면 끝 ID3v1.
     ID3v2.2/2.3/2.4 를 모두 내부적으로 2.4 로 통일해 파싱하고,
     RVA2 / TXXX(ReplayGain) / TXXX(MP3GAIN_*) 에서 게인 정보를 추출한다.
@@ -22,14 +24,14 @@ from typing import Optional, List
 from gaindb.tag import MP3GainTagInfo, _atof, _fmt_gain, _fmt_peak
 
 
-# ---- 오류 코드 (원본 rg_error.h 동등; 음수) -------------------------------
+# ---- 오류 코드 (음수) -----------------------------------------------------
 
 M3G_ERR_READ = -1
 M3G_ERR_TAGFORMAT = -2
 M3G_ERR_FILEOPEN = -3
 
 
-# ---- 태그/프레임 플래그 상수 (원본 #define 동등) --------------------------
+# ---- 태그/프레임 플래그 상수 (ID3v2 사양) --------------------------------
 
 TAGFL_UNSYNC = 0x80
 TAGFL_EXTHDR = 0x40
@@ -47,7 +49,7 @@ FRAMEFL_DLEN = 0x0001
 SYNCSAFE_INT_BAD = 0xFFFFFFFF
 
 
-# ---- ID3v2.2 → 2.4 프레임 ID 업그레이드 테이블 (원본 동등) ---------------
+# ---- ID3v2.2 → 2.4 프레임 ID 업그레이드 테이블 (ID3v2 사양) --------------
 
 _UPGRADE_ID3V22 = {
     b"BUF": b"RBUF", b"CNT": b"PCNT", b"COM": b"COMM", b"CRA": b"AENC",
@@ -69,7 +71,7 @@ _UPGRADE_ID3V22 = {
 }
 
 
-# ---- 데이터 구조 (원본 ID3v2FrameStruct / ID3v2TagStruct 동등) -----------
+# ---- 데이터 구조 ----------------------------------------------------------
 
 @dataclass
 class Id3Frame:
@@ -89,7 +91,7 @@ class Id3Tag:
     frames: List[Id3Frame] = field(default_factory=list)
 
 
-# ---- 정수/동기화 헬퍼 (원본 id3_get/put_* 동등) --------------------------
+# ---- 정수/동기화 헬퍼 -----------------------------------------------------
 
 def _get_int32(p: bytes) -> int:
     return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]
@@ -111,7 +113,7 @@ def _put_syncsafe_int(i: int) -> bytes:
 
 
 def _get_unsync_data(src: bytes) -> bytes:
-    """unsynchronisation 디코드: 0xFF 0x00 → 0xFF. 원본 id3_get_unsync_data 동등."""
+    """unsynchronisation 디코드: 0xFF 0x00 → 0xFF. ID3v2 사양의 unsync 규칙."""
     out = bytearray()
     n = len(src)
     i = 0
@@ -123,12 +125,12 @@ def _get_unsync_data(src: bytes) -> bytes:
     return bytes(out)
 
 
-# ---- ID3 전용 정수 파싱 (sscanf 엄밀 매칭 재현) --------------------------
+# ---- ID3 전용 정수 파싱 (C sscanf 와 동일한 결과 재현) -------------------
 
 def _atoi_or_none(s: str):
-    """C atoi 동등이되, 정수 앞부분이 없으면 None.
+    """C atoi 와 동일한 결과이되, 정수 앞부분이 없으면 None.
 
-    원본 sscanf 의 "변환 성공 개수" 검사를 재현하기 위해, 파싱 실패 시
+    C sscanf 의 "변환 성공 개수" 검사와 동일한 결과가 되도록, 파싱 실패 시
     None 을 반환해 해당 필드를 채우지 않도록 한다.
     """
     s = s.strip()
@@ -148,7 +150,7 @@ def _atoi_or_none(s: str):
 
 
 def _scan_two_ints(s: str):
-    """sscanf(s, "%d,%d") 동등. 둘 다 파싱되면 (a,b), 아니면 None."""
+    """sscanf(s, "%d,%d") 와 동일한 결과. 둘 다 파싱되면 (a,b), 아니면 None."""
     parts = s.split(",")
     if len(parts) < 2:
         return None
@@ -160,7 +162,7 @@ def _scan_two_ints(s: str):
 
 
 def _scan_undo(s: str):
-    """sscanf(s, "%d,%d,%c") 동등. (a,b,char) 또는 None.
+    """sscanf(s, "%d,%d,%c") 와 동일한 결과. (a,b,char) 또는 None.
 
     C 의 %c 는 콤마 직후 첫 문자 1개를 공백 스킵 없이 읽는다.
     """
@@ -180,10 +182,10 @@ def _scan_undo(s: str):
 # ---- RVA2 / TXXX 디코더 ---------------------------------------------------
 
 def _decode_rva2_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> int:
-    """RVA2 프레임(track/album, master channel)을 디코드.
+    """RVA2 프레임(track/album, master channel)을 디코드한다.
 
     info 가 주어지면 게인 정보를 채운다. info=None 이면 매칭 여부만 판정.
-    원본 id3_decode_rva2_frame 동등. 매칭이면 1, 아니면 0 반환.
+    매칭이면 1, 아니면 0 반환.
     """
     if frame.frameid != b"RVA2":
         return 0
@@ -240,10 +242,10 @@ def _decode_rva2_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> int:
 
 
 def _txxx_strings(frame: Id3Frame):
-    """TXXX 프레임에서 (description, value) 두 문자열을 추출.
+    """TXXX 프레임에서 (description, value) 두 문자열을 추출한다.
 
-    인코딩 0(ISO-8859-1)/3(UTF-8) 만 허용. 원본의 buf 처리 방식 재현
-    (description NUL 종료, 그 뒤가 value). 매칭 불가 시 None.
+    인코딩 0(ISO-8859-1)/3(UTF-8) 만 허용. description 은 NUL 로 종료되고
+    그 뒤가 value 다(mp3gain 과 동일한 처리). 매칭 불가 시 None.
     """
     if frame.frameid != b"TXXX":
         return None
@@ -254,7 +256,7 @@ def _txxx_strings(frame: Id3Frame):
         return None
     enc_byte = data[p]
     p += 1
-    # 원본은 최대 62바이트(buf[64])만 복사. 동등하게 자른다.
+    # description+value 를 최대 62바이트로 제한(mp3gain 과 동일한 결과).
     raw = data[p:p + 62]
     # description = 첫 NUL 까지, value = 그 다음 NUL 까지
     nul = raw.find(b"\0")
@@ -274,7 +276,7 @@ def _txxx_strings(frame: Id3Frame):
 
 
 def _decode_txxx_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> int:
-    """ReplayGain 표준 TXXX 프레임 디코드. 원본 id3_decode_txxx_frame 동등."""
+    """ReplayGain 표준 TXXX 프레임을 디코드한다."""
     parsed = _txxx_strings(frame)
     if parsed is None:
         return 0
@@ -307,7 +309,7 @@ def _decode_txxx_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> int:
 
 
 def _decode_mp3gain_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> int:
-    """mp3gain 고유 TXXX 프레임 디코드. 원본 id3_decode_mp3gain_frame 동등."""
+    """mp3gain 고유 TXXX 프레임(MP3GAIN_*)을 디코드한다."""
     parsed = _txxx_strings(frame)
     if parsed is None:
         return 0
@@ -338,11 +340,10 @@ def _decode_mp3gain_frame(frame: Id3Frame, info: Optional[MP3GainTagInfo]) -> in
     return 0
 
 
-# ---- ID3v2 직렬화 헬퍼 (⑤-B1; 원본 id3_put_unsync_data / id3_make_frame /
-#      id3_make_rva2_frame / id3_write_tag 동등) ----------------------------
+# ---- ID3v2 직렬화 헬퍼 (⑤-B1) -------------------------------------------
 
 def _put_unsync_data(src: bytes) -> bytes:
-    """unsynchronisation 인코드. 원본 id3_put_unsync_data 동등.
+    """unsynchronisation 인코드(ID3v2 사양의 unsync 규칙).
 
     0xFF 뒤에 (끝 / 0x00 / 상위3비트가 111) 이 오면 0x00 을 삽입한다.
     반환 길이가 입력과 같으면 unsync 가 불필요했다는 뜻(호출부에서 판단).
@@ -359,7 +360,7 @@ def _put_unsync_data(src: bytes) -> bytes:
 
 
 def _make_frame(frameid: bytes, fmt: str, *args) -> Id3Frame:
-    """포맷 문자열에 따라 프레임 본문을 조립. 원본 id3_make_frame 동등.
+    """포맷 문자열에 따라 프레임 본문을 조립한다.
 
     fmt 문자: 's' = bytes 그대로(NUL 종단 없음), 'b' = 1바이트 정수,
     'h' = 16비트 BE 정수. 음수 정수도 하위 바이트만 기록(2의 보수).
@@ -383,7 +384,7 @@ def _make_frame(frameid: bytes, fmt: str, *args) -> Id3Frame:
 
 def _make_rva2_frame(is_album: bool, gain: float,
                      have_peak: bool, peak: float) -> Id3Frame:
-    """RVA2 프레임(track/album, master channel) 생성. 원본 id3_make_rva2_frame 동등.
+    """RVA2 프레임(track/album, master channel)을 생성한다.
 
     gain*512 를 int16 BE 클램프, peak*32768 을 uint16. C (int) 0방향 절단을
     Python int() 로 재현.
@@ -406,16 +407,16 @@ def _make_rva2_frame(is_album: bool, gain: float,
 
 
 def _make_txxx_frame(description: bytes, value: bytes) -> Id3Frame:
-    """TXXX 프레임 생성(인코딩 0/ISO-8859-1). 원본 호출 "bsbs" (0,desc,0,value) 동등.
+    """TXXX 프레임 생성(인코딩 0/ISO-8859-1). "bsbs" = (0, desc, 0, value).
 
-    description 뒤 NUL 구분자, 그 뒤 value. NUL 종단(끝)은 없음(원본과 동일).
+    description 뒤 NUL 구분자, 그 뒤 value. NUL 종단(끝)은 없음.
     """
     return _make_frame(b"TXXX", "bsbs", 0, description, 0, value)
 
 
 def _write_tag(tag: Id3Tag):
     """태그를 ID3v2.4(전체 unsync, ext header 없음, 2KB 패딩, footer 없음)로
-    직렬화한 바이트열을 반환. 프레임이 0개면 None. 원본 id3_write_tag 동등.
+    직렬화한 바이트열을 반환한다. 프레임이 0개면 None.
     """
     if not tag.frames:
         return None
@@ -426,7 +427,7 @@ def _write_tag(tag: Id3Tag):
         dlen += 10 + len(_put_unsync_data(fr.data))
     dlen = (dlen + 2047) & ~2047
 
-    out = bytearray(dlen)            # calloc 동등(0 채움 → 패딩)
+    out = bytearray(dlen)            # 0 채움 → 패딩
 
     # 태그 헤더
     out[0:3] = b"ID3"
@@ -456,10 +457,9 @@ def _write_tag(tag: Id3Tag):
 # ---- ID3v2 파서 -----------------------------------------------------------
 
 def _parse_v2_tag(f) -> tuple:
-    """현재 위치에서 ID3v2 태그 파싱.
+    """현재 위치에서 ID3v2 태그를 파싱한다.
 
     반환: (status, Id3Tag). status 1=성공, 0=없음, 음수=에러.
-    원본 id3_parse_v2_tag 동등.
     """
     tag = Id3Tag()
     tag.offset = f.tell()
@@ -648,7 +648,7 @@ def _make_text_frame(frameid: bytes, *parts: bytes) -> Id3Frame:
 
 
 def _parse_v1_tag(f) -> tuple:
-    """ID3v1 태그를 ID3v2.4 프레임으로 변환. 원본 id3_parse_v1_tag 동등."""
+    """ID3v1 태그를 ID3v2.4 프레임으로 변환한다."""
     tag = Id3Tag()
     tag.offset = f.tell()
     buf = f.read(128)
@@ -687,7 +687,7 @@ def _parse_v1_tag(f) -> tuple:
 # ---- 태그 탐색 (앞 ID3v2 → 끝 ID3v2.4 → 끝 ID3v1) -----------------------
 
 def _search_tag(f) -> tuple:
-    """원본 id3_search_tag 동등. 반환: (status, Id3Tag)."""
+    """파일에서 태그를 탐색한다. 반환: (status, Id3Tag)."""
     f.seek(0, 0)
     status, tag = _parse_v2_tag(f)
 
@@ -764,7 +764,7 @@ def _search_tag(f) -> tuple:
 def read_mp3gain_id3_tag(filename: str, info: MP3GainTagInfo) -> int:
     """ID3v2 태그에서 게인 정보를 읽어 info 에 채운다.
 
-    원본 ReadMP3GainID3Tag 동등. 반환: 1=태그 발견·처리, 0=태그 없음, 음수=에러.
+    반환: 1=태그 발견·처리, 0=태그 없음, 음수=에러.
     """
     try:
         f = open(filename, "rb")
@@ -784,8 +784,7 @@ def read_mp3gain_id3_tag(filename: str, info: MP3GainTagInfo) -> int:
     return status
 
 
-# ---- 공개 API: 쓰기/제거 (⑤-B2; 원본 WriteMP3GainID3Tag /
-#      RemoveMP3GainID3Tag 동등) --------------------------------------------
+# ---- 공개 API: 쓰기/제거 (⑤-B2) -----------------------------------------
 
 def _restore_timestamp(filename: str, saved) -> None:
     """저장해 둔 stat 으로 atime/mtime 복원. tag.py 의 동명 헬퍼와 대칭."""
@@ -796,7 +795,7 @@ def _restore_timestamp(filename: str, saved) -> None:
 def _copy_data(inf, outf, offset: int, count: int) -> None:
     """inf 의 offset 부터 count 바이트를 outf 로 복사. count<0 이면 끝까지.
 
-    원본 id3_copy_data 동등(64KB 청크). 에러는 예외로 전파.
+    64KB 청크로 복사한다. 에러는 예외로 전파.
     """
     bufsize = 65536
     inf.seek(offset, 0)
@@ -816,7 +815,7 @@ def write_mp3gain_id3_tag(
     info: MP3GainTagInfo,
     save_timestamp: bool = False,
 ) -> int:
-    """ID3v2 태그에 게인 정보를 (재)기록. 원본 WriteMP3GainID3Tag 동등.
+    """ID3v2 태그에 게인 정보를 (재)기록한다.
 
     항상 파일 앞 단일 ID3v2.4 태그를 쓰거나 갱신한다. 기존 RG 프레임은 제거하고
     새 프레임을 고정 순서로 append. 변경할 게 없으면(need_update 거짓) 파일을
@@ -844,7 +843,7 @@ def write_mp3gain_id3_tag(
             return status
 
         if status == 0:
-            # 태그 없음 → 빈 태그 생성(version=0: 원본 전체 복사 분기 표시).
+            # 태그 없음 → 빈 태그 생성(version=0: 전체 복사 분기 표시).
             tag = Id3Tag(offset=0, length=0, version=0, flags=0, frames=[])
 
         # 기존 RG 프레임 제거.
@@ -859,7 +858,7 @@ def write_mp3gain_id3_tag(
                 kept.append(frame)
         tag.frames = kept
 
-        # 새 RG 프레임 append (TXXX 는 소문자: 원본 주석 — Winamp 호환).
+        # 새 RG 프레임 append (TXXX 는 Winamp 호환을 위해 소문자 필드명 사용).
         if (info.have_track_gain or info.have_track_peak or
                 info.have_album_gain or info.have_album_peak):
             need_update = True
@@ -953,7 +952,7 @@ def write_mp3gain_id3_tag(
 
 
 def remove_mp3gain_id3_tag(filename: str, save_timestamp: bool = False) -> int:
-    """ID3v2 태그에서 게인 정보 제거. 원본 RemoveMP3GainID3Tag 동등.
+    """ID3v2 태그에서 게인 정보를 제거한다.
 
     모든 have_* 가 꺼진 빈 info 로 write 를 호출 → RG 프레임만 제거되고 append
     는 없으므로, 제거가 일어났으면 1, 없었으면 0 반환.
