@@ -199,13 +199,13 @@ ADR-004 (YouTube 토큰 만료 403, 세션 재시작으로 새 토큰). ADR-003 
 
 ---
 
-### ADR-008: GaindB(mp3gain 클린룸) 통합 — MP3 다운로드 후 음량 정규화
+### ADR-008: GaindB(mp3gain 독립 구현, Apache-2.0) 통합 — MP3 다운로드 후 음량 정규화
 
 <a id="adr-008"></a>
 
-- **상태**: Accepted (UI·클리핑 표시 완료 — 실환경 검증·문서 잔여만 남음, WORKLOG 3 참조)
-- **날짜**: 2026-07-10 (2026-07-23 UI·클리핑·api 계층 반영)
-- **관련 커밋**: `e1a8a26` `17c8933` `51a071f` `aea6955` `1cbb6bc` `82ca735` `5d392bd`
+- **상태**: Accepted (UI·클리핑·실환경 검증 완료 — 문서 잔여만 남음, WORKLOG 3 참조)
+- **날짜**: 2026-07-10 (2026-07-23 UI·클리핑·api 계층, 2026-07-24 v3 최종본·Apache-2.0 반영)
+- **관련 커밋**: `e1a8a26` `17c8933` `51a071f` `aea6955` `1cbb6bc` `82ca735` `5d392bd` `aac618c`
 
 **결정**
 
@@ -213,7 +213,7 @@ ADR-004 (YouTube 토큰 만료 403, 세션 재시작으로 새 토큰). ADR-003 
 
 **이유**
 
-"모든 MP3 음량을 일정하게" 라는 요구는 단순 dB 오프셋이 아니라 곡별 분석 기반 목표 라우드니스 정규화(ReplayGain 트랙 모드)를 필요로 한다. GaindB 는 무손실(global_gain 조정)이라 재인코딩 없이 붙일 수 있고, ffmpeg 는 AVD 가 이미 의존한다. MIT(AVD) 와 클린룸 재구현 코드는 라이선스 충돌이 없다.
+"모든 MP3 음량을 일정하게" 라는 요구는 단순 dB 오프셋이 아니라 곡별 분석 기반 목표 라우드니스 정규화(ReplayGain 트랙 모드)를 필요로 한다. GaindB 는 무손실(global_gain 조정)이라 재인코딩 없이 붙일 수 있고, ffmpeg 는 AVD 가 이미 의존한다. AVD 본체(MIT)와 벤더링 서브패키지 `gaindb/`(Apache-2.0)는 라이선스 충돌이 없다(둘 다 permissive; Apache-2.0 준수를 위해 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉).
 
 **결과**
 
@@ -225,8 +225,12 @@ A. 단순 dB 오프셋 — 곡별 편차를 못 잡아 "일정한 음량" 요구
 
 **관련**
 
-ADR-003 (매니저 라이프사이클 — 슬롯 해제가 같은 원칙 확장). ADR-005 (오디오 후처리 정책 — 게인은 그 하류 단계). GaindB `LICENSE_REVIEW.md`(클린룸·의존성 라이선스 근거).
+ADR-003 (매니저 라이프사이클 — 슬롯 해제가 같은 원칙 확장). ADR-005 (오디오 후처리 정책 — 게인은 그 하류 단계). 라이선스 근거는 벤더링본 안의 `gaindb/NOTICE`·`gaindb/THIRD_PARTY_LICENSES`(독립 구현·의존성 고지, v3 부터 동봉).
 
 **후기 (2026-07-23 갱신)**
 
-GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도입해 벤더링본을 그 리팩터본(이후 v2 안정본)으로 교체(`aea6955`→`5d392bd`). 목표 dB→89 기준 오프셋 변환이 api 안에 캡슐화돼 GUI 는 목표 dB 만 넘긴다. 클리핑 판정은 예정대로 GaindB 본체가 해결: `analyze_file` 이 `clip_state`("none"/"possible"/"definite")를 반환하고 AVD 는 `definite` 만 클리핑으로 표시한다("설정값 강제 적용, 여부만 표시" 방침 유지). 워커는 `analyze_file`(비파괴, seed 확보) → `apply_file_track_gain`(seed 재사용 적용) 2단계로 처리하고 `normalize_done(적용dB, 클리핑)` 시그널로 위젯에 전달, 완료 라벨을 `완료 · 음량 +N.NdB`/`(클리핑)`/`완료 (음량 조정 실패)` 로 표시(`1cbb6bc`). 설정 UI 는 SpinBox 초안(다크 테마 화살표 미표시·레이아웃 깨짐)을 폐기하고, 체크박스로 펼쳐지는 접이식 컨테이너 안에 `QLineEdit`+`QDoubleValidator` 입력창과 `QSlider`(0.5dB 단위, 정수 슬라이더 ×2 스케일)를 공존시켜 상호 동기화(`82ca735`). 잔여: Windows 실환경 검증, README·LICENSE_REVIEW 문서 반영. 세부는 WORKLOG 3.
+GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도입해 벤더링본을 그 리팩터본(이후 v2 안정본)으로 교체(`aea6955`→`5d392bd`). 목표 dB→89 기준 오프셋 변환이 api 안에 캡슐화돼 GUI 는 목표 dB 만 넘긴다. 클리핑 판정은 예정대로 GaindB 본체가 해결: `analyze_file` 이 `clip_state`("none"/"possible"/"definite")를 반환하고 AVD 는 `definite` 만 클리핑으로 표시한다("설정값 강제 적용, 여부만 표시" 방침 유지). 워커는 `analyze_file`(비파괴, seed 확보) → `apply_file_track_gain`(seed 재사용 적용) 2단계로 처리하고 `normalize_done(적용dB, 클리핑)` 시그널로 위젯에 전달, 완료 라벨을 `완료 · 음량 +N.NdB`/`(클리핑)`/`완료 (음량 조정 실패)` 로 표시(`1cbb6bc`). 설정 UI 는 SpinBox 초안(다크 테마 화살표 미표시·레이아웃 깨짐)을 폐기하고, 체크박스로 펼쳐지는 접이식 컨테이너 안에 `QLineEdit`+`QDoubleValidator` 입력창과 `QSlider`(0.5dB 단위, 정수 슬라이더 ×2 스케일)를 공존시켜 상호 동기화(`82ca735`). Windows 실환경 검증 완료(2026-07-23).
+
+**후기 (2026-07-24 — GaindB v3 최종본)**
+
+GaindB 가 최종본(v3)에서 두 가지를 정리했다. (1) 구조: 그동안 리포 루트에 있어 AVD 벤더링 시 매번 `from apply_gain` → `from gaindb.apply_gain` 로 교정하던 `apply_gain.py` 를 upstream 이 `gaindb/` 패키지 안으로 이동 → 이제 원본을 무수정으로 벤더링(교정 패치 제거). (2) 라이선스: 전 파일 `SPDX-License-Identifier: Apache-2.0` 헤더 + docstring 문구를 "clean-room"→"독립 구현"·"ReplayGain 공개 사양의 표준 계수"로 정리하고 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 갖췄다. AVD 는 Apache-2.0 준수를 위해 이 3개 라이선스 파일을 `gaindb/` 에 함께 벤더링(`aac618c`). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 v2 와 동일해 `download_worker.py` 무수정 호환. 잔여: README 게인 기능·의존 한 줄. 세부는 WORKLOG 3.

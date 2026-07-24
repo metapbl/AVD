@@ -23,6 +23,11 @@
 
 ---
 
+## 2026-07-24
+
+- **`chore(gaindb)`** `aac618c`: 벤더링본을 GaindB v3 최종본으로 갱신 + Apache-2.0 라이선스 동봉. **(ADR-008)**
+    - GaindB 최종본(v3) 재벤더링(`gaindb/` 9개 파이썬 파일 전체 교체). upstream 이 `apply_gain.py` 를 리포 루트→`gaindb/` 패키지 안으로 옮겨 AVD 가 매번 하던 import 교정(`from apply_gain` → `from gaindb.apply_gain`)이 불필요해짐 → 원본 무수정 복사. GaindB 가 Apache-2.0 으로 정식 라이선싱(전 파일 SPDX 헤더, "clean-room"→"독립 구현" 문구 정리)됨에 따라 준수를 위해 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉(AVD 본체는 MIT 유지, 서브패키지만 Apache-2.0). 라인엔딩은 v3 기준 LF 통일. 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처 동일 → `download_worker.py` 무수정 호환(api.py 실질 변경은 주석 문구 정리뿐).
+
 ## 2026-07-23
 
 - **`docs`** `7d46f7b`: GaindB 음량 정규화 Windows 실환경 검증 완료 + yt-dlp 핀 정책 명문화. **(ADR-008)**

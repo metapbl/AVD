@@ -48,10 +48,11 @@
 ### 3.1. 진행 중 (In Progress)
 
 - **GaindB 음량 정규화 — 문서 잔여 (ADR-008 후속)**
-    - 완료: 벤더링본을 GaindB api 계층으로 교체(`aea6955`), 새 api 연동·완료 라벨 dB/클리핑 표시(`1cbb6bc`), 환경설정 접이식 슬라이더+입력창 UI(`82ca735`), GaindB v2 안정본 재벤더링(`5d392bd`). 클리핑 판정은 GaindB 본체가 `analyze_file` 의 `clip_state`("none"/"possible"/"definite")로 제공 → AVD 는 `definite` 만 클리핑으로 표시(강제 적용·표시Only 방침 유지). SpinBox 초안 폐기 후 `QLineEdit`+`QDoubleValidator`+`QSlider`(0.5dB, ×2 스케일) 조합으로 정착.
+    - 완료: 벤더링본을 GaindB api 계층으로 교체(`aea6955`), 새 api 연동·완료 라벨 dB/클리핑 표시(`1cbb6bc`), 환경설정 접이식 슬라이더+입력창 UI(`82ca735`), GaindB v2 안정본(`5d392bd`) 후 **v3 최종본 재벤더링(`aac618c`)**. 클리핑 판정은 GaindB 본체가 `analyze_file` 의 `clip_state`("none"/"possible"/"definite")로 제공 → AVD 는 `definite` 만 클리핑으로 표시(강제 적용·표시Only 방침 유지). SpinBox 초안 폐기 후 `QLineEdit`+`QDoubleValidator`+`QSlider`(0.5dB, ×2 스케일) 조합으로 정착.
     - Windows 실환경 검증 **완료(2026-07-23)**: 환경설정 게인 On/Off·목표 dB 조절·MP3 다운로드 후 음량 반영·완료 라벨 표시를 실기에서 확인. 부수 확인 — `requirements.txt` yt-dlp 핀(2026.3.17)이 앱 자동 업데이트로 최신화되는 흐름까지 함께 검증됨(아래 별도 항목 참조).
-    - 문서 잔여: README 에 게인 기능·numpy/scipy 의존 한 줄, LICENSE_REVIEW 에 v2 벤더링본(앨범 모드 api 추가 포함) 내역 반영.
-    - 벤더링 lint 메모: v2 원본에 unused import 3건(`api.py` 의 `analyze_track`·`track_peak`, `tag.py` 의 `dataclasses.field`)이 있으나 벤더링 원본 보존 원칙상 임의 수정하지 않음(향후 upstream 재동기화 diff 최소화). 연동부(AVD 자체 코드)는 ruff 통과.
+    - v3 라이선스 정비 **완료(2026-07-24)**: GaindB 가 Apache-2.0 으로 정식 라이선싱 → `apply_gain.py` 가 패키지 내부로 이동해 import 교정 패치 불필요해졌고, 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉(AVD 본체 MIT, 서브패키지 Apache-2.0). ADR-008 관련 문단의 `LICENSE_REVIEW.md` 참조는 `gaindb/NOTICE`·`THIRD_PARTY_LICENSES` 로 갱신.
+    - 문서 잔여: README 에 게인 기능·numpy/scipy 의존·`gaindb/` Apache-2.0 서브패키지 한 줄 반영(유일 잔여).
+    - 벤더링 lint 메모: v3 원본에도 unused import 3건(`api.py` 의 `analyze_track`·`track_peak`, `tag.py` 의 `dataclasses.field`)이 있으나 벤더링 원본 보존 원칙상 임의 수정하지 않음(향후 upstream 재동기화 diff 최소화). 연동부(AVD 자체 코드)는 ruff 통과.
 
 - **`requirements.txt` yt-dlp 핀 정책 — 의도적 저버전 유지 (자동 업데이트 리허설)**
     - 결정: `requirements.txt` 의 yt-dlp 핀을 최신으로 올리지 않고 저버전(현재 2026.3.17)으로 둔다. 근거 — `pip install -r requirements.txt` 가 항상 저버전을 설치하면, 앱 기동 시 자동 업데이트(비동기 모달 `1fd5c95`, ADR-007 계열)가 반드시 발동해 최신화한다. 즉 낮은 핀은 버그가 아니라 매 설치마다 "구버전 설치 → 자동 업데이트 발동 → 최신화" 경로를 실환경에서 리허설하게 만드는 장치다(2026-07-23 실기에서 정상 최신화 확인).
@@ -165,7 +166,7 @@
 - **ADR-005** 오디오 후처리 정책 — 원본 보존 vs 비트레이트 통일 (Proposed, TBD) — `FFmpegExtractAudio` 의 192 kbps 일괄 적용이 고음질 원본을 다운컨버트하는 문제. 네 갈래 검토 (환경설정 노출 / 컨테이너만 변경 / 다이얼로그 드롭다운 / 조건부 확인). → [ADR.md#adr-005](./ADR.md#adr-005)
 - **ADR-006** 플레이리스트 일괄 다운로드 — 글로벌 포맷 선택과 워커 시그널 규율 (Accepted, 2026-06-02) — 한 URL → 상한 500 경량 목록(`extract_flat`) → 체크박스 선택 다이얼로그 → 영상/음원 단일 선택 전체 적용. 정보추출은 다운로드 `max_concurrent` 공유 게이트. 워커 커스텀 시그널이 QThread 내장 `finished` 를 가리던 크래시를 시그널 개명(`download_finished`/`info_ready`/`thumb_ready`)으로 해소. → [ADR.md#adr-006](./ADR.md#adr-006)
 - **ADR-007** 다운로드 자동 재시도 — yt-dlp retries 위의 세션 레벨 재시도 (Accepted, 2026-07-09) — `DownloadWorker.run()` 이 `Downloader.download()` 전체를 재시도 루프로 감싸 매 시도 새 `YoutubeDL` 세션으로 만료 토큰을 갱신. 메시지 패턴 오류 분류(`_is_transient_error`, 판단 불가는 영구 취급), 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 백오프 대기 중 취소 폴링. `retrying` 시그널 → "재시도 중 (N/M)" 라벨. → [ADR.md#adr-007](./ADR.md#adr-007)
-- **ADR-008** GaindB(mp3gain 클린룸) 통합 — MP3 다운로드 후 음량 정규화 (Accepted 부분, 2026-07-10) — GaindB 벤더링으로 MP3 완료 직후 트랙 모드 음량 정규화(목표 89dB, 75.0~105.0). MP3 한정, 게인 실패해도 다운로드는 성공+실패 표시, MERGING·NORMALIZING 슬롯 해제. numpy/scipy(BSD) 추가. UI·클리핑 표시는 진행 중. → [ADR.md#adr-008](./ADR.md#adr-008)
+- **ADR-008** GaindB(mp3gain 독립 구현, Apache-2.0) 통합 — MP3 다운로드 후 음량 정규화 (Accepted, 2026-07-10; UI·클리핑·실환경 검증 완료, 2026-07-24 v3 최종본·Apache-2.0 반영) — GaindB 벤더링으로 MP3 완료 직후 트랙 모드 음량 정규화(목표 89dB, 75.0~105.0). MP3 한정, 게인 실패해도 다운로드는 성공+실패 표시, MERGING·NORMALIZING 슬롯 해제. numpy/scipy(BSD) 추가. 접이식 슬라이더+입력창 UI·완료 라벨 dB/클리핑 표시 완료. 서브패키지 `gaindb/` 는 Apache-2.0(LICENSE·NOTICE·THIRD_PARTY_LICENSES 동봉). → [ADR.md#adr-008](./ADR.md#adr-008)
 
 ---
 
