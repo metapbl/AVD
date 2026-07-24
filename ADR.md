@@ -213,7 +213,7 @@ ADR-004 (YouTube 토큰 만료 403, 세션 재시작으로 새 토큰). ADR-003 
 
 **이유**
 
-"모든 MP3 음량을 일정하게" 라는 요구는 단순 dB 오프셋이 아니라 곡별 분석 기반 목표 라우드니스 정규화(ReplayGain 트랙 모드)를 필요로 한다. GaindB 는 무손실(global_gain 조정)이라 재인코딩 없이 붙일 수 있고, ffmpeg 는 AVD 가 이미 의존한다. AVD 본체(MIT)와 벤더링 서브패키지 `gaindb/`(Apache-2.0)는 라이선스 충돌이 없다(둘 다 permissive; Apache-2.0 준수를 위해 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉).
+"모든 MP3 음량을 일정하게" 라는 요구는 단순 dB 오프셋이 아니라 곡별 분석 기반 목표 라우드니스 정규화(ReplayGain 트랙 모드)를 필요로 한다. GaindB 는 무손실(global_gain 조정)이라 재인코딩 없이 붙일 수 있고, ffmpeg 는 AVD 가 이미 의존한다. AVD 본체와 벤더링 서브패키지 `gaindb/` 는 모두 Apache-2.0 이라 라이선스가 일치한다(2026-07-24 AVD 를 MIT→Apache-2.0 으로 전환; Apache-2.0 준수를 위해 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉하고 루트에도 `NOTICE` 를 둠).
 
 **결과**
 
@@ -234,3 +234,33 @@ GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도
 **후기 (2026-07-24 — GaindB v3 최종본)**
 
 GaindB 가 최종본(v3)에서 두 가지를 정리했다. (1) 구조: 그동안 리포 루트에 있어 AVD 벤더링 시 매번 `from apply_gain` → `from gaindb.apply_gain` 로 교정하던 `apply_gain.py` 를 upstream 이 `gaindb/` 패키지 안으로 이동 → 이제 원본을 무수정으로 벤더링(교정 패치 제거). (2) 라이선스: 전 파일 `SPDX-License-Identifier: Apache-2.0` 헤더 + docstring 문구를 "clean-room"→"독립 구현"·"ReplayGain 공개 사양의 표준 계수"로 정리하고 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 갖췄다. AVD 는 Apache-2.0 준수를 위해 이 3개 라이선스 파일을 `gaindb/` 에 함께 벤더링(`aac618c`). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 v2 와 동일해 `download_worker.py` 무수정 호환. 잔여: README 게인 기능·의존 한 줄. 세부는 WORKLOG 3.
+
+---
+
+### ADR-009: 프로젝트 라이선스 MIT → Apache-2.0 전환
+
+<a id="adr-009"></a>
+
+- **상태**: Accepted
+- **날짜**: 2026-07-24
+- **관련 커밋**: (이 문서를 담은 커밋)
+
+**결정**
+
+AVD 본체 라이선스를 MIT 에서 Apache License 2.0 으로 전환한다. 저작권자 표기는 `META PUBLIC`(GitHub 계정 `metapbl` 과는 별개 층위 — 계정 식별자 ≠ 법적 저작권 귀속 주체). 루트에 Apache-2.0 표준 전문(`LICENSE`)과 저작권·서드파티 고지(`NOTICE`)를 둔다.
+
+**이유**
+
+번들 서브패키지 `gaindb/` 가 v3 에서 Apache-2.0 으로 정식 라이선싱되면서, 본체(MIT)와 서브패키지(Apache-2.0)의 라이선스가 갈렸다. 둘 다 permissive 라 충돌은 없지만, 본체도 Apache-2.0 으로 맞추면 (1) 저작권 표기·NOTICE 체계가 일관되고, (2) Apache-2.0 이 제공하는 명시적 특허 라이선스 조항(MIT 에는 없음)의 보호를 프로젝트 전체가 받는다. 저작권자를 `META PUBLIC` 으로 통일해 gaindb 와 일치시킨다.
+
+**결과**
+
+`LICENSE` 를 Apache-2.0 전문으로 교체, 루트 `NOTICE` 신설(AVD + gaindb 서브패키지 + PySide6/LGPL·yt-dlp·numpy/scipy·ffmpeg 외부 호출 등 고지). `README.md`·`CLAUDE.md` 의 "MIT" 표기를 Apache-2.0 으로 갱신. ADR-008 의 "AVD 본체 MIT" 서술도 갱신. 배포 시 NOTICE 동봉이 요구된다(Apache-2.0 §4).
+
+**대안**
+
+A. MIT 유지 + gaindb 만 Apache-2.0 — permissive 조합이라 합법이나 표기 이원화로 혼란·특허 보호 불균일. B(채택): 본체도 Apache-2.0 으로 통일.
+
+**관련**
+
+ADR-008 (GaindB 통합 — 서브패키지 Apache-2.0 채택이 이 전환의 계기). 루트 `NOTICE`·`LICENSE`, `gaindb/NOTICE`·`gaindb/THIRD_PARTY_LICENSES`.

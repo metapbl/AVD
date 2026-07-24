@@ -104,7 +104,7 @@ AV_Downloader/
 
 ## 라이선스
 
-MIT License. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+Apache License 2.0. 자세한 내용은 [LICENSE](LICENSE) 파일을, 저작권·서드파티 고지는 [NOTICE](NOTICE) 파일을 참조하세요. 번들된 `gaindb/` 서브패키지도 Apache-2.0 입니다.
 
 ## 면책
 

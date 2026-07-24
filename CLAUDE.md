@@ -12,7 +12,7 @@
 - **성격**: yt-dlp 기반 영상·오디오 다운로더 (PySide6 GUI, 다크 테마)
 - **리포지토리**: https://github.com/metapbl/AVD
 - **로컬 경로**: `C:\Users\ggoyo_zhxlvdr\AVD`
-- **라이선스**: MIT
+- **라이선스**: Apache-2.0 (저작권자 `META PUBLIC`; 서드파티 고지는 `NOTICE`). 번들 서브패키지 `gaindb/` 도 Apache-2.0 — 2026-07-24 MIT 에서 전환.
 
 ## 2. 협업 모델
 

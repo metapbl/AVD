@@ -1,0 +1,34 @@
+AV_Downloader (AVD)
+Copyright 2026 META PUBLIC
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for details.
+
+This product includes the following third-party components:
+
+- gaindb/ (bundled subpackage)
+  An independent re-implementation of mp3gain's ReplayGain track-mode
+  loudness normalization, licensed under the Apache License, Version 2.0.
+  Copyright 2026 META PUBLIC. See gaindb/NOTICE and gaindb/THIRD_PARTY_LICENSES
+  for its own attribution and dependency notices.
+
+- PySide6 (Qt for Python)
+  Licensed under the GNU LGPL v3. It is linked dynamically so that users
+  may replace the Qt libraries. When distributing pre-built binaries, the
+  LGPL v3 text and a usage notice are included.
+
+- yt-dlp
+  Public-domain / Unlicense. Used as a library for media extraction and
+  download.
+
+- numpy, scipy
+  Licensed under the BSD 3-Clause License. Used by the bundled gaindb
+  subpackage for ReplayGain loudness analysis.
+
+- requests, certifi, charset-normalizer, idna, urllib3, psutil
+  Their respective permissive licenses (Apache-2.0 / MPL-2.0 / BSD /
+  MIT) apply. Used for HTTP access and process/resource utilities.
+
+- ffmpeg
+  NOT bundled. It is invoked as an external process located on the user's
+  PATH; users must install it separately.

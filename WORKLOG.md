@@ -168,6 +168,8 @@
 - **ADR-007** 다운로드 자동 재시도 — yt-dlp retries 위의 세션 레벨 재시도 (Accepted, 2026-07-09) — `DownloadWorker.run()` 이 `Downloader.download()` 전체를 재시도 루프로 감싸 매 시도 새 `YoutubeDL` 세션으로 만료 토큰을 갱신. 메시지 패턴 오류 분류(`_is_transient_error`, 판단 불가는 영구 취급), 일시적 오류 한정 지수 백오프(2→5→10초) 최대 3회, 백오프 대기 중 취소 폴링. `retrying` 시그널 → "재시도 중 (N/M)" 라벨. → [ADR.md#adr-007](./ADR.md#adr-007)
 - **ADR-008** GaindB(mp3gain 독립 구현, Apache-2.0) 통합 — MP3 다운로드 후 음량 정규화 (Accepted, 2026-07-10; UI·클리핑·실환경 검증 완료, 2026-07-24 v3 최종본·Apache-2.0 반영) — GaindB 벤더링으로 MP3 완료 직후 트랙 모드 음량 정규화(목표 89dB, 75.0~105.0). MP3 한정, 게인 실패해도 다운로드는 성공+실패 표시, MERGING·NORMALIZING 슬롯 해제. numpy/scipy(BSD) 추가. 접이식 슬라이더+입력창 UI·완료 라벨 dB/클리핑 표시 완료. 서브패키지 `gaindb/` 는 Apache-2.0(LICENSE·NOTICE·THIRD_PARTY_LICENSES 동봉). → [ADR.md#adr-008](./ADR.md#adr-008)
 
+- **ADR-009** 프로젝트 라이선스 MIT → Apache-2.0 전환 (Accepted, 2026-07-24) — 번들 서브패키지 `gaindb/` 가 Apache-2.0 이 되면서 본체(MIT)와 갈린 표기를 통일. 본체도 Apache-2.0 으로 전환(저작권자 `META PUBLIC`), 루트 `LICENSE`(전문)·`NOTICE`(서드파티 고지) 정비. Apache-2.0 의 명시적 특허 조항 보호를 프로젝트 전체로 확장. → [ADR.md#adr-009](./ADR.md#adr-009)
+
 ---
 
 ## 5. 학습된 교훈 인덱스

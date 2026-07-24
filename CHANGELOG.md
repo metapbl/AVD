@@ -25,6 +25,9 @@
 
 ## 2026-07-24
 
+- **`chore`**: 프로젝트 라이선스 MIT → Apache-2.0 전환. **(ADR-009)**
+    - `LICENSE` 를 Apache-2.0 표준 전문으로 교체하고 루트 `NOTICE` 신설(저작권자 `META PUBLIC`; AVD 본체 + 번들 `gaindb/` 서브패키지 + PySide6(LGPL)·yt-dlp·numpy/scipy(BSD)·ffmpeg 외부 호출 고지). 번들 `gaindb/` 가 Apache-2.0 이 되며 갈렸던 본체(MIT) 표기를 통일하고, Apache-2.0 의 명시적 특허 라이선스 조항 보호를 프로젝트 전체로 확장. `README.md`·`CLAUDE.md` 의 "MIT" 표기와 ADR-008 의 "AVD 본체 MIT" 서술을 Apache-2.0 으로 갱신. GitHub 계정 `metapbl` 과 저작권자 `META PUBLIC` 은 별개 층위(식별자 ≠ 저작권 귀속 주체).
+
 - **`chore(gaindb)`** `aac618c`: 벤더링본을 GaindB v3 최종본으로 갱신 + Apache-2.0 라이선스 동봉. **(ADR-008)**
     - GaindB 최종본(v3) 재벤더링(`gaindb/` 9개 파이썬 파일 전체 교체). upstream 이 `apply_gain.py` 를 리포 루트→`gaindb/` 패키지 안으로 옮겨 AVD 가 매번 하던 import 교정(`from apply_gain` → `from gaindb.apply_gain`)이 불필요해짐 → 원본 무수정 복사. GaindB 가 Apache-2.0 으로 정식 라이선싱(전 파일 SPDX 헤더, "clean-room"→"독립 구현" 문구 정리)됨에 따라 준수를 위해 상류 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 `gaindb/` 에 동봉(AVD 본체는 MIT 유지, 서브패키지만 Apache-2.0). 라인엔딩은 v3 기준 LF 통일. 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처 동일 → `download_worker.py` 무수정 호환(api.py 실질 변경은 주석 문구 정리뿐).
 
