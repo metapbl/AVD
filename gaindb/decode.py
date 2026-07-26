@@ -48,6 +48,11 @@ from typing import Callable
 
 import numpy as np
 
+# Windows 에서 ffmpeg/ffprobe 자식 프로세스가 콘솔 창을 깜빡이며 띄우는 것을 막는다.
+# (--windowed 로 우리 앱엔 콘솔이 없지만, 자식 프로세스는 자기 콘솔을 띄운다.)
+# 다른 OS(macOS/Linux)에서는 해당 플래그가 없으므로 0(영향 없음).
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
 # ReplayGain 사양에서 지원하는 샘플레이트(Hz). 이 목록 밖이면 분석 불가.
 SUPPORTED_SAMPLE_RATES = frozenset(
     (96000, 88200, 64000, 48000, 44100, 32000,
@@ -93,6 +98,7 @@ def _probe_stream_info(path: Path) -> tuple[int, int, float]:
     try:
         proc = subprocess.run(
             cmd, capture_output=True, check=True,
+            creationflags=_NO_WINDOW,
         )
     except FileNotFoundError as exc:
         raise DecodeError(
@@ -145,6 +151,7 @@ def _spawn_ffmpeg(path: Path, out_channels: int) -> subprocess.Popen:
     try:
         return subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            creationflags=_NO_WINDOW,
         )
     except FileNotFoundError as exc:
         raise DecodeError(

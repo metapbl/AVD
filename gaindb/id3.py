@@ -26,9 +26,9 @@ from gaindb.tag import MP3GainTagInfo, _atof, _fmt_gain, _fmt_peak
 
 # ---- 오류 코드 (음수) -----------------------------------------------------
 
-M3G_ERR_READ = -1
-M3G_ERR_TAGFORMAT = -2
-M3G_ERR_FILEOPEN = -3
+ID3_ERR_READ = -1
+ID3_ERR_TAGFORMAT = -2
+ID3_ERR_FILEOPEN = -3
 
 
 # ---- 태그/프레임 플래그 상수 (ID3v2 사양) --------------------------------
@@ -473,19 +473,19 @@ def _parse_v2_tag(f) -> tuple:
     flags = buf[5]
     if major == 2:
         if flags & ~TAGFL_UNSYNC:
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
     elif major == 3:
         if flags & ~(TAGFL_UNSYNC | TAGFL_EXTHDR | TAGFL_EXPR):
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
     elif major == 4:
         if flags & ~(TAGFL_UNSYNC | TAGFL_EXTHDR | TAGFL_EXPR | TAGFL_FOOTER):
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
     else:
-        return M3G_ERR_TAGFORMAT, tag
+        return ID3_ERR_TAGFORMAT, tag
 
     dlen = _get_syncsafe_int(buf[6:10])
     if dlen == SYNCSAFE_INT_BAD:
-        return M3G_ERR_TAGFORMAT, tag
+        return ID3_ERR_TAGFORMAT, tag
 
     tag.flags = flags
     tag.version = (buf[3] << 8) | buf[4]
@@ -493,7 +493,7 @@ def _parse_v2_tag(f) -> tuple:
 
     tagdata = f.read(dlen)
     if len(tagdata) != dlen:
-        return M3G_ERR_TAGFORMAT, tag
+        return ID3_ERR_TAGFORMAT, tag
 
     ver = tag.version >> 8
 
@@ -506,32 +506,32 @@ def _parse_v2_tag(f) -> tuple:
     # extended header 스킵
     if flags & TAGFL_EXTHDR:
         if p + 6 > dlen:
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
         if ver == 4:
             k = _get_syncsafe_int(tagdata[p:p + 4])
             if k == SYNCSAFE_INT_BAD or k > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             p += k
         elif ver == 3:
             k = _get_int32(tagdata[p:p + 4])
             if k > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             p += 4 + k
 
     # 프레임 스캔
     while p < dlen and tagdata[p] != 0:
         if ver == 2:
             if p + 5 > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             frameid = _UPGRADE_ID3V22.get(bytes(tagdata[p:p + 3]), b"\0\0\0\0")
             flen = (tagdata[p + 3] << 16) | (tagdata[p + 4] << 8) | tagdata[p + 5]
             fflags = 0
             if flen > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             p += 6
         elif ver == 3:
             if p + 10 > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             frameid = bytes(tagdata[p:p + 4])
             flen = _get_int32(tagdata[p + 4:p + 8])
             fflags = (tagdata[p + 8] << 7) & 0xFF00
@@ -544,22 +544,22 @@ def _parse_v2_tag(f) -> tuple:
             if tagdata[p + 9] & 0x1F:
                 fflags |= FRAMEFL_BAD
             if flen > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             p += 10
         elif ver == 4:
             if p + 10 > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             frameid = bytes(tagdata[p:p + 4])
             flen = _get_syncsafe_int(tagdata[p + 4:p + 8])
             fflags = (tagdata[p + 8] << 8) | tagdata[p + 9]
             if flen == SYNCSAFE_INT_BAD or flen > dlen:
-                return M3G_ERR_TAGFORMAT, tag
+                return ID3_ERR_TAGFORMAT, tag
             p += 10
         else:
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
 
         if p + flen > dlen:
-            return M3G_ERR_TAGFORMAT, tag
+            return ID3_ERR_TAGFORMAT, tag
 
         frameid = bytearray(frameid)
 
@@ -637,7 +637,7 @@ def _parse_v2_tag(f) -> tuple:
         tag.frames.append(frame)
 
     if p > dlen:
-        return M3G_ERR_TAGFORMAT, tag
+        return ID3_ERR_TAGFORMAT, tag
 
     return 1, tag
 
@@ -702,7 +702,7 @@ def _search_tag(f) -> tuple:
             f.seek(pos - 10, 0)
             buf = f.read(10)
             if len(buf) != 10:
-                return M3G_ERR_READ, tag
+                return ID3_ERR_READ, tag
             if (buf[0:3] == b"3DI" and buf[3] == 4 and
                     ((buf[6] | buf[7] | buf[8] | buf[9]) & 0x80) == 0):
                 k = _get_syncsafe_int(buf[6:10])
@@ -716,7 +716,7 @@ def _search_tag(f) -> tuple:
             f.seek(pos - 128, 0)
             buf = f.read(3)
             if len(buf) != 3:
-                return M3G_ERR_READ, tag
+                return ID3_ERR_READ, tag
             if buf == b"TAG":
                 pos -= 128
                 id3v1_pos = pos
@@ -724,7 +724,7 @@ def _search_tag(f) -> tuple:
                     f.seek(pos - 15, 0)
                     lyr = f.read(15)
                     if len(lyr) != 15:
-                        return M3G_ERR_READ, tag
+                        return ID3_ERR_READ, tag
                     if lyr[6:15] == b"LYRICS200":
                         k = 0
                         ok = True
@@ -741,7 +741,7 @@ def _search_tag(f) -> tuple:
             f.seek(pos - 32, 0)
             buf = f.read(32)
             if len(buf) != 32:
-                return M3G_ERR_READ, tag
+                return ID3_ERR_READ, tag
             if buf[0:8] == b"APETAGEX":
                 k = buf[12] | (buf[13] << 8) | (buf[14] << 16) | (buf[15] << 24)
                 if buf[23] & 0x80:
@@ -769,7 +769,7 @@ def read_mp3gain_id3_tag(filename: str, info: MP3GainTagInfo) -> int:
     try:
         f = open(filename, "rb")
     except OSError:
-        return M3G_ERR_FILEOPEN
+        return ID3_ERR_FILEOPEN
     try:
         status, tag = _search_tag(f)
     finally:
@@ -834,7 +834,7 @@ def write_mp3gain_id3_tag(
     try:
         f = open(filename, "rb")
     except OSError:
-        return M3G_ERR_FILEOPEN
+        return ID3_ERR_FILEOPEN
 
     try:
         status, tag = _search_tag(f)
