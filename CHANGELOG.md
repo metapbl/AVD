@@ -23,6 +23,11 @@
 
 ---
 
+## 2026-07-26
+
+- **`chore(gaindb)`**: 벤더링본을 GaindB v5(0.5.0)로 갱신 + 상류 공개 URL 기록. **(ADR-008)**
+    - 상류 GaindB 가 <https://github.com/metapbl/GainDB> 로 공개(0.5.0)되고 벤더링 대상 `gaindb/` 에 소규모 개정이 있어 3개 파일 재반영: `__init__.py`(프로그램명/버전 단일 진실원 `__version__`/`PROGNAME` 노출), `decode.py`(ffmpeg/ffprobe 자식 프로세스에 `CREATE_NO_WINDOW` — Windows 콘솔 깜빡임 방지, AVD 도 직접 이득), `id3.py`(내부 에러 상수 `M3G_ERR_*`→`ID3_ERR_*` 명명 정리, 공개 API 무변경). 트랙 모드 API 시그니처 불변 → `download_worker.py` 무수정 호환. 라이선스 3파일은 내용 동일. 컴파일·`import main`·게인 API 스모크 통과. 루트 `NOTICE`·ADR-008 에 벤더링 출처(공개 URL, 버전 0.5.0) 기록.
+
 ## 2026-07-24
 
 - **`chore`**: 프로젝트 라이선스 MIT → Apache-2.0 전환. **(ADR-009)**

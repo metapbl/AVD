@@ -204,8 +204,9 @@ ADR-004 (YouTube 토큰 만료 403, 세션 재시작으로 새 토큰). ADR-003 
 <a id="adr-008"></a>
 
 - **상태**: Accepted (UI·클리핑·실환경 검증 완료 — 문서 잔여만 남음, WORKLOG 3 참조)
-- **날짜**: 2026-07-10 (2026-07-23 UI·클리핑·api 계층, 2026-07-24 v3 최종본·Apache-2.0 반영)
+- **날짜**: 2026-07-10 (2026-07-23 UI·클리핑·api 계층, 2026-07-24 v3 최종본·Apache-2.0 반영, 2026-07-26 v5 재벤더링)
 - **관련 커밋**: `e1a8a26` `17c8933` `51a071f` `aea6955` `1cbb6bc` `82ca735` `5d392bd` `aac618c`
+- **상류(Upstream)**: <https://github.com/metapbl/GainDB> — 2026-07-26 공개됨. 벤더링 출처(provenance).
 
 **결정**
 
@@ -234,6 +235,10 @@ GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도
 **후기 (2026-07-24 — GaindB v3 최종본)**
 
 GaindB 가 최종본(v3)에서 두 가지를 정리했다. (1) 구조: 그동안 리포 루트에 있어 AVD 벤더링 시 매번 `from apply_gain` → `from gaindb.apply_gain` 로 교정하던 `apply_gain.py` 를 upstream 이 `gaindb/` 패키지 안으로 이동 → 이제 원본을 무수정으로 벤더링(교정 패치 제거). (2) 라이선스: 전 파일 `SPDX-License-Identifier: Apache-2.0` 헤더 + docstring 문구를 "clean-room"→"독립 구현"·"ReplayGain 공개 사양의 표준 계수"로 정리하고 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 갖췄다. AVD 는 Apache-2.0 준수를 위해 이 3개 라이선스 파일을 `gaindb/` 에 함께 벤더링(`aac618c`). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 v2 와 동일해 `download_worker.py` 무수정 호환. 잔여: README 게인 기능·의존 한 줄. 세부는 WORKLOG 3.
+
+**후기 (2026-07-26 — GaindB v5 재벤더링 + 상류 공개)**
+
+GaindB 가 공개 저장소 <https://github.com/metapbl/GainDB> 로 공개됐고(버전 0.5.0), 벤더링 대상 `gaindb/` 패키지에 소규모 개정이 있어 재반영했다. 변경은 3개 파일: (1) `__init__.py` — 프로그램명/버전 단일 진실원(`__version__ = "0.5.0"`, `PROGNAME = "Gain dB"`) 노출, (2) `decode.py` — ffmpeg/ffprobe 자식 프로세스에 `subprocess.CREATE_NO_WINDOW`(비Windows 는 0) 부여로 Windows 콘솔 창 깜빡임 방지 → AVD 도 Windows 실행이라 직접 이득, (3) `id3.py` — 내부 에러 상수 `M3G_ERR_*` → `ID3_ERR_*` 로 mp3gain 잔재 명명 정리(공개 API 무변경). 트랙 모드 공개 API 시그니처 불변이라 `download_worker.py` 무수정 호환. 라이선스 3파일(`LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`)은 내용 동일(상류는 루트, AVD 는 `gaindb/` 에 동봉). 컴파일·`import main`·게인 API 스모크 통과. 상류 공개 URL 을 루트 `NOTICE` 의 `gaindb/` 항목과 본 ADR 에 벤더링 출처로 기록.
 
 ---
 
