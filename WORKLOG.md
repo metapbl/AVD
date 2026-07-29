@@ -47,6 +47,17 @@
 
 ### 3.1. 진행 중 (In Progress)
 
+- **GaindB 라이선스 재정정 — Apache-2.0 → LGPL-2.1-or-later 재벤더링 (ADR-008·009 후속, 착수 대기)**
+    - 배경: 상류 GaindB 의 라이선스 검토 결과 mp3gain(LGPL-2.1-or-later) 파생 가능성이 확인되어 `LGPL-2.1-or-later` 로 전환하기로 결론. 근거는 (1) 원본 C 소스가 작업 폴더에 있던 상태라 "구현자가 원본을 보지 않았다" 는 클린룸 요건이 성립하지 않고, (2) 전수 스캔에서 `gaindb/NOTICE` 의 "does NOT contain or derive from any of mp3gain's original source code" 단언과 `gaindb/analysis.py` docstring(8~24행)의 "필터 계수를 mp3gain 에서 가져왔고 자체 재설계 경로가 원리적으로 막혀 있었다" 서술이 정면 충돌하기 때문. 원본과 같은 라이선스로 배포하면 파생 여부 판정과 무관하게 준수 상태가 유지된다.
+    - 라이선스 구조 결론: **폴더 경계 이중 라이선스**. AVD 본체는 Apache-2.0 유지(`gaindb.api` 공개 함수 호출만 하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"), 서브패키지 `gaindb/` 만 LGPL-2.1-or-later. `-or-later` 라 수령자가 LGPL-3.0 을 택할 수 있어 Apache-2.0 과 호환. PySide6(LGPLv3)와 동일한 구조이므로 새로운 복잡도가 아니다.
+    - 착수 조건: 상류 GaindB 의 라이선스 정리 완료. 수령할 자료 — 확정된 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 3파일 본문, SPDX 헤더 최종 형태, docstring 변경분(특히 `analysis.py`), GaindB 버전 번호.
+    - 작업 1 (재벤더링): `gaindb/` 라이선스 3파일 교체 + 9개 `.py`(`__init__`·`analysis`·`api`·`apply_gain`·`decode`·`frame`·`id3`·`tag`·`writer`) SPDX 헤더 교체. 코드 로직 변경은 없을 예정이므로 트랙 모드 공개 API 시그니처 불변 → `download_worker.py` 무수정 호환 예상.
+    - 작업 2 (AVD 문서 정정, 5곳): 루트 `NOTICE` 의 gaindb 문단(10~14행), `README.md` 라이선스 절(107행), `CLAUDE.md` 1 의 라이선스 줄(15행), 본 파일 3.1 의 v3 라이선스 정비 문단·섹션 4 의 ADR-008/009 인덱스 요약, `workers/download_worker.py` 20행의 "GaindB(mp3gain clean-room)" 주석. 기존 "문서 잔여" 항목의 README 한 줄(게인 기능·numpy/scipy 의존·서브패키지 라이선스)도 여기에 흡수해 함께 처리.
+    - 작업 3 (기록): **ADR-010** 신설 — ADR-008 의 "클린룸 재구현"·"독립 구현" 서술 철회, ADR-009 는 결정 유지하되 전환 동기 두 개 중 "서브패키지와 표기 통일" 이 소멸했음을 명기(특허 조항 근거는 gaindb 와 무관하게 독립 성립), 폴더 경계 이중 라이선스 구조 확정. `ADR.md` 는 "한 번 작성된 ADR 은 수정하지 않는다", `CHANGELOG.md` 는 "한 번 적은 줄은 지우지 않는다" 규약이므로 두 파일 본문은 고치지 않고 새 항목으로만 번복을 기록.
+    - 빌드 접점(선반영): LGPL 은 사용자가 라이브러리를 자기 수정본으로 교체할 수 있을 것을 요구하므로, PyInstaller 빌드 시 `gaindb/` 를 exe 번들에서 제외하고 exe 옆 평문 `.py` 로 배치해야 한다(spec `excludes` + `datas`). PySide6(LGPLv3)도 Qt DLL 분리로 같은 요건을 충족하므로 **onedir** 구성이 두 건을 동시에 해결한다. 배포물에는 루트 `LICENSE`·`NOTICE`, `gaindb/` 라이선스 3파일, 신규 `THIRD_PARTY_LICENSES`(PySide6/Qt·yt-dlp(Unlicense)·requests·numpy·scipy·psutil 등) 동봉 필요.
+    - 검증: 재벤더링 후 `python main.py` 기동, MP3 다운로드 시 음량 정규화 정상 동작, 완료 라벨 dB 표시 확인. 코드 무변경이면 회귀 위험 낮음.
+    - 보류: 장기적으로 mp3gain 참조 없는 독립 재작성 후 Apache-2.0 복귀는, 동일인이 이미 원본을 본 이상 클린룸 요건 충족이 어려워 현실성 낮음 — 당분간 LGPL 유지.
+
 - **GaindB 음량 정규화 — 문서 잔여 (ADR-008 후속)**
     - 완료: 벤더링본을 GaindB api 계층으로 교체(`aea6955`), 새 api 연동·완료 라벨 dB/클리핑 표시(`1cbb6bc`), 환경설정 접이식 슬라이더+입력창 UI(`82ca735`), GaindB v2 안정본(`5d392bd`) 후 **v3 최종본 재벤더링(`aac618c`)**. 클리핑 판정은 GaindB 본체가 `analyze_file` 의 `clip_state`("none"/"possible"/"definite")로 제공 → AVD 는 `definite` 만 클리핑으로 표시(강제 적용·표시Only 방침 유지). SpinBox 초안 폐기 후 `QLineEdit`+`QDoubleValidator`+`QSlider`(0.5dB, ×2 스케일) 조합으로 정착.
     - Windows 실환경 검증 **완료(2026-07-23)**: 환경설정 게인 On/Off·목표 dB 조절·MP3 다운로드 후 음량 반영·완료 라벨 표시를 실기에서 확인. 부수 확인 — `requirements.txt` yt-dlp 핀(2026.3.17)이 앱 자동 업데이트로 최신화되는 흐름까지 함께 검증됨(아래 별도 항목 참조).
