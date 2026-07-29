@@ -65,7 +65,7 @@ ADR-004 가 본 체인 앞에 `_NFCNormalizePP` 추가로 보강.
 
 - **상태**: Accepted
 - **날짜**: 2026-05-28
-- **관련 커밋**: `954152f`
+- **관련 커밋**: `6434bf0`
 
 **결정**
 
@@ -93,7 +93,7 @@ A. 분할 없이 통째 — 비대화 지속. B. 다섯 책임 전면 재배치 
 
 - **상태**: Accepted
 - **날짜**: 2026-05-28
-- **관련 커밋**: `316c642`
+- **관련 커밋**: `f53c7df`
 - **대체 관계**: 2026-05-18 의 `fix(downloader)` "NFC 메타데이터를 yt-dlp 의 정상 경로로 흘려보내는 구조로 재구성" 결정의 `process_ie_result` 사용 부분을 **번복**. ADR-001 의 후처리 체인 결정은 유효 — 본 ADR 이 `pre_process` PP 한 단계 추가로 보강.
 
 **결정**
@@ -120,7 +120,7 @@ ADR-001 (후처리 체인). LESSONS yt-dlp 항목의 `process_ie_result` 함정.
 
 **후기 (2026-07-10, 부분 번복)**
 
-위 결정 중 `info["meta_comment"] = info.get("description") or ""` 부분만 번복 — `meta_comment` 를 **빈 문자열**로 변경(커밋 `d273280`). `webpage_url → comment` 자동 매핑을 차단한다는 목적은 유지되지만, description 을 넣으면 FFmpeg 가 이를 비표준 `TXXX:comment` (UTF-16) 프레임으로 써 한글 Windows '주석' 열에서 mojibake 가 됐다. 빈 값이면 comment 프레임 자체가 안 생겨(실측) 문제 소멸. 영상 URL 은 `purl` 태그가 보관하므로 정보 손실 없음. `pre_process` PP 정공법과 자동 매핑 차단 메커니즘은 그대로 유효.
+위 결정 중 `info["meta_comment"] = info.get("description") or ""` 부분만 번복 — `meta_comment` 를 **빈 문자열**로 변경(커밋 `21ccde9`). `webpage_url → comment` 자동 매핑을 차단한다는 목적은 유지되지만, description 을 넣으면 FFmpeg 가 이를 비표준 `TXXX:comment` (UTF-16) 프레임으로 써 한글 Windows '주석' 열에서 mojibake 가 됐다. 빈 값이면 comment 프레임 자체가 안 생겨(실측) 문제 소멸. 영상 URL 은 `purl` 태그가 보관하므로 정보 손실 없음. `pre_process` PP 정공법과 자동 매핑 차단 메커니즘은 그대로 유효.
 
 ---
 
@@ -205,7 +205,7 @@ ADR-004 (YouTube 토큰 만료 403, 세션 재시작으로 새 토큰). ADR-003 
 
 - **상태**: Accepted (UI·클리핑·실환경 검증 완료 — 문서 잔여만 남음, WORKLOG 3 참조)
 - **날짜**: 2026-07-10 (2026-07-23 UI·클리핑·api 계층, 2026-07-24 v3 최종본·Apache-2.0 반영, 2026-07-26 v5 재벤더링)
-- **관련 커밋**: `e1a8a26` `17c8933` `51a071f` `aea6955` `1cbb6bc` `82ca735` `5d392bd` `aac618c`
+- **관련 커밋**: `00e3db0` `417d328` `c5c4a3c` `39aeffe` `86271f6` `d1d7135` `42b3df7` `b582bc9`
 - **상류(Upstream)**: <https://github.com/metapbl/GainDB> — 2026-07-26 공개됨. 벤더링 출처(provenance).
 
 **결정**
@@ -230,11 +230,11 @@ ADR-003 (매니저 라이프사이클 — 슬롯 해제가 같은 원칙 확장)
 
 **후기 (2026-07-23 갱신)**
 
-GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도입해 벤더링본을 그 리팩터본(이후 v2 안정본)으로 교체(`aea6955`→`5d392bd`). 목표 dB→89 기준 오프셋 변환이 api 안에 캡슐화돼 GUI 는 목표 dB 만 넘긴다. 클리핑 판정은 예정대로 GaindB 본체가 해결: `analyze_file` 이 `clip_state`("none"/"possible"/"definite")를 반환하고 AVD 는 `definite` 만 클리핑으로 표시한다("설정값 강제 적용, 여부만 표시" 방침 유지). 워커는 `analyze_file`(비파괴, seed 확보) → `apply_file_track_gain`(seed 재사용 적용) 2단계로 처리하고 `normalize_done(적용dB, 클리핑)` 시그널로 위젯에 전달, 완료 라벨을 `완료 · 음량 +N.NdB`/`(클리핑)`/`완료 (음량 조정 실패)` 로 표시(`1cbb6bc`). 설정 UI 는 SpinBox 초안(다크 테마 화살표 미표시·레이아웃 깨짐)을 폐기하고, 체크박스로 펼쳐지는 접이식 컨테이너 안에 `QLineEdit`+`QDoubleValidator` 입력창과 `QSlider`(0.5dB 단위, 정수 슬라이더 ×2 스케일)를 공존시켜 상호 동기화(`82ca735`). Windows 실환경 검증 완료(2026-07-23).
+GaindB 가 CLI·GUI·AVD 공유 순수 함수 api 계층(`gaindb/api.py`)을 도입해 벤더링본을 그 리팩터본(이후 v2 안정본)으로 교체(`39aeffe`→`42b3df7`). 목표 dB→89 기준 오프셋 변환이 api 안에 캡슐화돼 GUI 는 목표 dB 만 넘긴다. 클리핑 판정은 예정대로 GaindB 본체가 해결: `analyze_file` 이 `clip_state`("none"/"possible"/"definite")를 반환하고 AVD 는 `definite` 만 클리핑으로 표시한다("설정값 강제 적용, 여부만 표시" 방침 유지). 워커는 `analyze_file`(비파괴, seed 확보) → `apply_file_track_gain`(seed 재사용 적용) 2단계로 처리하고 `normalize_done(적용dB, 클리핑)` 시그널로 위젯에 전달, 완료 라벨을 `완료 · 음량 +N.NdB`/`(클리핑)`/`완료 (음량 조정 실패)` 로 표시(`86271f6`). 설정 UI 는 SpinBox 초안(다크 테마 화살표 미표시·레이아웃 깨짐)을 폐기하고, 체크박스로 펼쳐지는 접이식 컨테이너 안에 `QLineEdit`+`QDoubleValidator` 입력창과 `QSlider`(0.5dB 단위, 정수 슬라이더 ×2 스케일)를 공존시켜 상호 동기화(`d1d7135`). Windows 실환경 검증 완료(2026-07-23).
 
 **후기 (2026-07-24 — GaindB v3 최종본)**
 
-GaindB 가 최종본(v3)에서 두 가지를 정리했다. (1) 구조: 그동안 리포 루트에 있어 AVD 벤더링 시 매번 `from apply_gain` → `from gaindb.apply_gain` 로 교정하던 `apply_gain.py` 를 upstream 이 `gaindb/` 패키지 안으로 이동 → 이제 원본을 무수정으로 벤더링(교정 패치 제거). (2) 라이선스: 전 파일 `SPDX-License-Identifier: Apache-2.0` 헤더 + docstring 문구를 "clean-room"→"독립 구현"·"ReplayGain 공개 사양의 표준 계수"로 정리하고 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 갖췄다. AVD 는 Apache-2.0 준수를 위해 이 3개 라이선스 파일을 `gaindb/` 에 함께 벤더링(`aac618c`). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 v2 와 동일해 `download_worker.py` 무수정 호환. 잔여: README 게인 기능·의존 한 줄. 세부는 WORKLOG 3.
+GaindB 가 최종본(v3)에서 두 가지를 정리했다. (1) 구조: 그동안 리포 루트에 있어 AVD 벤더링 시 매번 `from apply_gain` → `from gaindb.apply_gain` 로 교정하던 `apply_gain.py` 를 upstream 이 `gaindb/` 패키지 안으로 이동 → 이제 원본을 무수정으로 벤더링(교정 패치 제거). (2) 라이선스: 전 파일 `SPDX-License-Identifier: Apache-2.0` 헤더 + docstring 문구를 "clean-room"→"독립 구현"·"ReplayGain 공개 사양의 표준 계수"로 정리하고 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 갖췄다. AVD 는 Apache-2.0 준수를 위해 이 3개 라이선스 파일을 `gaindb/` 에 함께 벤더링(`b582bc9`). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처는 v2 와 동일해 `download_worker.py` 무수정 호환. 잔여: README 게인 기능·의존 한 줄. 세부는 WORKLOG 3.
 
 **후기 (2026-07-26 — GaindB v5 재벤더링 + 상류 공개)**
 
