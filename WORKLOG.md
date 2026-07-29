@@ -233,6 +233,9 @@
 - `git add -p` 의 hunk 단위 스테이징
 - Conventional Commits 약속
 - `--amend` 후 push 거부 = 형제 분기 신호, `git log --graph --all` 우선
+- 전역 `user.email` 이 없으면 도구(GenSpark·GitHub 웹편집기)가 자기에게 내장된 주소로 커밋하는 문제 — 리포 로컬 고정 + push 전 작성자 확인
+- `git filter-repo` 는 origin 삭제 + 백업 브랜치까지 재작성 — 진짜 백업은 `git bundle`
+- 히스토리 재작성은 문서 인용 해시를 전부 무효화 — `commit-map` 치환 후 `cat-file -t` 로 전수 검증
 
 ### 5.6. 협업 · 커뮤니케이션 → [LESSONS.md#lessons-collab](./LESSONS.md#lessons-collab)
 

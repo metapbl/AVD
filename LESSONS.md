@@ -71,6 +71,9 @@
 - 의미 단위 분할은 `git add -p` 의 hunk 단위 스테이징.
 - Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`. 참고: <https://www.conventionalcommits.org/>
 - `--amend` 후 push 거부는 원격에 형제 분기가 형성된 신호. `git log --oneline --graph --all` 로 진실 먼저 확인. 1인 환경의 `--force-with-lease` 유혹에 주의 — 원격 docs 커밋이 살아 있는 케이스에서 손실 가능.
+- **전역 `~/.gitconfig` 의 `user.email` 이 없으면 커밋이 막히는 게 아니라, 도구가 자신에게 내장된 주소로 커밋해 버리는 문제가 발생함.** GenSpark CLI 는 `genspark_dev@genspark.ai`, GitHub 웹 편집기는 계정 noreply 주소를 넣는 문제였다. 경고가 없어 25개가 쌓인 뒤에야 발견됐다. 방어는 두 겹 — 리포 로컬 `.git/config` 에 작성자 고정(전역보다 우선하고 전역 유실에도 생존) + push 전 `git log -1 --format="%an <%ae>"` 확인. (출처: `fbbccbf`)
+- `git filter-repo` 는 실행 직후 `origin` 리모트를 삭제하고, 사전에 만들어 둔 백업 **브랜치까지 함께 재작성해** 무력화한다. 브랜치는 백업이 아니다. `git bundle create ..\repo.bundle --all` 로 리포 밖에 파일로 떠 둘 것. 재작성 매핑표는 `.git/filter-repo/commit-map`(헤더 1줄 + 커밋 수).
+- 히스토리 재작성은 문서에 인용해 둔 7자리 해시를 **전부** 무효화한다. 순서는 재작성 → `commit-map` 으로 문서 일괄 치환 → 별도 커밋. 마무리로 인용 해시 전수를 `git cat-file -t` 에 통과시켜 유령 참조가 없는지 확인. (출처: `fbbccbf`)
 
 ### 협업 · 커뮤니케이션
 
