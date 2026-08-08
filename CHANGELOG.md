@@ -23,6 +23,18 @@
 
 ---
 
+## 2026-08-08
+
+- **`chore(gaindb)`**: 벤더링본을 GaindB 0.5.1 로 갱신 — 서브패키지 라이선스 Apache-2.0 → LGPL-2.1-or-later 재정정. **(ADR-010)** **(2026-07-24 `b582bc9` 라이선스 판단 번복)**
+    - 상류 GaindB 가 mp3gain(LGPL-2.1-or-later) 파생임을 확인해 LGPL 로 재라이선싱 → 벤더링본도 그 상태로 재반영. `gaindb/` 9개 모듈의 SPDX 헤더가 `LGPL-2.1-or-later` 로 바뀌고 `id3.py`·`tag.py`·`frame.py`·`writer.py`·`analysis.py` 에 mp3gain 원저작자(Glen Sawyer 등) 고지와 원본 대비 변경 내역 헤더가 붙었으며, docstring 의 "독립 구현" 표현이 "개작(파생)" 으로 정정됐다. `LICENSE`(LGPL-2.1 전문)·`NOTICE`(mp3gain attribution·변경 표시·소스 제공처)·`THIRD_PARTY_LICENSES` 3파일을 상류 정본으로 교체.
+    - **코드 로직 무변경**을 AST 비교로 검증 — docstring 을 제거한 AST 가 9개 모듈 전부 동일(차이는 헤더 주석·docstring·`__version__` "0.5.0"→"0.5.1" 뿐). 트랙 모드 공개 API(`analyze_file`·`apply_file_track_gain`) 시그니처 불변이라 `download_worker.py` 무수정 호환. `import gaindb`·`import main`·게인 API 스모크 통과.
+
+- **`docs`**: GaindB 라이선스 재정정 반영 — 폴더 경계 이중 라이선스·배포 방침 명문화. **(ADR-010)**
+    - ADR-010 신설(ADR-008 의 "mp3gain 독립 구현"·"clean-room" 서술 철회, ADR-009 는 결정 유지·동기 일부 소멸 명기). `ADR.md`·`CHANGELOG.md` 의 기존 본문은 규약(수정 금지·삭제 금지)대로 손대지 않고 새 항목으로만 번복을 기록하되, WORKLOG 섹션 4 인덱스는 오독 방지를 위해 ADR-008/009 요약에 대체 사실을 덧붙였다.
+    - 라이선스 서술 정정 4곳 — 루트 `NOTICE`(gaindb 문단을 LGPL 고지·mp3gain 파생·§5 근거·소스 제공처로 재작성), `README.md`(라이선스 절을 이중 라이선스 구조로 개편), `CLAUDE.md` 1(라이선스 줄), `workers/download_worker.py`("GaindB(mp3gain clean-room)" 주석).
+    - 배포 방침 명문화 — **비영리 무료 공개**(유료 판매·상업적 재판매 없음)를 `NOTICE`·`README.md` 에, 이용 제한·사용자 책임·무보증(Apache-2.0·LGPL-2.1 양쪽 무보증 조항), **DRM 우회 금지 방침**(우회·무단 접근을 돕는 기능은 도입하지 않음 — 쿠키 지원 보류가 그 첫 사례)을 `README.md` 에 추가. README 잔여였던 게인 기능·numpy/scipy 의존 한 줄도 함께 반영.
+    - WORKLOG 3.1 의 재정정 항목은 완료 처리하고, 남은 배포물 요건(PyInstaller onedir 로 `gaindb/` 평문 배치 = 교체 가능성, 릴리스에 소스 아카이브 첨부 = 소스 제공, 의존성 전문 모음 `THIRD_PARTY_LICENSES` 신설)만 후속 항목으로 남겼다. LGPL 준수 5항 중 3항(고지 보존·변경 표시·전문 포함)은 이번 커밋으로 충족.
+
 ## 2026-07-29
 
 - **`docs`**: 환경별 파일 참조 규칙(8.1)·커밋 작성자 고정 규약 추가.

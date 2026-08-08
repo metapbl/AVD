@@ -2,7 +2,8 @@ THIRD-PARTY LICENSES
 ====================
 
 Gain dB depends on the following third-party Python packages. Gain dB
-itself is licensed under the Apache License 2.0 (see LICENSE and NOTICE).
+itself is licensed under the GNU LGPL v2.1 or later (see LICENSE and
+NOTICE; NOTICE also carries the mp3gain attribution).
 The packages below are NOT bundled with the Gain dB source distribution;
 they are installed separately via pip (see requirements.txt). Their
 license texts are reproduced or referenced here for convenience and to

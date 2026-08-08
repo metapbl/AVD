@@ -1,22 +1,53 @@
 Gain dB
 Copyright 2026 META PUBLIC
 
-This product is an independent re-implementation. It reproduces the
-observable behavior, command-line option scheme, and the file and tag
-formats of mp3gain in order to remain compatible with it. It does NOT
-contain or derive from any of mp3gain's original source code.
+This software is licensed under the GNU Lesser General Public License,
+version 2.1 or (at your option) any later version (LGPL-2.1-or-later).
+See the LICENSE file for the full license text.
 
-- Loudness analysis is based on the publicly documented ReplayGain
-  specification. Filter coefficient values are public standard numbers
-  shared across independent implementations and are not copyrightable.
+Relationship to mp3gain
+-----------------------
+Gain dB is a Python re-implementation that reproduces the behavior,
+command-line option scheme, and the file and tag formats of mp3gain
+(https://sourceforge.net/projects/mp3gain/) in order to remain
+compatible with it.
 
-- ffmpeg is NOT bundled. It is invoked as an external process located on
-  the user's PATH; users must install it separately.
+Portions of Gain dB are based on, or adapted from, the mp3gain C
+sources, which are licensed under the GNU LGPL v2.1 or later:
 
-- The graphical interface uses PySide6 (Qt for Python), which is licensed
-  under the GNU LGPL v3. It is linked dynamically so that users may
-  replace the Qt libraries. When distributing pre-built binaries, the
-  LGPL v3 text and a usage notice are included.
+  mp3gain -- Copyright (C) 2001-2009 Glen Sawyer
+             AAC support (C) 2004-2009 David Lasker, Altos Design, Inc.
+             ReplayGainAnalysis (C) 2001-2009 David Robinson and
+             Glen Sawyer; improvements by Frank Klemm and Marcel Mueller
+             ID3v2 / APEv2 tag handling by the mp3gain contributors
 
-This software is licensed under the Apache License, Version 2.0.
-See the LICENSE file for details.
+In particular, the modules gaindb/id3.py, gaindb/tag.py,
+gaindb/frame.py and gaindb/writer.py follow the structure of the
+corresponding mp3gain sources (id3tag.c, apetag.c, mp3gain.c) and are
+distributed as modified versions under the same LGPL terms. The
+changes relative to the originals are: translation from C to Python,
+restructuring into Python modules/dataclasses, removal of
+platform-specific code, and integration with the Gain dB API. See the
+per-file headers for details.
+
+Other components
+----------------
+- Loudness analysis (gaindb/analysis.py) implements the publicly
+  documented ReplayGain specification. Filter coefficient values are
+  public standard numbers shared across independent implementations.
+
+- ffmpeg is NOT bundled. It is invoked as an external process located
+  on the user's PATH; users must install it separately.
+
+- The graphical interface uses PySide6 (Qt for Python), which is
+  licensed under the GNU LGPL v3. It is linked dynamically so that
+  users may replace the Qt libraries. When distributing pre-built
+  binaries, the LGPL v3 text and a usage notice are included.
+
+- NumPy and SciPy are used under the BSD 3-Clause License. See
+  THIRD_PARTY_LICENSES.
+
+Source availability
+-------------------
+The complete corresponding source code of Gain dB is available at:
+https://github.com/metapbl/GainDB

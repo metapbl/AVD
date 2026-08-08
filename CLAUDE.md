@@ -12,7 +12,7 @@
 - **성격**: yt-dlp 기반 영상·오디오 다운로더 (PySide6 GUI, 다크 테마)
 - **리포지토리**: https://github.com/metapbl/AVD
 - **로컬 경로**: `C:\Users\ggoyo_zhxlvdr\AVD`
-- **라이선스**: Apache-2.0 (저작권자 `META PUBLIC`; 서드파티 고지는 `NOTICE`). 번들 서브패키지 `gaindb/` 도 Apache-2.0 — 2026-07-24 MIT 에서 전환.
+- **라이선스**: **폴더 경계 이중 라이선스** — 본체는 Apache-2.0 (저작권자 `META PUBLIC`; 서드파티 고지는 `NOTICE`), 번들 서브패키지 `gaindb/` 만 **LGPL-2.1-or-later**. 본체 MIT→Apache-2.0 전환은 2026-07-24(ADR-009), `gaindb/` Apache-2.0→LGPL 재정정은 2026-08-08(ADR-010 — mp3gain 파생 확인). 본체는 `gaindb.api` 공개 함수만 호출하므로 LGPL-2.1 §5 "라이브러리를 사용하는 저작물". 배포 방침은 비영리 무료 공개, LGPL 준수를 위해 배포물의 `gaindb/` 는 평문 `.py`(onedir)로 두고 릴리스마다 소스 아카이브를 첨부한다.
 
 ## 2. 협업 모델
 

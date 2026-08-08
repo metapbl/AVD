@@ -1,7 +1,30 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
-"""ID3v2 (RVA2 + TXXX) 태그 읽기/쓰기 — mp3gain 과 동일한 결과·포맷을 산출하는
-독립 구현. 공개 사양(ID3v2.4·RVA2·TXXX)만 차용한다.
+# SPDX-FileCopyrightText: 2001-2009 Glen Sawyer and the mp3gain contributors
+#
+# This file is a Python adaptation of mp3gain's id3tag.c
+# (mp3gain, https://sourceforge.net/projects/mp3gain/,
+#  Copyright (C) 2001-2009 Glen Sawyer and contributors),
+# originally licensed under the GNU LGPL v2.1 or later.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2.1 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# Changes relative to the original id3tag.c: translated from C to
+# Python; restructured into dataclasses (Id3Frame/Id3Tag) and module
+# functions; frame lists replace linked lists; error codes exposed as
+# module constants; atomic rewrite via tempfile + os.replace; snake_case
+# naming; integration with gaindb.tag helpers.
+"""ID3v2 (RVA2 + TXXX) 태그 읽기/쓰기 — mp3gain 의 id3tag.c 를 Python 으로
+개작(파생)한 모듈. mp3gain 과 동일한 결과·포맷을 산출한다.
+공개 사양(ID3v2.4·RVA2·TXXX)과 원본 mp3gain 구현 구조를 따른다.
 
 이 모듈은 ⑤-A(읽기) + ⑤-B(쓰기)를 담당한다. 결선(⑤-C)은 이어서 추가한다.
 
