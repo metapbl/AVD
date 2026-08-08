@@ -17,7 +17,8 @@ from utils.file_utils import (
 
 
 # ── MP3 음량 정규화 목표 기준값 ──────────────────────
-# GaindB(mp3gain clean-room)의 ReplayGain 분석은 89dB 기준이다. 사용자 목표
+# GaindB(mp3gain 파생 Python 재구현, LGPL-2.1-or-later)의 ReplayGain 분석은
+# 89dB 기준이다. 사용자 목표
 # 음량(target_db)은 gaindb.api.apply_file_track_gain 에 그대로 넘긴다 —
 # 목표→89 기준 오프셋(target - 89) 변환은 api 안에 가둬져 있어, 표시(analyze_file)
 # 와 실제 적용 스텝이 같은 offset·db_to_steps 를 쓰므로 항상 일치한다.

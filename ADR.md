@@ -269,3 +269,33 @@ A. MIT 유지 + gaindb 만 Apache-2.0 — permissive 조합이라 합법이나 �
 **관련**
 
 ADR-008 (GaindB 통합 — 서브패키지 Apache-2.0 채택이 이 전환의 계기). 루트 `NOTICE`·`LICENSE`, `gaindb/NOTICE`·`gaindb/THIRD_PARTY_LICENSES`.
+
+---
+
+### ADR-010: GaindB 라이선스 재정정 — 서브패키지 `gaindb/` 를 LGPL-2.1-or-later 로 (ADR-008 일부 철회)
+
+<a id="adr-010"></a>
+
+- **상태**: Accepted (Supersedes ADR-008 의 라이선스 서술 부분)
+- **날짜**: 2026-08-08
+- **관련 커밋**: (이 문서를 담은 커밋)
+
+**결정**
+
+번들 서브패키지 `gaindb/` 의 라이선스를 Apache-2.0 에서 **LGPL-2.1-or-later** 로 재정정하고, 상류 GaindB 0.5.1(<https://github.com/metapbl/GainDB>)을 그 라이선스 상태로 재벤더링한다. AVD 본체는 Apache-2.0 을 유지해 **폴더 경계 이중 라이선스** 구조를 확정한다. ADR-008 의 "mp3gain 독립 구현"·"clean-room 재구현" 서술은 이로써 **철회**한다. ADR-009(본체 MIT→Apache-2.0)의 결정 자체는 유지하되, 전환 동기 두 개 중 "서브패키지와 표기 통일" 은 소멸했고 특허 조항 근거만 남는다(그 근거는 gaindb 와 무관하게 독립 성립).
+
+**이유**
+
+상류 라이선스 검토에서 mp3gain(LGPL-2.1-or-later) 파생 가능성이 확인됐다. (1) 구현 당시 원본 C 소스가 작업 폴더에 있었으므로 "구현자가 원본을 보지 않았다" 는 clean-room 요건이 성립하지 않고, (2) 종전 `gaindb/NOTICE` 의 "원본 소스를 포함·파생하지 않았다" 단언이 `analysis.py` docstring 의 "필터 계수를 mp3gain 에서 가져왔고 자체 재설계 경로가 원리적으로 막혀 있었다" 서술과 정면 충돌했다. 원본과 같은 라이선스로 배포하면 파생 여부 판정과 무관하게 준수 상태가 유지된다. AVD 본체는 `gaindb.api` 공개 함수만 호출하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물" 에 해당하고, `-or-later` 라 수령자가 LGPL-3.0 을 택할 수 있어 Apache-2.0 과 호환된다 — PySide6(LGPLv3) 동적 링크와 같은 구조여서 새 복잡도는 없다.
+
+**결과**
+
+`gaindb/` 9개 모듈의 SPDX 헤더가 `LGPL-2.1-or-later` 로 바뀌고 `id3.py`·`tag.py`·`frame.py`·`writer.py`·`analysis.py` 에 mp3gain 원저작자 고지·변경 내역 헤더가 붙었으며, `LICENSE`(LGPL-2.1 전문)·`NOTICE`(mp3gain attribution)·`THIRD_PARTY_LICENSES` 3파일을 상류 정본으로 교체했다. 코드 로직은 무변경(AST 비교로 docstring·헤더·버전 문자열 외 차이 없음 확인)이라 트랙 모드 공개 API 시그니처가 불변이고 `download_worker.py` 는 무수정 호환. 루트 `NOTICE`·`README.md`·`CLAUDE.md`·`workers/download_worker.py` 주석의 라이선스 서술을 정정하고, 배포 방침(비영리 무료 공개)·이용 제한·무보증·DRM 우회 금지 방침을 `README.md` 에 명문화했다. **LGPL 준수 5항** — 고지 보존/변경 표시(`gaindb/NOTICE`), 전문 포함(`gaindb/LICENSE`), 소스 제공(릴리스에 소스 아카이브 첨부), 교체 가능성(PyInstaller onedir + `gaindb/` 평문 `.py` 배치) — 이 각 산출물에 대응한다.
+
+**대안**
+
+A. Apache-2.0 유지 — 파생으로 판정되면 LGPL 위반이 되므로 법적 위험을 남긴다. B. mp3gain 참조 없는 완전 독립 재작성 후 Apache-2.0 복귀 — 동일인이 이미 원본을 본 이상 clean-room 요건 충족이 어려워 현실성이 낮다. C. 프로젝트 전체를 LGPL 로 — 본체는 파생물이 아니므로 불필요하게 상위 조건을 자임하게 된다. D(채택): 폴더 경계 이중 라이선스.
+
+**관련**
+
+ADR-008 (GaindB 통합 — 라이선스 서술을 본 ADR 이 철회). ADR-009 (본체 Apache-2.0 — 결정 유지, 동기 일부 소멸). 루트 `NOTICE`·`README.md`, `gaindb/LICENSE`·`gaindb/NOTICE`·`gaindb/THIRD_PARTY_LICENSES`.

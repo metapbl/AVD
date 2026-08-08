@@ -4,14 +4,31 @@ Copyright 2026 META PUBLIC
 This product is licensed under the Apache License, Version 2.0.
 See the LICENSE file for details.
 
+AVD is distributed as free and open-source software at no charge, for
+non-commercial use; it is not sold and no paid edition is offered.
+
+The bundled subpackage gaindb/ is NOT covered by the Apache License. It
+carries its own license (GNU LGPL v2.1 or later) as described below; the
+license boundary follows the folder boundary.
+
 This product includes the following third-party components:
 
-- gaindb/ (bundled subpackage)
-  An independent re-implementation of mp3gain's ReplayGain track-mode
-  loudness normalization, licensed under the Apache License, Version 2.0.
-  Copyright 2026 META PUBLIC. Vendored from the upstream project at
-  https://github.com/metapbl/GainDB (bundled version 0.5.0). See gaindb/NOTICE
-  and gaindb/THIRD_PARTY_LICENSES for its own attribution and dependency notices.
+- gaindb/ (bundled subpackage) -- LGPL-2.1-or-later
+  A Python re-implementation of mp3gain's ReplayGain track-mode loudness
+  normalization. Portions are based on, or adapted from, the mp3gain C
+  sources (Copyright (C) 2001-2009 Glen Sawyer and contributors), which
+  are licensed under the GNU Lesser General Public License, version 2.1
+  or later; gaindb/ is therefore distributed under the same LGPL terms.
+  Copyright 2026 META PUBLIC. Vendored without modification from the
+  upstream project at https://github.com/metapbl/GainDB (bundled version
+  0.5.1). AVD itself only calls the public functions of gaindb.api and is
+  a "work that uses the Library" in the sense of LGPL-2.1 section 5, so
+  AVD's own Apache-2.0 licensing is unaffected. The full LGPL-2.1 text is
+  in gaindb/LICENSE; see gaindb/NOTICE for the mp3gain attribution and the
+  record of changes, and gaindb/THIRD_PARTY_LICENSES for dependency
+  notices. The complete corresponding source of the bundled gaindb/ is
+  available at https://github.com/metapbl/GainDB and is also attached to
+  each AVD release on GitHub.
 
 - PySide6 (Qt for Python)
   Licensed under the GNU LGPL v3. It is linked dynamically so that users
