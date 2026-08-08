@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
 """
 gaindb/apply_gain.py - MP3 파일의 global_gain 을 무손실 조정하는 라이브러리 모듈.

@@ -1,9 +1,32 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
+# SPDX-FileCopyrightText: 2001-2009 Glen Sawyer and the mp3gain contributors
+#
+# This file is a Python adaptation of mp3gain's apetag.c / apetag.h
+# (mp3gain, https://sourceforge.net/projects/mp3gain/,
+#  Copyright (C) 2001-2009 Glen Sawyer and contributors),
+# originally licensed under the GNU LGPL v2.1 or later.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2.1 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# Changes relative to the original apetag.c: translated from C to
+# Python; C structs (MP3GainTagInfo/APETagStruct/FileTagsStruct)
+# restructured as dataclasses; manual memory management removed;
+# snake_case naming; atomic tag rewrite; orchestration wrappers
+# (read_mp3gain_tags/change_gain_and_tag) integrated with the Gain dB
+# API.
 """gaindb/tag.py — 태그 처리 (4단계).
 
-APEv2 태그를 읽고 쓰고 제거하는 독립 구현. mp3gain 과 결과·포맷을 일치시키되
-공개 사양(APEv2 포맷·필드명)과 관찰된 동작만 차용하고 코드는 독립 작성한다.
+APEv2 태그를 읽고 쓰고 제거하는 모듈. mp3gain 의 apetag.c 를 Python 으로
+개작(파생)한 구현으로, mp3gain 과 결과·포맷을 일치시킨다.
 이 파일 단계 ①: APEv2 읽기 파서 (전 필드 + otherFields 보존 + Lyrics3/ID3v1 꼬리 감지).
 
 담당 기능:

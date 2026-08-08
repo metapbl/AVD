@@ -1,11 +1,32 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
+# SPDX-FileCopyrightText: 2001-2009 Glen Sawyer and the mp3gain contributors
+#
+# Parts of this file follow the MP3 frame-scanning approach of
+# mp3gain's mp3gain.c
+# (mp3gain, https://sourceforge.net/projects/mp3gain/,
+#  Copyright (C) 2001-2009 Glen Sawyer and contributors),
+# originally licensed under the GNU LGPL v2.1 or later.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2.1 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# Changes relative to the original: translated from C to Python;
+# read-only parser separated into its own module (FrameInfo dataclass,
+# _BitReader helper); Xing/Info frame detection integrated.
 """
 gaindb.frame - MP3 Layer III 프레임 파서 (읽기 전용)
 
 MP3 파일을 순회하며 각 프레임의 global_gain 값을 읽는다.
-공개된 MPEG 오디오 프레임 구조 사양만 참조해 독립 구현.
-이 단계는 디코딩이 아니라 사이드 정보의 게인 필드만 읽으므로 외부 의존성 없음.
+공개된 MPEG 오디오 프레임 구조 사양과 mp3gain(mp3gain.c)의 프레임 순회
+방식을 따르며, 사이드 정보의 게인 필드만 읽으므로 외부 의존성 없음.
 """
 
 from dataclasses import dataclass

@@ -1,12 +1,35 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
+# SPDX-FileCopyrightText: 2001-2009 Glen Sawyer and the mp3gain contributors
+#
+# Parts of this file are a Python adaptation of gain-modification and
+# CRC-recalculation code from mp3gain's mp3gain.c
+# (mp3gain, https://sourceforge.net/projects/mp3gain/,
+#  Copyright (C) 2001-2009 Glen Sawyer and contributors),
+# originally licensed under the GNU LGPL v2.1 or later.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2.1 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# Changes relative to the original mp3gain.c: translated from C to
+# Python; whole-file in-memory (bytearray) processing with atomic
+# write-back; cancellation/progress callbacks added; restructured into
+# apply_gain/scan_gain module functions.
 """
 gaindb.writer - MP3 global_gain 무손실 조정 (쓰기)
 
 각 프레임의 global_gain 필드를 ±N 하여 음량을 조정한다.
 재인코딩 없음 -> 무손실. CRC 보호 프레임은 헤더 CRC를 재계산한다.
 
-MPEG 사이드 정보 레이아웃과 게인 적용 규칙(공개 사양)만 참조해 독립 구현.
+게인 수정·CRC 재계산 로직은 mp3gain 의 mp3gain.c 해당 부분을 Python 으로
+개작(파생)한 것이다. MPEG 사이드 정보 레이아웃은 공개 사양을 따른다.
 
 취소·진행률(GUI/워커 대응):
   apply_gain·scan_gain 은 순수 파이썬 프레임 순회라 디코딩이 없다. 초장시간

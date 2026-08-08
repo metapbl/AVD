@@ -1,27 +1,30 @@
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: LGPL-2.1-or-later
 # SPDX-FileCopyrightText: 2026 META PUBLIC
+# SPDX-FileCopyrightText: 2001-2009 David Robinson and Glen Sawyer
+#
+# The algorithm and the filter coefficient tables in this module follow
+# the ReplayGain proposal by David Robinson (replaygain.org) and the
+# reference implementation ReplayGainAnalysis / gain_analysis.c
+# (Copyright (C) 2001-2009 David Robinson and Glen Sawyer; improvements
+# by Frank Klemm and Marcel Mueller), licensed under the GNU LGPL v2.1
+# or later. The Python code here is a new vectorized implementation
+# (numpy/scipy) and is distributed under the same LGPL terms.
 """
 gaindb/analysis.py
 
 ReplayGain 분석기 (Track gain / Album gain).
 
-독립 구현: 필터 계수는 저작권 대상이 아닌 필터 계수 수치(사실 데이터)만
-전사한 것이며, 코드는 독립 작성했다.
-
-계수 출처(정직한 기재): 이 프로젝트가 쓰는 전 샘플레이트(44.1k·48k·32k /
-24k·22.05k·16k / 12k·11.025k·8k)의 yulewalk·Butterworth 계수는 ReplayGain
-공개 사양이 정의하는 표준값이다. 이 사양에는 전 샘플레이트의 계수가 수치로
-공개되어 있으며, 여러 독립 구현이 사실상 사양처럼 공유하는 값이다. 이
-프로젝트는 그 수치(저작권 대상이 아닌 필터 계수 사실 데이터)를 scipy lfilter
-규약(b/a 분리, a[0]=1.0)에 맞게 재배치해 전사했고, 코드는 독립 작성했다.
-(사양의 표는 한 배열에 b·a 계수를 교차 저장하는 형태이므로, 같은 수치를
-lfilter 형식으로 옮겼을 뿐 값은 동일하다.) 필터 계수라는 수치 데이터는
-저작권 대상이 아니다. 자체 재설계로 동일한 응답을 얻으려면 비공개인
-equal-loudness target 곡선이 필요하고 scipy 에 MATLAB yulewalk 등가도
-없어(조사로 확인) 재설계 경로가 원리적으로 막혀 있으므로, 2.1(mp3gain 결과
-일치) 최우선 원칙 하에 계수 수치만 차용하기로 사용자와 합의했다. 상세 경위는
-CLAUDE.md 10 진척 로그(6단계) 참조. ReplayGain 사양에 대한 사실 언급은
-NOTICE/README 에서 다룬다.
+알고리즘·필터 계수의 출처: ReplayGain 공개 제안(replaygain.org, David
+Robinson)과 그 레퍼런스 구현 ReplayGainAnalysis(gain_analysis.c,
+LGPL-2.1-or-later)를 따른다. 이 프로젝트가 쓰는 전 샘플레이트
+(44.1k·48k·32k / 24k·22.05k·16k / 12k·11.025k·8k)의 yulewalk·Butterworth
+계수는 ReplayGain 공개 사양이 수치로 정의하는 표준값이며, 여러 구현이
+사양처럼 공유하는 값이다. 그 수치를 scipy lfilter 규약(b/a 분리,
+a[0]=1.0)에 맞게 재배치해 전사했다(사양의 표는 한 배열에 b·a 계수를 교차
+저장하는 형태이므로, 같은 수치를 lfilter 형식으로 옮겼을 뿐 값은 동일하다).
+코드 자체는 C 레퍼런스와 달리 numpy/scipy 벡터화로 새로 작성했으며,
+프로젝트 전체와 함께 LGPL-2.1-or-later 로 배포된다. 상세 경위는 CLAUDE.md
+10 진척 로그(6단계) 참조. 사실 고지는 NOTICE/README 에서 다룬다.
 
 알고리즘 사양:
   1) 입력 PCM 을 10차 yulewalk IIR → 2차 Butterworth(150Hz HPF) 캐스케이드로 필터.
@@ -58,10 +61,10 @@ DB_PER_STEP = _DB_PER_STEP_DIVISOR
 # lfilter(b, a, x) 규약: a[0]=1.0. Yulewalk: b=[b0..b10], a=[1.0, a1..a10].
 # Butterworth: b=[b0, b1, b2], a=[1.0, a1, a2].
 #
-# 전 샘플레이트 계수는 ReplayGain 공개 사양이 정의하는 표준값이다. 그 수치
-# (저작권 대상이 아닌 필터 계수 사실 데이터)를 lfilter 규약에 맞게 재배치해
-# 전사했고 코드는 독립 작성했다. 상세는 위 모듈 docstring 및 CLAUDE.md 10
-# 진척 로그(6단계) 참조.
+# 전 샘플레이트 계수는 ReplayGain 공개 사양이 정의하는 표준값이다(레퍼런스
+# 구현 gain_analysis.c 의 테이블과 동일한 수치). 그 수치를 lfilter 규약에
+# 맞게 재배치해 전사했다. 상세는 위 모듈 docstring 및 CLAUDE.md 10 진척
+# 로그(6단계) 참조.
 
 _YULE_44100_B = [
     0.05418656406430, -0.02911007808948, -0.00848709379851, -0.00851165645469,
