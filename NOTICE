@@ -5,7 +5,8 @@ This product is licensed under the Apache License, Version 2.0.
 See the LICENSE file for details.
 
 The author distributes AVD free of charge and offers no paid edition.
-This describes the author's own distribution practice and adds no restriction to the license above.
+This describes the author's own distribution practice and 
+adds no restriction to the license above.
 
 The bundled subpackage gaindb/ is NOT covered by the Apache License. It
 carries its own license (GNU LGPL v2.1 or later) as described below; the
