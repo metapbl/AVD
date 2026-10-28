@@ -47,11 +47,12 @@
   - pyinstaller → `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`README.md` 를 `dist\AVD\` 에 복사 → `release\AVD-v{APP_VERSION}-win64.zip` 와 `git archive` 로 `release\AVD-v{APP_VERSION}-src.zip`
   - 확인: `.\build.ps1` → zip 2개 생성 | exe zip 목록에 `AVD.exe`·`LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`_internal\gaindb\api.py`·`_internal\gaindb\LICENSE` 존재 | src zip 에 `gaindb\`·`main.py` 존재
   - 결과 (2026-10-29, `b1066c8`): 커밋 안 된 변경이 있으면 멈춤 확인(소스 zip 이 exe 와 같은 커밋이어야 해서 추가). `AVD-v1.0.0-win64.zip` 100.0 MB·1394항목, 필수 8개 모두 있음 / `AVD-v1.0.0-src.zip` 0.3 MB·96항목, `gaindb/api.py`·`main.py`·`LICENSE`·`AVD.spec` 있음. 두 zip 모두 `config.json` 없음
-- [ ] 7. exe 실기기 확인 (작업 6 의 zip 을 리포 밖 새 폴더에 풀어서)
+- [x] 7. exe 실기기 확인 (작업 6 의 zip 을 리포 밖 새 폴더에 풀어서)
   - 실기기: 단일 YouTube 다운로드 → 완료·재생 가능 | MP3 + 음량 정규화 → 완료, 태그 기록 | 환경설정 저장 → exe 옆에 `config.json` 생김
   - 실기기 (교체 가능성): `_internal\gaindb\api.py` 공개 함수 첫 줄에 표시 파일을 쓰는 한 줄을 넣고 정규화 실행 → 그 파일이 생김 (평문 수정이 반영됨)
   - 실기기 (업데이트 리허설): `_internal\yt_dlp\version.py` 의 `__version__` 을 옛 값으로 바꾸고 기동 → 업데이트 질문 → 예 → 완료 문구 → 다시 시작 → 질문 없음, 버전이 최신
   - 판정: Claude 가 할 수 있는 것은 D036 처럼 대리 확인하고, 창 표시·탐색기는 사용자 눈 확인
+  - 결과 (2026-10-29, `a4ce4b0` 빌드를 scratchpad 에 풀어서): 사용자 — 업데이트 질문·예·완료, AVD 창 중복 없음, 다시 켜면 질문 없음, mp4(VP9+Opus)·mp3(192k, "음량 −3.0dB") 완료. Claude 대리 — `yt_dlp\version.py` 2026.03.17→2026.10.26·`yt_dlp.old` 없음(실행 중 폴더 이름 바꾸기 성공), `config.json` exe 옆, `REPLACED_MARKER.txt` 생김, 두 파일 ffmpeg 전체 디코딩 오류 0, mp3 표지(mjpeg)·제목·아티스트·NFC 파일명 정상, MP3Gain 태그 `status ok`·volume 88.3(목표 89, −3.0dB 적용 뒤 값과 맞음). 업데이트 뒤 자동 재시작 요청 → Q049
 - [ ] 8. 배포본 안내와 릴리스 절차서 — `README.md > 설치`, `docs/RELEASE.md`
   - README: zip 풀기 → ffmpeg·Node.js 설치 → `AVD.exe`, `gaindb` 교체 위치, 설정 파일 위치
   - RELEASE.md: 버전 올리기 → CHANGELOG → `build.ps1` → 실기기 최소 항목(작업 7 의 첫 줄) → 태그·push → `gh release create` 에 zip 2개

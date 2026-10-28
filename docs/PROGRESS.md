@@ -1,11 +1,12 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (6/10)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (7/10)
 - 갱신: 2026-10-29 · 마지막 커밋: `1492bc8 docs: 세 번째 계획 인수 확인 결과 기록` (origin/main 보다 19커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 작업 7: exe 실기기 확인 — `release\AVD-v1.0.0-win64.zip` 을 리포 밖 새 폴더에 풀어 다운로드·MP3 정규화·config 위치·gaindb 교체·yt-dlp 업데이트 리허설 (사용자 눈 확인 포함)
+1. Q049 업데이트 뒤 자동 재시작 방식 답 받기 → D041·계획에 작업 추가 (작업 8 앞)
+2. 작업 8: README 배포본 안내·`docs/RELEASE.md`
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
