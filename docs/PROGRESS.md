@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 4/9 (1·3·4·5 완료, 2 확인 대기)
-- 갱신: 2026-10-28 · 마지막 커밋: `79ff953 chore: 본체 라이선스 MIT 전환`
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 5/9 (1·3·4·5·6 완료, 2 확인 대기)
+- 갱신: 2026-10-28 · 마지막 커밋: `932f8ef docs(readme): 현행에 맞춤`
 
 ## 다음 할 일
-1. 작업 6 — 다운로드 워커 파싱 함수 특성 테스트 (`tests/test_download_worker_parsing.py`). 작업 2 기동 결과 대기 중
+1. 작업 7 — 파일 유틸 특성 테스트 (`tests/test_file_utils.py`). 작업 2 기동 결과 대기 중
 
 ## 미해결
 - (다음 계획 후보) ruff 0.17 기본 규칙으로는 앱 코드 64건 (blind-except 21·import 순서 19·try-except-pass 9 등, 26건 자동 수정 가능) — 단서: D035

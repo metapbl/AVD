@@ -37,9 +37,10 @@
   - 확인: `Select-String -Path README.md -Pattern "WORKLOG.md","사용자 설정 폴더"` → 0건 / README 의 상대 링크 대상이 모두 존재 (`Select-String` 으로 `](` 링크 추출 → 각각 `Test-Path` True)
   - 결과: 2026-10-28 통과 — "WORKLOG.md"·"사용자 설정 폴더" 0건 / 상대 링크 14개 모두 존재 / 디렉터리 구조에 playlist·update 모듈·gaindb·docs·개발 도구 파일 반영
   - 커밋: `docs(readme): config 위치·문서 안내·디렉터리 구조를 현행에 맞춤`
-- [ ] 6. 다운로드 워커 파싱 함수 특성 테스트 (F9) — `tests/test_download_worker_parsing.py`
+- [x] 6. 다운로드 워커 파싱 함수 특성 테스트 (F9) — `tests/test_download_worker_parsing.py`
   - 대상: `workers/download_worker.py > _is_transient_error, _parse_eta_secs, _format_eta_secs, _normalize_size_str, _split_size_str, _is_unknown_size`. 기대값은 현 코드 출력에서 얻는다. `_is_transient_error` 는 REFERENCE T3·T4 의 경계(403·429 일시, 400/401/404/410 영구, 포장된 `Unable to download webpage: HTTP Error 404`)를 반드시 포함
   - 확인: `venv\Scripts\python -m pytest tests/test_download_worker_parsing.py` → 전부 통과 / 변이 확인: `_is_transient_error` 의 반환을 임시로 뒤집으면 실패 → 원복 후 `git diff -- workers/` 출력 없음
+  - 결과: 2026-10-28 통과 — 54 passed / 변이(`_is_transient_error` 일시 패턴 반환 True→False) 시 7 failed / 원복 후 `git diff -- workers/` 출력 없음 / `ruff check tests` 통과
   - 커밋: `test: 다운로드 워커 파싱 함수 특성 테스트 추가`
 - [ ] 7. 파일 유틸 특성 테스트 (F9) — `tests/test_file_utils.py`
   - 대상: `utils/file_utils.py > sanitize_filename, normalize_unicode, get_unique_path, format_duration`. NFD 한글 입력 → NFC 출력(T9), Windows 금지 문자, 중복 파일명(`tmp_path`), `None`·0·시간 경계
