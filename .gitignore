@@ -32,6 +32,7 @@ MANIFEST
 *.manifest
 *.spec
 !AVD.spec
+release/
 
 # Installer logs
 pip-log.txt
