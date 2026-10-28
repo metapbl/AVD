@@ -5,8 +5,8 @@
 extend-exclude = ["gaindb", "docs", "venv"]
 
 [tool.ruff.lint]
-# ruff 0.17 의 넓어진 기본 규칙 대신 기존 기본(E4·E7·E9·F)을 고정 — 앱 코드 정리는 별도 계획
-select = ["E4", "E7", "E9", "F"]
+# ruff 0.17 기본 규칙. 워커의 예외→error 시그널 경계와 정리 단계의 실패 삼킴은 의도된 코드 (D037)
+ignore = ["BLE001", "S110"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

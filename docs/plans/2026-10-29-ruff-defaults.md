@@ -27,7 +27,7 @@
   - `utils/file_utils.py > open_folder` `PLW1510` 2건: `check=False` 명시 (탐색기는 성공해도 1 을 돌려줄 수 있어 지금처럼 검사 안 함)
   - `ui/download_item_widget.py` `RUF046`: 불필요한 `int()` 제거 / `utils/file_utils.py` `RUF059`: 안 쓰는 `gone` → `_gone` / `ui/main_window.py` `SIM102`: 중첩 `if` 합치기
   - 확인: 기본 검사 → `BLE001`·`S110` 30건만 남음 | pytest 통과
-- [ ] 4. 규칙 고정 해제 — `pyproject.toml`, `DECISIONS.md`
+- [x] 4. 규칙 고정 해제 — `pyproject.toml`, `DECISIONS.md`
   - `select` 줄 제거, `ignore = ["BLE001", "S110"]` 와 이유 주석 (D037, 승인 때 기록됨)
   - 확인: `venv\Scripts\ruff.exe check --force-exclude .` → `All checks passed!`
 - [ ] 5. 인수 확인
