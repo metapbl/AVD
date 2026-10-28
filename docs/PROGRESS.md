@@ -2,7 +2,7 @@
 
 ## 상태
 - 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (8/11)
-- 갱신: 2026-10-29 · 마지막 커밋: `1492bc8 docs: 세 번째 계획 인수 확인 결과 기록` (origin/main 보다 19커밋 앞섬, push 안 함)
+- 갱신: 2026-10-29 · 마지막 커밋: `c59b48e docs: 작업 8 자동 재시작 실기기 확인 결과 기록` (origin/main 보다 33커밋 앞섬, push 안 함 — 작업 10 에서 확인 후)
 
 ## 다음 할 일
 1. 작업 9: README 배포본 안내·`docs/RELEASE.md` (경로를 `Test-Path` 로 산출물에 대조)
