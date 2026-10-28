@@ -2,10 +2,14 @@
 # 앱 설정을 JSON 파일로 저장하고 불러오는 파일
 
 import json
+import sys
 from pathlib import Path
 
-# 설정 파일 저장 위치 (앱 폴더 안에 config.json)
-CONFIG_PATH = Path(__file__).parent.parent / "config.json"
+# 설정 파일 저장 위치 (앱 폴더 안에 config.json). exe 배포본은 exe 옆 (D039)
+CONFIG_PATH = (
+    Path(sys.executable).parent if getattr(sys, "frozen", False)
+    else Path(__file__).parent.parent
+) / "config.json"
 
 # 기본 설정값
 DEFAULT_CONFIG = {
