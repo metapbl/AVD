@@ -2,13 +2,17 @@
 
 ## 상태
 - 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (8/11)
-- 갱신: 2026-10-29 · 마지막 커밋: `c59b48e docs: 작업 8 자동 재시작 실기기 확인 결과 기록` (origin/main 보다 33커밋 앞섬, push 안 함 — 작업 10 에서 확인 후)
+- 갱신: 2026-10-29 · 마지막 커밋: `b38078e docs(progress): 세션 마무리 — 네 번째 계획 8/11` (origin/main 보다 33커밋 앞섬, push 안 함 — 작업 10 에서 확인 후)
 
 ## 다음 할 일
-1. 작업 9: README 배포본 안내·`docs/RELEASE.md` (경로를 `Test-Path` 로 산출물에 대조)
-2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. 작업 9: `README.md > 설치` 에 배포본 안내(zip 풀기 → ffmpeg·Node.js → `AVD.exe`, `_internal\gaindb\` 교체 위치, exe 옆 `config.json`), `docs/RELEASE.md` 절차서(`utils/updater.py > APP_VERSION` → CHANGELOG → `build.ps1` → 실기 최소 항목 → 태그·push → `gh release create`). 확인: 문서 속 경로를 `Test-Path` 로 `dist\AVD` 에 대조
+2. 작업 10: 첫 릴리스 — `gh release list --repo metapbl/AVD` 로 기존 번호 확인부터 (지난번 출력 비어 있음, 인증 여부 미확인)
+3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
+- (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
+- (기존 코드, D013 위반) `ui/main_window.py > _run_ytdlp_update` 의 `worker.done.connect(_on_done)` 에 `QueuedConnection` 명시 없음 — 이번 계획 전부터
+- (판단 필요) Qt/PySide6 LGPL 소스 제공을 공식 서버 링크로 갈음 (`THIRD_PARTY_LICENSES`) — 직접 첨부가 필요한지 법률 검토 안 함
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
@@ -30,3 +34,8 @@
 - 2026-10-28 첫 계획(기반 다지기) 완료 — 인수 확인 통과 (2d292bb)
 - 2026-10-29 두 번째 계획: PlaylistProbeWorker 시그널 `probe_ready` 개명·정리 연결 교체 (596dcc9), 인수 확인 (961d0fe)
 - 2026-10-29 세 번째 계획: ruff 0.17 기본 규칙 채택 — import 정리 (133f01b), 자동 수정 (3c61718), 수동 정리 (4555bbb), 규칙 고정 해제 D037 (04d130b), 인수 확인 (1492bc8)
+- 2026-10-29 네 번째 계획 승인 D038~D040 (8f4ac46)
+- 2026-10-29 PyInstaller onedir 빌드 `AVD.spec` (3caf25d), exe 옆 config.json D039 (391ec31)
+- 2026-10-29 exe 용 yt-dlp wheel 교체 (f0adf1b), UpdateWorker frozen 분기·T17 (0ac4c9b)
+- 2026-10-29 루트 THIRD_PARTY_LICENSES·NOTICE (9579289), `build.ps1` (b1066c8, a4ce4b0)
+- 2026-10-29 exe 실기기 확인 통과 (3922d92), 업데이트 뒤 자동 재시작 D041 (cb15588, c59b48e)
