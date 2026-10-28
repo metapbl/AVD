@@ -2,10 +2,10 @@
 
 ## 상태
 - 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` done (9/9) — 다음 계획 없음
-- 갱신: 2026-10-28 · 마지막 커밋: `f0abd36 docs: 2026-07-09 작업분 실기 검증 결과 기록`
+- 갱신: 2026-10-28 · 마지막 커밋: `2d292bb docs: 첫 계획 인수 확인 결과 기록` (origin/main 보다 11커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 다음 계획 정하기 — 아래 '다음 계획 후보' 중 고르거나 새 기능 (/metarche plan)
+1. 다음 계획 정하기 (/metarche plan) — 추천 첫 후보: `workers/playlist_probe_worker.py > PlaylistProbeWorker` 의 커스텀 `finished` 를 T2 규칙대로 개명, 연결처 `controllers/playlist_flow.py > PlaylistFlow.start`
 
 ## 미해결
 - (다음 계획 후보) `workers/playlist_probe_worker.py > PlaylistProbeWorker.finished = Signal(object)` 가 QThread 내장 `finished` 를 가리고 `controllers/playlist_flow.py` 가 `deleteLater` 를 거기 연결 — T2 규칙 위반. 하네스에선 크래시 없음
@@ -23,5 +23,9 @@
 <!-- 한 줄씩: YYYY-MM-DD 무엇을 (커밋 hash). 50줄을 넘으면 docs/history/로 옮긴다. -->
 - 2026-10-28 metarche 이관 착수 — 기존 문서 legacy 이동, PRD 초안 (8e494a2)
 - 2026-10-28 PRD 승인 (3a6f5f8)
-- 2026-10-28 문서 체계 승인 — CLAUDE.md·PROGRESS·REFERENCE·settings·훅
-- 2026-10-28 첫 계획(기반 다지기) 완료 — venv·의존성 상향, MIT 전환, 특성 테스트 77개, 실기 검증 대리 판정(D036)
+- 2026-10-28 문서 체계 승인 — CLAUDE.md·PROGRESS·REFERENCE·settings·훅 (301d5b3)
+- 2026-10-28 Python 3.15 대응 의존성 상향 (b57ba9f), pytest·ruff 개발 도구 (1d0d6d5)
+- 2026-10-28 본체 라이선스 MIT 전환 (79ff953), README 현행화 (932f8ef)
+- 2026-10-28 특성 테스트 — 다운로드 워커 파싱 54개 (c361f58), 파일 유틸 23개 (f42d487)
+- 2026-10-28 2026-07-09 작업분 실기 검증 대리 판정 기록 (f0abd36)
+- 2026-10-28 첫 계획(기반 다지기) 완료 — 인수 확인 통과 (2d292bb)
