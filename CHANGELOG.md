@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`feat(updater)`**: exe 배포본용 yt-dlp 교체 함수 `install_ytdlp_wheel` 추가 — PyPI 순수 파이썬 wheel 을 받아 sha256 대조 뒤 `yt_dlp` 폴더 교체, 실패하면 기존 폴더 유지. 워커 연결은 다음 커밋. **(D038)**
 - **`feat(config)`**: exe 배포본은 `config.json` 을 exe 옆에 둔다 (포터블). 소스 실행 위치는 그대로. **(D039)**
 - **`build`**: PyInstaller 6.22.3 onedir 빌드 설정 `AVD.spec` 추가 — `gaindb/`(LGPL)·`yt_dlp` 를 실행 파일에 묶지 않고 `_internal\` 아래 평문 `.py` 로 배치, `gaindb` 라이선스 3파일 동봉. 개발 의존성에 pyinstaller 핀. **(D011, D038)**
 - **`docs`**: 세 번째 계획(ruff 기본 규칙) 인수 확인 — pytest 83·ruff 통과, 실기기 다운로드·폴더 열기 정상.

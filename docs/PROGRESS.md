@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (2/10)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (3/10)
 - 갱신: 2026-10-29 · 마지막 커밋: `1492bc8 docs: 세 번째 계획 인수 확인 결과 기록` (origin/main 보다 19커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 작업 3: yt-dlp wheel 설치 함수 — `utils/updater.py > install_ytdlp_wheel` (D038), 가짜 wheel 테스트 먼저
+1. 작업 4: UpdateWorker frozen 분기 — `workers/update_worker.py > UpdateWorker.run` 이 `install_ytdlp_wheel` 호출 (D038), 테스트 먼저
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결

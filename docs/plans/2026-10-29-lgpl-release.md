@@ -26,10 +26,11 @@
   - 실패하는 테스트 먼저: `sys.frozen=True`·`sys.executable` 을 임시 경로로 바꾸고 모듈 reload → `CONFIG_PATH == exe 폴더/config.json` / 바꾸지 않으면 지금 경로(리포 루트) 그대로
   - 확인: `venv\Scripts\python -m pytest tests/test_frozen_paths.py` 통과 → 전체 pytest 통과
   - 결과 (2026-10-29): frozen 테스트 먼저 실패 확인 → 구현 뒤 pytest 85 통과, ruff 통과. 시험 빌드 기동 → `dist\AVD\config.json` 생김, `_internal\config.json` 없음
-- [ ] 3. yt-dlp wheel 설치 함수 (D038) — `utils/updater.py > install_ytdlp_wheel(dest_dir, on_line)`
+- [x] 3. yt-dlp wheel 설치 함수 (D038) — `utils/updater.py > install_ytdlp_wheel(dest_dir, on_line)`
   - PyPI JSON(`https://pypi.org/pypi/yt-dlp/json`)의 `py3-none-any` wheel URL·sha256 → 받기 → sha256 대조 → 임시 폴더에 `yt_dlp/` 만 풀기 → `dest_dir\yt_dlp` 를 `yt_dlp.old` 로 옮기고 새 폴더로 바꾼 뒤 옛 폴더 삭제. 바꾸는 도중 실패하면 옛 폴더를 되돌린다
   - 실패하는 테스트 먼저 (네트워크는 가짜 응답, 가짜 wheel zip): 정상 → 새 `version.py` 로 교체됨 / sha256 불일치 → 실패 반환, 기존 폴더 그대로 / 교체 중 예외 → 기존 폴더 복원
   - 확인: `venv\Scripts\python -m pytest tests/test_ytdlp_wheel.py` 통과 → 전체 pytest 통과
+  - 결과 (2026-10-29): 3건 먼저 실패 확인 → 구현 뒤 pytest 88 통과, ruff 통과. 실제 PyPI 로 임시 폴더에 시험 → `yt_dlp-2026.10.26-py3-none-any.whl` 받아 sha256 통과·교체, 찌꺼기 없음
 - [ ] 4. UpdateWorker frozen 분기 — `workers/update_worker.py > UpdateWorker.run`
   - frozen 이면 pip 대신 작업 3 함수 호출(`dest_dir = Path(yt_dlp.__file__).parent.parent`), 진행 줄은 `progress_text` 로, 완료 문구 "다시 시작하면 적용됩니다". 소스 실행 경로는 손대지 않는다
   - REFERENCE 함정 대장에 "동결 빌드의 `sys.executable` 은 AVD.exe — `-m pip` 이 앱을 다시 띄운다" 추가

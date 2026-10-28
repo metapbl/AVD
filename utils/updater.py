@@ -1,8 +1,13 @@
 # utils/updater.py
 # yt-dlp 버전 체크 및 업데이트, 앱 자체 업데이트를 담당하는 파일
 
+import hashlib
+import io
+import shutil
 import subprocess
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 
 import requests
@@ -19,6 +24,49 @@ YTDLP_API_URL = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
 
 # 앱 GitHub API 주소
 APP_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+
+# yt-dlp PyPI 정보 주소 (exe 배포본의 wheel 교체용)
+PYPI_YTDLP_URL = "https://pypi.org/pypi/yt-dlp/json"
+
+
+def install_ytdlp_wheel(dest_dir: Path, on_line=print) -> bool:
+    """
+    exe 배포본용 yt-dlp 업데이트 (D038). pip 이 없으니 PyPI 의 순수 파이썬
+    wheel 을 받아 sha256 대조 뒤 dest_dir/yt_dlp 폴더를 통째로 바꾼다.
+    다시 시작해야 적용된다. 성공 시 True, 실패 시 기존 폴더를 그대로 두고 False
+    """
+    target = dest_dir / "yt_dlp"
+    old    = dest_dir / "yt_dlp.old"
+    try:
+        res = requests.get(PYPI_YTDLP_URL, timeout=10)
+        res.raise_for_status()
+        wheel = next(
+            u for u in res.json()["urls"]
+            if u["filename"].endswith("-py3-none-any.whl")
+        )
+        on_line(f"받는 중: {wheel['filename']}")
+        res = requests.get(wheel["url"], timeout=60)
+        res.raise_for_status()
+        if hashlib.sha256(res.content).hexdigest() != wheel["digests"]["sha256"]:
+            on_line("받은 파일의 sha256 이 PyPI 값과 달라 버립니다.")
+            return False
+
+        with tempfile.TemporaryDirectory(dir=dest_dir) as tmp:
+            with zipfile.ZipFile(io.BytesIO(res.content)) as zf:
+                zf.extractall(tmp, [m for m in zf.namelist() if m.startswith("yt_dlp/")])
+            on_line("yt-dlp 폴더 교체 중")
+            shutil.rmtree(old, ignore_errors=True)  # 지난번 실패의 찌꺼기
+            target.rename(old)
+            try:
+                (Path(tmp) / "yt_dlp").rename(target)
+            except Exception:
+                old.rename(target)
+                raise
+        shutil.rmtree(old, ignore_errors=True)
+        return True
+    except Exception as e:
+        on_line(f"업데이트 실패: {e}")
+        return False
 
 
 class YtdlpUpdater:
