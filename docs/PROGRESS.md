@@ -1,15 +1,15 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 1/9
-- 갱신: 2026-10-28 · 마지막 커밋: `3a6f5f8 docs: approve PRD`
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 2/9 (1·3 완료, 2 확인 대기)
+- 갱신: 2026-10-28 · 마지막 커밋: `b57ba9f chore(deps): Python 3.15 대응`
 
 ## 다음 할 일
-1. 작업 2 — 기동 실기 확인 (사용자), 이어서 작업 3 개발 도구 (`requirements-dev.txt`, `pyproject.toml`)
+1. 작업 4 — 본체 라이선스 MIT 전환 (`LICENSE`, `NOTICE`, `README.md > 라이선스·면책`). 작업 2 기동 결과 대기 중
 
 ## 미해결
 - README 낡은 절: config 위치(실제는 앱 폴더), 끊긴 `WORKLOG.md` 링크·디렉터리 구조 — 단서: Q011, Q012 → 작업 5
-- ruff 없음(venv 재생성으로 삭제) → `.py` 편집 시 검사 훅이 "검사 도구 없음". gaindb 제외 설정도 없음 — 작업 3 에서 해소
+- (다음 계획 후보) ruff 0.17 기본 규칙으로는 앱 코드 64건 (blind-except 21·import 순서 19·try-except-pass 9 등, 26건 자동 수정 가능) — 단서: D035
 - (정보) `theme`·`language` 설정 키는 기본값만 있고 쓰이지 않음 — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)

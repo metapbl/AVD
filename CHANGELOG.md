@@ -25,6 +25,8 @@
 
 ## 2026-10-28
 
+- **`chore(dev)`**: 개발 도구 추가 — `requirements-dev.txt`(pytest 9.2.0·ruff 0.17.3), `pyproject.toml`(ruff 는 gaindb 제외·규칙 E4/E7/E9/F 고정, pytest 경로). **(D035)**
+
 - **`chore(deps)`**: Python 3.15 대응 — PySide6 계열 6.12.0·numpy 2.5.4·scipy 1.18.1, README Python 하한 3.12 로 정정. **(D027, D028)**
 
 - **`docs`**: metarche 문서 체계 완성 — 새 루트 `CLAUDE.md`, `docs/PROGRESS.md`·`docs/REFERENCE.md`(함정 대장 T1~T16), `.claude/settings.json`·훅 3개(PROGRESS 주입·PRD 변경 중 차단·ruff 검사).

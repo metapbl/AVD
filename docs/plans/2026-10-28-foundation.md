@@ -21,9 +21,11 @@
 - [ ] 2. 기동 실기 확인 (F11 인수 기준 2) — 코드 변경 없음, 커밋 없음
   - 실기기: 사용자가 `venv\Scripts\python main.py` 실행 → 메인 창이 뜨고 yt-dlp 업데이트 모달이 떠서 완료 후 닫힘. 종료 뒤 내가 `venv\Scripts\python -m pip show yt-dlp` → 버전이 2026.3.17 보다 높음
   - 실패하면 첫 계획 미완 (D033): PROGRESS 미해결에 기록하고 의존성 되돌림을 사용자와 정한다
-- [ ] 3. 개발 도구 마련 — `requirements-dev.txt`, `pyproject.toml`
+- [x] 3. 개발 도구 마련 — `requirements-dev.txt`, `pyproject.toml`
   - 내용: `-r requirements.txt` + `pytest`·`ruff` 판 고정(설치 시점 최신, ruff 는 0.15.x). `pyproject.toml` 은 위 구조의 키만
   - 확인: `venv\Scripts\python -m pip install -r requirements-dev.txt` 후 `venv\Scripts\ruff.exe check .` → `All checks passed!` (gaindb 제외 반영) / `venv\Scripts\ruff.exe check --force-exclude gaindb/api.py` → 출력 없음 / `venv\Scripts\python -m pytest` → `no tests ran` (종료 코드 5)
+  - 계획 변경 (D035): ruff 0.17.3 채택, 0.17 기본 규칙 확장으로 64건이 걸려 `[tool.ruff.lint] select = ["E4","E7","E9","F"]` 고정
+  - 결과: 2026-10-28 통과 — 설치 성공 / `ruff check .` → All checks passed! / gaindb/api.py → 검사 제외 / `pytest` → 종료 코드 5 (테스트 없음) / 검사 훅이 F401 을 돌려줌(exit 2)
   - 커밋: `chore(dev): pytest·ruff 개발 의존성과 pyproject 설정 추가`
 - [ ] 4. 본체 라이선스 MIT 전환 (F8 기준 1~3) — `LICENSE`, `NOTICE`, `README.md > 라이선스·면책`
   - `LICENSE` 를 MIT 전문 + `Copyright (c) 2026 META PUBLIC` 으로. `NOTICE`·README 의 본체 라이선스 서술을 MIT 로, 무보증 문구는 "MIT 및 LGPL-2.1 양쪽의 무보증 조항"으로. 서드파티 고지의 Apache-2.0(requests 등)은 유지
