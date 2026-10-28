@@ -1,12 +1,12 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (8/11)
-- 갱신: 2026-10-29 · 마지막 커밋: `b38078e docs(progress): 세션 마무리 — 네 번째 계획 8/11` (origin/main 보다 33커밋 앞섬, push 안 함 — 작업 10 에서 확인 후)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (10/11)
+- 갱신: 2026-10-29 · v1.0.0 게시(태그 `f3290d5`, https://github.com/metapbl/AVD/releases/tag/v1.0.0). 그 뒤 기록 커밋은 push 안 함
 
 ## 다음 할 일
-1. 작업 9: `README.md > 설치` 에 배포본 안내(zip 풀기 → ffmpeg·Node.js → `AVD.exe`, `_internal\gaindb\` 교체 위치, exe 옆 `config.json`), `docs/RELEASE.md` 절차서(`utils/updater.py > APP_VERSION` → CHANGELOG → `build.ps1` → 실기 최소 항목 → 태그·push → `gh release create`). 확인: 문서 속 경로를 `Test-Path` 로 `dist\AVD` 에 대조
-2. 작업 10: 첫 릴리스 — `gh release list --repo metapbl/AVD` 로 기존 번호 확인부터 (지난번 출력 비어 있음, 인증 여부 미확인)
+1. 작업 11 인수 확인: pytest·ruff·`git diff 90d1a0e.. -- gaindb/`·소스 실행 기동 → 릴리스에서 받은 exe 로 YouTube 단일(PRD §1 판정 3항) → `/metarche discover` 로 PRD §3 F7·§5 배포 형태 현행화
+2. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
 3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
