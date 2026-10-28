@@ -56,18 +56,22 @@ def _friendly_error(msg: str) -> tuple[str, str]:
     if "sign in to confirm" in low or "not a bot" in low or "confirm you" in low:
         return (
             "YouTube 봇 감지에 걸렸습니다",
-            "짧은 시간에 많은 영상을 받으면 YouTube 가 자동 접근(봇)으로 의심해 "
-            "일시 차단합니다.\n\n대처 방법:\n"
-            "  • 몇 분~몇 시간 뒤 다시 시도하세요 (차단은 시간이 지나면 풀립니다).\n"
-            "  • 한 번에 받는 영상 수를 줄이고, 동시 다운로드 수도 낮춰 보세요.\n"
-            "  • 계속된다면 브라우저 로그인 쿠키 사용 기능이 필요합니다 "
-            "(추후 지원 예정).",
+            (
+                "짧은 시간에 많은 영상을 받으면 YouTube 가 자동 접근(봇)으로 의심해 "
+                "일시 차단합니다.\n\n대처 방법:\n"
+                "  • 몇 분~몇 시간 뒤 다시 시도하세요 (차단은 시간이 지나면 풀립니다).\n"
+                "  • 한 번에 받는 영상 수를 줄이고, 동시 다운로드 수도 낮춰 보세요.\n"
+                "  • 계속된다면 브라우저 로그인 쿠키 사용 기능이 필요합니다 "
+                "(추후 지원 예정)."
+            ),
         )
     if "private video" in low:
         return (
             "비공개 영상입니다",
-            "이 영상은 비공개로 설정되어 있어 다운로드할 수 없습니다. "
-            "접근 권한이 있는 계정의 쿠키가 필요합니다.",
+            (
+                "이 영상은 비공개로 설정되어 있어 다운로드할 수 없습니다. "
+                "접근 권한이 있는 계정의 쿠키가 필요합니다."
+            ),
         )
     if "members-only" in low or "join this channel" in low:
         return (
@@ -91,8 +95,10 @@ def _friendly_error(msg: str) -> tuple[str, str]:
         )
     return (
         "다운로드 중 오류가 발생했습니다",
-        "아래 '자세히' 를 눌러 원문 오류를 확인하세요. 일시적 문제라면 "
-        "수동 재시도 버튼으로 다시 시도할 수 있습니다.",
+        (
+            "아래 '자세히' 를 눌러 원문 오류를 확인하세요. 일시적 문제라면 "
+            "수동 재시도 버튼으로 다시 시도할 수 있습니다."
+        ),
     )
 
 
@@ -595,9 +601,11 @@ class MainWindow(QMainWindow):
         """
         self._thumb_running.discard(item_id)
 
-        if isinstance(getattr(self, "_thumb_workers", None), dict):
-            if self._thumb_workers.get(item_id) is worker:
-                self._thumb_workers.pop(item_id, None)
+        if (
+            isinstance(getattr(self, "_thumb_workers", None), dict)
+            and self._thumb_workers.get(item_id) is worker
+        ):
+            self._thumb_workers.pop(item_id, None)
         try:
             worker.deleteLater()
         except Exception:

@@ -22,7 +22,7 @@
 - [x] 2. 안전 자동 수정 7건 — `workers/download_worker.py`(`PLR1730` 진행률 0~100 고정 2건, `SIM114` ETA 분기 1건), `ui/download_item_widget.py`(`PLR1730` 2건), `utils/file_utils.py`(`PYI041`), `ui/main_window.py`(`PIE790`)
   - `--select PLR1730,SIM114,PYI041,PIE790 --fix` (unsafe 아님)
   - 확인: 기본 검사 → 해당 규칙 없음, 45→38 | pytest 통과 | `git diff` 를 눈으로 보고 `if x<0: x=0` → `max(x,0)` 같은 같은 뜻 변환만인지 확인
-- [ ] 3. 수동 정리 8건 — 동작 불변
+- [x] 3. 수동 정리 8건 — 동작 불변
   - `ui/main_window.py` `ISC004` 3건: 오류 안내 튜플 안의 이어 붙인 문자열을 괄호로 감싼다 (글자 그대로)
   - `utils/file_utils.py > open_folder` `PLW1510` 2건: `check=False` 명시 (탐색기는 성공해도 1 을 돌려줄 수 있어 지금처럼 검사 안 함)
   - `ui/download_item_widget.py` `RUF046`: 불필요한 `int()` 제거 / `utils/file_utils.py` `RUF059`: 안 쓰는 `gone` → `_gone` / `ui/main_window.py` `SIM102`: 중첩 `if` 합치기

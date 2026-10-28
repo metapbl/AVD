@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-ruff-defaults.md` active (2/5)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-ruff-defaults.md` active (3/5)
 - 갱신: 2026-10-29 · 마지막 커밋: `596dcc9 fix(playlist): PlaylistProbeWorker 결과 시그널을 probe_ready 로 개명` (origin/main 보다 12커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 계획 작업 3 — 수동 정리 8건 (`ISC004`·`PLW1510`·`RUF046`·`RUF059`·`SIM102`)
+1. 계획 작업 4 — `pyproject.toml` 규칙 고정 해제, `ignore = ["BLE001", "S110"]`
 
 ## 미해결
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토

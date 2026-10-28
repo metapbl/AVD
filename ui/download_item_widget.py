@@ -91,7 +91,7 @@ def format_bitrate(abr: float, tbr: float) -> str:
     rate = abr if abr and abr > 0 else (tbr if tbr and tbr > 0 else 0.0)
     if rate <= 0:
         return ""
-    return f"{int(round(rate))}kbps"
+    return f"{round(rate)}kbps"
 
 
 def format_codec_segment(

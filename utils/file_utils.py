@@ -147,10 +147,10 @@ def open_folder(path: str):
     import subprocess
     if os.path.isfile(path):
         # 파일이면 해당 파일을 탐색기에서 선택한 채로 열기
-        subprocess.run(["explorer", "/select,", path])
+        subprocess.run(["explorer", "/select,", path], check=False)  # explorer 는 성공해도 1 을 돌려줄 수 있다
     elif os.path.isdir(path):
         # 폴더면 그냥 열기
-        subprocess.run(["explorer", path])
+        subprocess.run(["explorer", path], check=False)
 
 
 # ── 자식 프로세스 추적 헬퍼 ─────────────────────────────────
@@ -226,7 +226,7 @@ def terminate_pids(pids: set[int], grace_seconds: float = 5.0) -> None:
             pass
 
     # 2단계: 일괄 대기
-    gone, alive = psutil.wait_procs(procs, timeout=grace_seconds)
+    _gone, alive = psutil.wait_procs(procs, timeout=grace_seconds)
 
     # 3단계: 여전히 살아 있으면 강제 종료
     for p in alive:
