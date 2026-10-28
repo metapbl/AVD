@@ -194,3 +194,13 @@ A: "둘 다 추천대로"
 Q: [관문] PRD 승인
 A: "승인"
 → PRD 상태 approved (2026-10-28), 단계 6 문서로
+
+### Q037 · 2026-10-28 · 단계 6 · [U]
+Q: 문서 분류 목록 (CLAUDE.md 1~4 / PROGRESS 5~7 / REFERENCE 8~12 / settings·훅 13~15)
+A: "이대로 작성"
+→ CLAUDE.md(52줄, draft)·PROGRESS(머리 19줄)·REFERENCE(80줄)·.claude/settings.json·hooks 3개 작성. 추가: `.gitignore` 에 `.claude/settings.local.json`
+
+### Q038 · 2026-10-28 · 단계 6 · [U]
+Q: [관문] 문서 구성 승인
+A: "승인"
+→ CLAUDE.md 첫 줄 `<!-- metarche -->`, 단계 7 계획으로

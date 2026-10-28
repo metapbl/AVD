@@ -25,6 +25,8 @@
 
 ## 2026-10-28
 
+- **`docs`**: metarche 문서 체계 완성 — 새 루트 `CLAUDE.md`, `docs/PROGRESS.md`·`docs/REFERENCE.md`(함정 대장 T1~T16), `.claude/settings.json`·훅 3개(PROGRESS 주입·PRD 변경 중 차단·ruff 검사).
+
 - **`docs`**: PRD 승인 — 질의응답 Q014~Q036·결정 D017~D034 반영 (첫 계획: venv 3.15·의존성 상향 → MIT 전환·README 정합 → pytest 특성 테스트 → 실기 검증·표본 8건).
 
 - **`docs`**: metarche 문서 체계로 이관 착수 — `CLAUDE.md`·`WORKLOG.md`·`ADR.md`·`LESSONS.md` 를 `docs/legacy/` 로 이동, `docs/PRD.md` 초안·`docs/discovery/`(QA_LOG·DECISIONS·OPEN·ADOPT_MAP) 신설.

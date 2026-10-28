@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh release *)",
+      "Bash(pyinstaller *)",
+      "Bash(*pip install *)",
+      "Bash(rm -rf venv*)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)",
+      "PowerShell(gh release *)",
+      "PowerShell(pyinstaller *)",
+      "PowerShell(*pip install *)",
+      "PowerShell(Remove-Item *venv*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "pwsh", "args": ["-NoProfile", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/progress-head.ps1"] }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "pwsh", "args": ["-NoProfile", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/gate.ps1"] }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "pwsh", "args": ["-NoProfile", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/check.ps1"] }
+        ]
+      }
+    ]
+  }
+}
