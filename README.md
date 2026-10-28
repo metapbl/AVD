@@ -107,10 +107,10 @@ AV_Downloader/
 
 이 프로젝트는 **폴더 경계 이중 라이선스**입니다.
 
-- **AVD 본체** — Apache License 2.0. 전문은 [LICENSE](LICENSE), 저작권·서드파티 고지는 [NOTICE](NOTICE) 를 참조하세요.
+- **AVD 본체** — MIT License. 전문은 [LICENSE](LICENSE), 저작권·서드파티 고지는 [NOTICE](NOTICE) 를 참조하세요.
 - **번들 서브패키지 `gaindb/`** — **GNU LGPL v2.1 or later**. mp3gain(LGPL-2.1-or-later) C 소스에서 개작·파생된 부분을 포함하므로 원본과 같은 조건으로 배포합니다. 전문은 [`gaindb/LICENSE`](gaindb/LICENSE), mp3gain 원저작자 고지와 변경 내역은 [`gaindb/NOTICE`](gaindb/NOTICE), 의존성 고지는 [`gaindb/THIRD_PARTY_LICENSES`](gaindb/THIRD_PARTY_LICENSES) 에 있습니다. 상류 저장소는 <https://github.com/metapbl/GainDB> (번들 버전 0.5.1).
 
-AVD 본체는 `gaindb.api` 의 공개 함수만 호출하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"에 해당하며, 본체의 Apache-2.0 라이선싱은 영향을 받지 않습니다. `-or-later` 조건이라 수령자가 LGPL-3.0 을 택할 수 있어 Apache-2.0 과도 호환됩니다. 이는 PySide6(LGPLv3)를 동적 링크로 사용하는 구조와 동일합니다.
+AVD 본체는 `gaindb.api` 의 공개 함수만 호출하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"에 해당하며, 본체의 MIT 라이선싱은 영향을 받지 않습니다. 이는 PySide6(LGPLv3)를 동적 링크로 사용하는 구조와 동일합니다.
 
 배포 방침 — LGPL 준수를 위해 배포물의 `gaindb/` 는 사용자가 자기 수정본으로 교체할 수 있도록 실행 파일에 묶지 않고 평문 `.py` 로 배치하며(onedir 구성), 각 GitHub Release 에 해당 태그의 소스 아카이브를 실행 파일과 함께 첨부합니다.
 
@@ -124,4 +124,4 @@ AVD 본체는 `gaindb.api` 의 공개 함수만 호출하므로 LGPL-2.1 §5 의
 
 이 도구는 개인적 학습과 백업 목적으로 사용하시기 바랍니다. 각 사이트의 이용 약관과 저작권법을 준수하는 것은 사용자의 책임입니다. 사용자는 자신의 책임 아래 합법적인 범위에서만 이 도구를 사용해야 하며, 그로 인해 발생하는 모든 결과와 책임은 사용자에게 있습니다.
 
-이 소프트웨어는 **어떠한 보증도 없이(WITHOUT ANY WARRANTY)** "있는 그대로" 제공됩니다. 상품성이나 특정 목적 적합성에 대한 묵시적 보증도 포함되지 않습니다(Apache-2.0 및 LGPL-2.1 양쪽의 무보증 조항).
+이 소프트웨어는 **어떠한 보증도 없이(WITHOUT ANY WARRANTY)** "있는 그대로" 제공됩니다. 상품성이나 특정 목적 적합성에 대한 묵시적 보증도 포함되지 않습니다(MIT 및 LGPL-2.1 양쪽의 무보증 조항).

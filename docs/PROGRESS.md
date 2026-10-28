@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 2/9 (1·3 완료, 2 확인 대기)
-- 갱신: 2026-10-28 · 마지막 커밋: `b57ba9f chore(deps): Python 3.15 대응`
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` 작업 3/9 (1·3·4 완료, 2 확인 대기)
+- 갱신: 2026-10-28 · 마지막 커밋: `1d0d6d5 chore(dev): pytest·ruff 개발 의존성`
 
 ## 다음 할 일
-1. 작업 4 — 본체 라이선스 MIT 전환 (`LICENSE`, `NOTICE`, `README.md > 라이선스·면책`). 작업 2 기동 결과 대기 중
+1. 작업 5 — README 정합 (`README.md > 머리 인용·실행·디렉터리 구조·문서`). 작업 2 기동 결과 대기 중
 
 ## 미해결
 - README 낡은 절: config 위치(실제는 앱 폴더), 끊긴 `WORKLOG.md` 링크·디렉터리 구조 — 단서: Q011, Q012 → 작업 5

@@ -27,9 +27,10 @@
   - 계획 변경 (D035): ruff 0.17.3 채택, 0.17 기본 규칙 확장으로 64건이 걸려 `[tool.ruff.lint] select = ["E4","E7","E9","F"]` 고정
   - 결과: 2026-10-28 통과 — 설치 성공 / `ruff check .` → All checks passed! / gaindb/api.py → 검사 제외 / `pytest` → 종료 코드 5 (테스트 없음) / 검사 훅이 F401 을 돌려줌(exit 2)
   - 커밋: `chore(dev): pytest·ruff 개발 의존성과 pyproject 설정 추가`
-- [ ] 4. 본체 라이선스 MIT 전환 (F8 기준 1~3) — `LICENSE`, `NOTICE`, `README.md > 라이선스·면책`
+- [x] 4. 본체 라이선스 MIT 전환 (F8 기준 1~3) — `LICENSE`, `NOTICE`, `README.md > 라이선스·면책`
   - `LICENSE` 를 MIT 전문 + `Copyright (c) 2026 META PUBLIC` 으로. `NOTICE`·README 의 본체 라이선스 서술을 MIT 로, 무보증 문구는 "MIT 및 LGPL-2.1 양쪽의 무보증 조항"으로. 서드파티 고지의 Apache-2.0(requests 등)은 유지
   - 확인: `Select-String -Path LICENSE -Pattern "MIT License","META PUBLIC"` → 2건 / `Select-String -Path NOTICE,README.md -Pattern "Apache"` → 서드파티 고지·변경 이력 문장 외 0건 (결과를 줄 단위로 보인다) / `git diff --stat -- gaindb/` → 출력 없음
+  - 결과: 2026-10-28 통과 — LICENSE 1행 `MIT License`·3행 `Copyright (c) 2026 META PUBLIC` / LICENSE·NOTICE·README 의 "Apache" 는 NOTICE 47행 서드파티(requests 등) 고지 1건뿐 / `git diff --stat -- gaindb/` 출력 없음
   - 커밋: `chore: 본체 라이선스 Apache-2.0 → MIT 전환 (D017)`
 - [ ] 5. README 정합 (F8 기준 4) — `README.md > 머리 인용·실행·디렉터리 구조·문서`
   - config 위치를 "앱 폴더의 `config.json`" 으로. `WORKLOG.md` 언급·링크를 지우고 문서 절을 `CLAUDE.md`·`docs/PRD.md`·`docs/PROGRESS.md`·`docs/REFERENCE.md`·`CHANGELOG.md` 안내로 바꾼다. 디렉터리 구조 블록을 실제 구조로(`controllers/playlist_flow.py`, `gaindb/`, `docs/` 등). ADR-003 링크는 `docs/legacy/ADR.md` 로
