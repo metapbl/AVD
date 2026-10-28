@@ -53,10 +53,11 @@
   - 실기기 (업데이트 리허설): `_internal\yt_dlp\version.py` 의 `__version__` 을 옛 값으로 바꾸고 기동 → 업데이트 질문 → 예 → 완료 문구 → 다시 시작 → 질문 없음, 버전이 최신
   - 판정: Claude 가 할 수 있는 것은 D036 처럼 대리 확인하고, 창 표시·탐색기는 사용자 눈 확인
   - 결과 (2026-10-29, `a4ce4b0` 빌드를 scratchpad 에 풀어서): 사용자 — 업데이트 질문·예·완료, AVD 창 중복 없음, 다시 켜면 질문 없음, mp4(VP9+Opus)·mp3(192k, "음량 −3.0dB") 완료. Claude 대리 — `yt_dlp\version.py` 2026.03.17→2026.10.26·`yt_dlp.old` 없음(실행 중 폴더 이름 바꾸기 성공), `config.json` exe 옆, `REPLACED_MARKER.txt` 생김, 두 파일 ffmpeg 전체 디코딩 오류 0, mp3 표지(mjpeg)·제목·아티스트·NFC 파일명 정상, MP3Gain 태그 `status ok`·volume 88.3(목표 89, −3.0dB 적용 뒤 값과 맞음). 업데이트 뒤 자동 재시작 요청 → Q049
-- [ ] 8. 업데이트 뒤 자동 재시작 (D041) — `utils/updater.py > restart_command`, `ui/main_window.py > _run_ytdlp_update`
+- [x] 8. 업데이트 뒤 자동 재시작 (D041) — `utils/updater.py > restart_command`, `ui/main_window.py > _run_ytdlp_update`
   - 실패하는 테스트 먼저: `restart_command()` — frozen 이면 `[AVD.exe, *argv[1:]]`, 소스면 `[python, *argv]`
   - 성공한 업데이트의 "닫기" 뒤: 끝나지 않은 항목이 없으면 새 프로세스를 띄우고 `QApplication.quit()`, 있으면 안내만. 완료 문구를 "닫기를 누르면 앱을 다시 시작합니다" 로
   - 확인: pytest 통과 | 실기기 (scratchpad 의 새 빌드, `version.py` 를 옛 값으로): 업데이트 → 닫기 → 앱이 꺼졌다 다시 뜨고 질문 없음, AVD 프로세스 1개
+  - 결과 (2026-10-29, `cb15588`): 테스트 2건 먼저 실패 확인 → 구현 뒤 pytest 94 통과, ruff 통과. 사용자 실기기 — 예 → 완료 문구 → 닫기 → 앱이 꺼졌다 다시 뜸 → 질문 없음. Claude — 시작 전 AVD 프로세스 1개, 뒤 `version.py` 2026.10.26·`yt_dlp.old` 없음. 재시작 직후 프로세스 수는 사용자가 앱을 닫은 뒤라 직접 세지 못함 (눈 확인으로 갈음). "끝나지 않은 항목이 있으면 안내만" 분기는 실기기로 안 봄
 - [ ] 9. 배포본 안내와 릴리스 절차서 — `README.md > 설치`, `docs/RELEASE.md`
   - README: zip 풀기 → ffmpeg·Node.js 설치 → `AVD.exe`, `gaindb` 교체 위치, 설정 파일 위치
   - RELEASE.md: 버전 올리기 → CHANGELOG → `build.ps1` → 실기기 최소 항목(작업 7 의 첫 줄) → 태그·push → `gh release create` 에 zip 2개
