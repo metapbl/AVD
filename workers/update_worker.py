@@ -34,7 +34,7 @@ class UpdateWorker(QThread):
             # exe 의 sys.executable 은 AVD.exe — -m pip 이 앱을 다시 띄운다 (R§4 T17, D038)
             dest = Path(yt_dlp.__file__).parent.parent
             if install_ytdlp_wheel(dest, self.progress_text.emit):
-                self.done.emit(True, "yt-dlp를 새 버전으로 바꿨습니다.\n앱을 다시 시작하면 적용됩니다.")
+                self.done.emit(True, "yt-dlp를 새 버전으로 바꿨습니다.\n닫기를 누르면 앱을 다시 시작합니다.")
             else:
                 self.done.emit(False, "업데이트에 실패했습니다. 위 기록의 마지막 줄을 확인해 주세요.")
             return
@@ -65,7 +65,7 @@ class UpdateWorker(QThread):
 
             code = proc.wait()
             if code == 0:
-                self.done.emit(True, "yt-dlp가 최신 버전으로 업데이트됐습니다.")
+                self.done.emit(True, "yt-dlp가 최신 버전으로 업데이트됐습니다.\n닫기를 누르면 앱을 다시 시작합니다.")
             else:
                 self.done.emit(
                     False,

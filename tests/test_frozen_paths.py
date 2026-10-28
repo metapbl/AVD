@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from utils import config_manager
+from utils import config_manager, updater
 
 REPO_ROOT = Path(config_manager.__file__).parent.parent
 
@@ -25,3 +25,17 @@ def test_config_path_frozen_is_next_to_exe(monkeypatch, tmp_path, reload_config)
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(tmp_path / "AVD.exe"))
     assert reload_config().CONFIG_PATH == tmp_path / "config.json"
+
+
+# 업데이트 뒤 재시작 명령 (D041) — exe 는 argv[0] 이 exe 자신이라 빼고, 소스는 main.py 를 넘긴다
+def test_restart_command_source_run(monkeypatch):
+    monkeypatch.setattr(sys, "executable", r"C:\venv\python.exe")
+    monkeypatch.setattr(sys, "argv", ["main.py"])
+    assert updater.restart_command() == [r"C:\venv\python.exe", "main.py"]
+
+
+def test_restart_command_frozen(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", r"C:\AVD\AVD.exe")
+    monkeypatch.setattr(sys, "argv", [r"C:\AVD\AVD.exe"])
+    assert updater.restart_command() == [r"C:\AVD\AVD.exe"]

@@ -53,21 +53,25 @@
   - 실기기 (업데이트 리허설): `_internal\yt_dlp\version.py` 의 `__version__` 을 옛 값으로 바꾸고 기동 → 업데이트 질문 → 예 → 완료 문구 → 다시 시작 → 질문 없음, 버전이 최신
   - 판정: Claude 가 할 수 있는 것은 D036 처럼 대리 확인하고, 창 표시·탐색기는 사용자 눈 확인
   - 결과 (2026-10-29, `a4ce4b0` 빌드를 scratchpad 에 풀어서): 사용자 — 업데이트 질문·예·완료, AVD 창 중복 없음, 다시 켜면 질문 없음, mp4(VP9+Opus)·mp3(192k, "음량 −3.0dB") 완료. Claude 대리 — `yt_dlp\version.py` 2026.03.17→2026.10.26·`yt_dlp.old` 없음(실행 중 폴더 이름 바꾸기 성공), `config.json` exe 옆, `REPLACED_MARKER.txt` 생김, 두 파일 ffmpeg 전체 디코딩 오류 0, mp3 표지(mjpeg)·제목·아티스트·NFC 파일명 정상, MP3Gain 태그 `status ok`·volume 88.3(목표 89, −3.0dB 적용 뒤 값과 맞음). 업데이트 뒤 자동 재시작 요청 → Q049
-- [ ] 8. 배포본 안내와 릴리스 절차서 — `README.md > 설치`, `docs/RELEASE.md`
+- [ ] 8. 업데이트 뒤 자동 재시작 (D041) — `utils/updater.py > restart_command`, `ui/main_window.py > _run_ytdlp_update`
+  - 실패하는 테스트 먼저: `restart_command()` — frozen 이면 `[AVD.exe, *argv[1:]]`, 소스면 `[python, *argv]`
+  - 성공한 업데이트의 "닫기" 뒤: 끝나지 않은 항목이 없으면 새 프로세스를 띄우고 `QApplication.quit()`, 있으면 안내만. 완료 문구를 "닫기를 누르면 앱을 다시 시작합니다" 로
+  - 확인: pytest 통과 | 실기기 (scratchpad 의 새 빌드, `version.py` 를 옛 값으로): 업데이트 → 닫기 → 앱이 꺼졌다 다시 뜨고 질문 없음, AVD 프로세스 1개
+- [ ] 9. 배포본 안내와 릴리스 절차서 — `README.md > 설치`, `docs/RELEASE.md`
   - README: zip 풀기 → ffmpeg·Node.js 설치 → `AVD.exe`, `gaindb` 교체 위치, 설정 파일 위치
   - RELEASE.md: 버전 올리기 → CHANGELOG → `build.ps1` → 실기기 최소 항목(작업 7 의 첫 줄) → 태그·push → `gh release create` 에 zip 2개
   - 확인: 두 문서에 적힌 경로를 `Test-Path` 로 작업 6 산출물에 대조 → 전부 True
-- [ ] 9. 첫 릴리스 게시 (D040) — `utils/updater.py > APP_VERSION`, `CHANGELOG.md`
+- [ ] 10. 첫 릴리스 게시 (D040) — `utils/updater.py > APP_VERSION`, `CHANGELOG.md`
   - `gh release list --repo metapbl/AVD` 와 원격 태그로 기존 번호 확인 → 버전 제안 → 사용자 확인 → `APP_VERSION` 갱신·커밋
   - RELEASE.md 절차대로: 릴리스 빌드(확인) → 태그 → `git push` 와 태그 push(확인) → `gh release create`(확인), 노트에 번들 yt-dlp 버전·ffmpeg 별도 설치 안내
   - 확인: `gh release view v{버전} --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe zip 을 새 폴더에 풀어 기동 → 메인 창
-- [ ] 10. 인수 확인
+- [ ] 11. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | `ruff check` 통과 | `git diff 90d1a0e.. -- gaindb/` 비어 있음 | 소스 실행 `venv\Scripts\python main.py` 기동 정상
   - 실기기: 성공 기준 장면(YouTube 단일)을 릴리스에서 받은 exe 로 → PRD §1 판정 3항
 
 ## 자가 검토
-- PRD 기능 누락: 없음 — §2.2 항목의 onedir 빌드(1·6), `gaindb/` 평문 배치(1·7), THIRD_PARTY_LICENSES(5), 릴리스 절차(8·9). F7 은 exe 에서도 동작하도록(3·4)
-- 테스트로 옮기지 않은 인수 기준: exe 기동·교체 가능성·업데이트 리허설(7)과 게시(9)는 동결 빌드·GitHub 가 있어야 해서 자동 테스트가 안 된다 → 실기기 확인으로 대체. 경로 판별·wheel 교체·워커 분기·라이선스 목록은 테스트(2~5)
-- 순서 의존: 2~5 는 1 뒤(빌드가 되는지 먼저 확인), 6 은 5 뒤, 7 은 2~6 뒤, 8 은 6 뒤, 9 는 7·8 뒤, 10 은 마지막
+- PRD 기능 누락: 없음 — §2.2 항목의 onedir 빌드(1·6), `gaindb/` 평문 배치(1·7), THIRD_PARTY_LICENSES(5), 릴리스 절차(9·10). F7 은 exe 에서도 동작하도록(3·4), 업데이트 뒤 재시작(8)
+- 테스트로 옮기지 않은 인수 기준: exe 기동·교체 가능성·업데이트 리허설(7·8)과 게시(10)는 동결 빌드·GitHub 가 있어야 해서 자동 테스트가 안 된다 → 실기기 확인으로 대체. 경로 판별·wheel 교체·워커 분기·라이선스 목록은 테스트(2~5)
+- 순서 의존: 2~5 는 1 뒤(빌드가 되는지 먼저 확인), 6 은 5 뒤, 7 은 2~6 뒤, 8 은 4·7 뒤, 9 는 6·8 뒤, 10 은 7~9 뒤, 11 은 마지막
 - 알림 (고치지 않음): `utils/updater.py > YtdlpUpdater.update`(pip 직접 호출)와 `AppUpdater`(onefile exe 교체 가정)는 호출처가 없다. onedir 에선 `AppUpdater` 가 맞지 않으므로 앱 자체 업데이트를 쓰게 될 때 다시 본다
-- PRD 본문: §5 "배포 형태 … (미착수)" 표기는 완료 뒤 갱신이 필요하다 — PRD 변경 절차(/metarche discover)로 처리할지 작업 10 에서 묻는다
+- PRD 본문: §5 "배포 형태 … (미착수)" 표기는 완료 뒤 갱신이 필요하다 — PRD 변경 절차(/metarche discover)로 처리할지 작업 11 에서 묻는다

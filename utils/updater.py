@@ -29,6 +29,13 @@ APP_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 PYPI_YTDLP_URL = "https://pypi.org/pypi/yt-dlp/json"
 
 
+def restart_command() -> list[str]:
+    """지금 앱을 같은 방식으로 다시 띄우는 명령 (D041). exe 는 argv[0] 이 exe 자신이라 뺀다"""
+    if getattr(sys, "frozen", False):
+        return [sys.executable, *sys.argv[1:]]
+    return [sys.executable, *sys.argv]
+
+
 def install_ytdlp_wheel(dest_dir: Path, on_line=print) -> bool:
     """
     exe 배포본용 yt-dlp 업데이트 (D038). pip 이 없으니 PyPI 의 순수 파이썬

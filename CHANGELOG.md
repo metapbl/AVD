@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`feat(updater)`**: yt-dlp 업데이트가 성공하면 완료 창의 "닫기" 를 누를 때 앱이 스스로 다시 시작해 새 버전을 쓴다 (exe·소스 실행 모두). 끝나지 않은 다운로드가 있으면 재시작 대신 안내. **(D041)**
 - **`build`**: 빌드 스크립트 `build.ps1` 추가 — 커밋 안 된 변경이 있으면 멈추고, PyInstaller → `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`README.md` 동봉 → `release\` 에 exe zip 과 같은 커밋의 소스 zip(`git archive`). **(D011, D040)**
 - **`docs(license)`**: 루트 `THIRD_PARTY_LICENSES` 신설 — exe 배포본에 실리는 Python·PyInstaller 부트로더·PySide6/Qt(LGPL-3.0 + GPL-3.0 전문)·yt-dlp·requests·numpy·scipy 등 13절의 라이선스 전문. `NOTICE` 에 이 파일과 배포본 안 `gaindb` 위치(`_internal\gaindb\`) 안내. **(D011)**
 - **`fix(updater)`**: exe 배포본에서 yt-dlp 업데이트가 pip 대신 wheel 교체로 동작 — 전에는 `sys.executable -m pip` 이 AVD.exe 를 하나 더 띄웠다. 완료 뒤 "다시 시작하면 적용" 안내. 소스 실행은 그대로 pip. **(D038)**

@@ -1,10 +1,12 @@
 # ui/main_window.py
 # 메인 윈도우 - 앱의 핵심 화면
 
+import subprocess
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -28,7 +30,7 @@ from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
 from utils.config_manager import ConfigManager
 from utils.file_utils import open_folder
-from utils.updater import YtdlpUpdater
+from utils.updater import YtdlpUpdater, restart_command
 from workers.info_worker import InfoWorker
 from workers.thumbnail_worker import ThumbnailWorker
 from workers.update_worker import UpdateWorker
@@ -995,7 +997,10 @@ class MainWindow(QMainWindow):
 
         worker.progress_text.connect(dialog.append_line)
 
+        result = {"success": False}
+
         def _on_done(success: bool, message: str):
+            result["success"] = success
             dialog.on_done(success, message)
             # 워커 정리(다이얼로그는 사용자가 '닫기' 누를 때까지 유지).
             worker.quit()
@@ -1010,6 +1015,23 @@ class MainWindow(QMainWindow):
         # 다이얼로그 종료 후 참조 해제.
         self._update_worker = None
         self._update_dialog = None
+
+        if result["success"]:
+            self._restart_after_update()
+
+    def _restart_after_update(self):
+        """새 yt-dlp 를 쓰도록 앱을 다시 띄운다 (D041). 끝나지 않은 항목이 있으면 안내만."""
+        finished = (DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELLED)
+        if any(item.status not in finished for item in self.items.values()):
+            QMessageBox.information(
+                self,
+                "yt-dlp 업데이트",
+                "진행 중인 다운로드가 있어 지금은 다시 시작하지 않습니다.\n"
+                "다운로드가 끝난 뒤 앱을 다시 시작하면 새 버전이 적용됩니다.",
+            )
+            return
+        subprocess.Popen(restart_command())
+        QApplication.quit()
 
     # ── 스타일 ───────────────────────────────────────
 
