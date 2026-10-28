@@ -65,6 +65,7 @@
 | T15 | HLS 에서 ETA 안 나옴 | `total_bytes`·`total_bytes_estimate` 모두 없음 | placeholder 감지 + 진행률×경과시간 추정 `~M:SS` | LESSONS |
 | T16 | 체크박스 ✓ 가 안 그려짐 | `QCheckBox::indicator` 직접 스타일링 | `setStyle("Fusion")` 먼저, indicator 스타일링 피함 | 2026-05-29 |
 | T17 | exe 에서 yt-dlp 업데이트하면 AVD.exe 가 하나 더 뜸 | 동결 빌드의 `sys.executable` 은 AVD.exe → `[sys.executable, "-m", "pip", …]` 가 앱 실행 | `sys.frozen` 이면 pip 대신 `install_ytdlp_wheel` (D038). `sys.executable` 로 하위 파이썬을 띄우는 코드는 frozen 분기 필수 | 2026-10-29 |
+| T18 | 안내한 exe 실행 명령이 경로 문자열만 출력하고 앱이 안 뜸 | PowerShell 은 따옴표로 감싼 경로를 문자열 식으로 본다 | 사용자 안내는 `& "경로\AVD.exe"` (호출 연산자) 또는 `Start-Process` | 2026-10-29 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

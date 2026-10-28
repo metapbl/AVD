@@ -69,10 +69,11 @@
 - [ ] 11. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | `ruff check` 통과 | `git diff 90d1a0e.. -- gaindb/` 비어 있음 | 소스 실행 `venv\Scripts\python main.py` 기동 정상
   - 실기기: 성공 기준 장면(YouTube 단일)을 릴리스에서 받은 exe 로 → PRD §1 판정 3항
+  - PRD 갱신 (2026-10-29 사용자 승인): 인수 확인 뒤 `/metarche discover` 로 §3 F7(exe 는 wheel 교체 D038, 업데이트 뒤 재시작 D041)·§5 배포 형태 "(미착수)" 를 현행화
 
 ## 자가 검토
 - PRD 기능 누락: 없음 — §2.2 항목의 onedir 빌드(1·6), `gaindb/` 평문 배치(1·7), THIRD_PARTY_LICENSES(5), 릴리스 절차(9·10). F7 은 exe 에서도 동작하도록(3·4), 업데이트 뒤 재시작(8)
 - 테스트로 옮기지 않은 인수 기준: exe 기동·교체 가능성·업데이트 리허설(7·8)과 게시(10)는 동결 빌드·GitHub 가 있어야 해서 자동 테스트가 안 된다 → 실기기 확인으로 대체. 경로 판별·wheel 교체·워커 분기·라이선스 목록은 테스트(2~5)
 - 순서 의존: 2~5 는 1 뒤(빌드가 되는지 먼저 확인), 6 은 5 뒤, 7 은 2~6 뒤, 8 은 4·7 뒤, 9 는 6·8 뒤, 10 은 7~9 뒤, 11 은 마지막
 - 알림 (고치지 않음): `utils/updater.py > YtdlpUpdater.update`(pip 직접 호출)와 `AppUpdater`(onefile exe 교체 가정)는 호출처가 없다. onedir 에선 `AppUpdater` 가 맞지 않으므로 앱 자체 업데이트를 쓰게 될 때 다시 본다
-- PRD 본문: §5 "배포 형태 … (미착수)" 표기는 완료 뒤 갱신이 필요하다 — PRD 변경 절차(/metarche discover)로 처리할지 작업 11 에서 묻는다
+- PRD 본문: §5 "배포 형태 … (미착수)" 표기는 완료 뒤 갱신이 필요하다 — PRD 변경 절차(/metarche discover)로 처리할지 작업 11 에서 묻는다 → 처리하기로 승인됨, F7 도 함께 (작업 11)
