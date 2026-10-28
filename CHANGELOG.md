@@ -23,6 +23,12 @@
 
 ---
 
+## 2026-10-28
+
+- **`docs`**: metarche 문서 체계로 이관 착수 — `CLAUDE.md`·`WORKLOG.md`·`ADR.md`·`LESSONS.md` 를 `docs/legacy/` 로 이동, `docs/PRD.md` 초안·`docs/discovery/`(QA_LOG·DECISIONS·OPEN·ADOPT_MAP) 신설.
+    - 기존 ADR·로드맵·교훈은 DECISIONS D001~D020 과 PRD 초안으로 역추출. 본체 라이선스를 MIT 로 되돌리기로 결정(D017, `gaindb/` 는 LGPL 유지) — 파일 반영은 PRD 승인 후 별도 커밋.
+    - 새 루트 `CLAUDE.md` 는 문서 단계에서 작성 예정이라, 그때까지 README·본 파일의 `CLAUDE.md`/`WORKLOG.md` 링크는 끊겨 있음.
+
 ## 2026-08-08
 
 - **`chore(gaindb)`**: 벤더링본을 GaindB 0.5.1 로 갱신 — 서브패키지 라이선스 Apache-2.0 → LGPL-2.1-or-later 재정정. **(ADR-010)** **(2026-07-24 `b582bc9` 라이선스 판단 번복)**
