@@ -1,14 +1,13 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-playlist-probe-signal.md` active (1/2)
-- 갱신: 2026-10-28 · 마지막 커밋: `2d292bb docs: 첫 계획 인수 확인 결과 기록` (origin/main 보다 11커밋 앞섬, push 안 함)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-playlist-probe-signal.md` done (2/2) — 다음 계획 없음
+- 갱신: 2026-10-29 · 마지막 커밋: `596dcc9 fix(playlist): PlaylistProbeWorker 결과 시그널을 probe_ready 로 개명` (origin/main 보다 12커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 계획 작업 2 인수 확인 — 실기기: 플레이리스트 URL 다이얼로그 확인·취소, 깨진 URL 오류 메시지 (크래시·`QThread: Destroyed` 없음)
+1. 다음 계획 정하기 (/metarche plan) — 추천 첫 후보: ruff 기본 규칙 64건 정리 (단서: D035)
 
 ## 미해결
-- (다음 계획 후보) `workers/playlist_probe_worker.py > PlaylistProbeWorker.finished = Signal(object)` 가 QThread 내장 `finished` 를 가리고 `controllers/playlist_flow.py` 가 `deleteLater` 를 거기 연결 — T2 규칙 위반. 하네스에선 크래시 없음
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (다음 계획 후보) ruff 0.17 기본 규칙으로는 앱 코드 64건 (blind-except 21·import 순서 19·try-except-pass 9 등, 26건 자동 수정 가능) — 단서: D035
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기

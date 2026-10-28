@@ -1,5 +1,5 @@
 # 두 번째 계획 — PlaylistProbeWorker 결과 시그널 개명 (T2 위반 해소)
-상태: active | 시작: 2026-10-28 | 근거: PRD F2 (D007, D013), R§4 T2
+상태: done (2026-10-29) | 시작: 2026-10-28 | 근거: PRD F2 (D007, D013), R§4 T2
 
 목표: `PlaylistProbeWorker` 가 QThread 내장 `finished` 를 가리지 않게 하고, 워커 정리(`deleteLater`)를 스레드가 실제로 끝난 뒤인 내장 `finished` 에만 연결한다. 같은 위반이 다시 들어오면 테스트가 잡는다.
 구조:
@@ -17,9 +17,10 @@
   - 먼저 실패하는 테스트: `tests/test_worker_signals.py` — `workers/` 의 모든 QThread 서브클래스가 클래스 본문에 `finished`·`started` 를 정의하지 않음, `PlaylistProbeWorker` 에 `probe_ready` 가 있음
   - 연결 결과: `probe_ready`→`_on_probe_done`, `error`→`_on_probe_error` (둘 다 Queued), 내장 `finished`→`deleteLater` 하나. 이벤트 루프가 없는 워커라 효과 없는 `quit` 연결과, 스레드 종료 전에 걸리던 `error`→`deleteLater` 는 뺀다
   - 확인: 수정 전 `venv\Scripts\python -m pytest tests/test_worker_signals.py` → 실패 1건 이상, 수정 후 → 통과 | `venv\Scripts\ruff.exe check workers controllers tests` → 새 위반 없음
-- [ ] 2. 인수 확인 — F2 흐름이 그대로 동작하는지
+- [x] 2. 인수 확인 — F2 흐름이 그대로 동작하는지
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과
   - 실기기: (a) YouTube 플레이리스트 URL 추가 → 선택 다이얼로그가 뜨고, 확인·취소 모두 크래시나 콘솔의 `QThread: Destroyed while thread is still running` 없음 (b) 플레이리스트가 아닌 깨진 URL → 상태줄에 "플레이리스트를 가져오지 못했습니다" 류 메시지, 크래시 없음
+  - 결과 (2026-10-29): pytest 83 통과(작업 1). 사용자 실기기 (a) 확인·취소 (b) 깨진 URL 모두 크래시 없음, 콘솔에 `QThread: Destroyed` 없음. 콘솔의 `ERROR: [youtube:tab] INVALID: ... HTTP Error 400` 은 깨진 URL 에 대한 yt-dlp 출력(기대 동작)
 
 ## 자가 검토
 - PRD 기능 누락: 없음 (F2 동작 보존만, 새 기능 없음)

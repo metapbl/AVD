@@ -23,6 +23,10 @@
 
 ---
 
+## 2026-10-29
+
+- **`docs`**: 두 번째 계획(PlaylistProbeWorker 시그널 개명) 인수 확인 — 플레이리스트 확인·취소·깨진 URL 실기기 통과, `QThread: Destroyed` 없음.
+
 ## 2026-10-28
 
 - **`fix(playlist)`**: `PlaylistProbeWorker` 결과 시그널 `finished`→`probe_ready` — QThread 내장 `finished` 를 가려 스레드 종료 전 `deleteLater` 가 걸릴 수 있던 문제. 정리는 내장 `finished` 에만 연결, 워커가 내장 시그널을 가리지 않음을 테스트로 고정. **(R§4 T2)**
