@@ -37,11 +37,12 @@
   - 실패하는 테스트 먼저: frozen + 작업 3 함수를 가짜로 → `run()` 직접 호출 시 `done(True, …)`, subprocess 미호출
   - 확인: pytest 통과 | 시험 빌드 후 실기기 확인은 작업 7
   - 결과 (2026-10-29): `tests/test_update_worker.py` 2건 먼저 실패 확인 → 구현 뒤 pytest 90 통과, ruff 통과. REFERENCE R§4 T17 추가. 시험 빌드·기동 정상 (업데이트 실제 동작은 작업 7)
-- [ ] 5. 루트 THIRD_PARTY_LICENSES 와 NOTICE — `THIRD_PARTY_LICENSES`, `NOTICE`
+- [x] 5. 루트 THIRD_PARTY_LICENSES 와 NOTICE — `THIRD_PARTY_LICENSES`, `NOTICE`
   - `requirements.txt` 의 각 패키지 + Python(PSF) + PyInstaller 부트로더(GPL 예외)의 라이선스 전문. 원문은 venv 의 `*.dist-info` 라이선스 파일에서 옮긴다 (Qt/PySide6 는 LGPLv3 전문, 참조하는 GPLv3 전문 포함)
   - NOTICE 에 THIRD_PARTY_LICENSES 위치와 배포본 안의 `gaindb` 위치(`_internal\gaindb\`) 한 줄
   - 실패하는 테스트 먼저: `requirements.txt` 의 모든 패키지 이름이 THIRD_PARTY_LICENSES 의 절 제목에 있다
   - 확인: `venv\Scripts\python -m pytest tests/test_third_party_licenses.py` 통과
+  - 결과 (2026-10-29): 2건 먼저 실패 확인 → 생성 뒤 pytest 92 통과, ruff 통과. 13절 220 KB — requirements 11개(PySide6 계열 4개는 한 절) + Python(기본 설치 `LICENSE.txt`) + PyInstaller(`COPYING.txt`) + setuptools(빌드 때 런타임 훅이 실음). PySide6 wheel 에 LGPL 전문이 없어 사용자 GaindB 리포의 `licenses/qt/LGPL-3.0.txt`·`GPL-3.0.txt` 를 옮김. `dist` 에 메타데이터만 실린 pluggy 는 코드가 없어 제외. 생성 스크립트는 리포에 넣지 않음 (1회용)
 - [ ] 6. 빌드 스크립트 — `build.ps1`, `.gitignore`
   - pyinstaller → `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`README.md` 를 `dist\AVD\` 에 복사 → `release\AVD-v{APP_VERSION}-win64.zip` 와 `git archive` 로 `release\AVD-v{APP_VERSION}-src.zip`
   - 확인: `.\build.ps1` → zip 2개 생성 | exe zip 목록에 `AVD.exe`·`LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`_internal\gaindb\api.py`·`_internal\gaindb\LICENSE` 존재 | src zip 에 `gaindb\`·`main.py` 존재

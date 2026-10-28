@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (4/10)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (5/10)
 - 갱신: 2026-10-29 · 마지막 커밋: `1492bc8 docs: 세 번째 계획 인수 확인 결과 기록` (origin/main 보다 19커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 작업 5: 루트 `THIRD_PARTY_LICENSES`(requirements 각 패키지·Python·PyInstaller 전문)와 NOTICE, 패키지 목록 테스트 먼저
+1. 작업 6: 빌드 스크립트 `build.ps1` — pyinstaller → 라이선스·README 복사 → `release\` 에 exe zip·`git archive` 소스 zip, `.gitignore` 에 `release/`
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결

@@ -11,7 +11,9 @@ The bundled subpackage gaindb/ is NOT covered by the MIT License. It
 carries its own license (GNU LGPL v2.1 or later) as described below; the
 license boundary follows the folder boundary.
 
-This product includes the following third-party components:
+This product includes the following third-party components. The full
+license texts of everything bundled in the Windows executable
+distribution are in THIRD_PARTY_LICENSES.
 
 - gaindb/ (bundled subpackage) -- LGPL-2.1-or-later
   A Python re-implementation of mp3gain's ReplayGain track-mode loudness
@@ -28,7 +30,9 @@ This product includes the following third-party components:
   record of changes, and gaindb/THIRD_PARTY_LICENSES for dependency
   notices. The complete corresponding source of the bundled gaindb/ is
   available at https://github.com/metapbl/GainDB and is also attached to
-  each AVD release on GitHub.
+  each AVD release on GitHub. In the executable distribution, gaindb/ is
+  shipped as plain .py files under _internal\gaindb\ so that users may
+  replace it with a modified version.
 
 - PySide6 (Qt for Python)
   Licensed under the GNU LGPL v3. It is linked dynamically so that users
@@ -46,6 +50,10 @@ This product includes the following third-party components:
 - requests, certifi, charset-normalizer, idna, urllib3, psutil
   Their respective permissive licenses (Apache-2.0 / MPL-2.0 / BSD /
   MIT) apply. Used for HTTP access and process/resource utilities.
+
+- Python (PSF-2.0), PyInstaller bootloader (GPL-2.0-or-later with the
+  Bootloader Exception), setuptools (MIT)
+  Bundled in the Windows executable distribution only.
 
 - ffmpeg
   NOT bundled. It is invoked as an external process located on the user's
