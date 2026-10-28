@@ -1,15 +1,14 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-playlist-probe-signal.md` done (2/2) — 다음 계획 없음
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-ruff-defaults.md` active (0/5)
 - 갱신: 2026-10-29 · 마지막 커밋: `596dcc9 fix(playlist): PlaylistProbeWorker 결과 시그널을 probe_ready 로 개명` (origin/main 보다 12커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 다음 계획 정하기 (/metarche plan) — 추천 첫 후보: ruff 기본 규칙 64건 정리 (단서: D035)
+1. 계획 작업 1 — import 순서 자동 정리 (`I001` 19건)
 
 ## 미해결
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
-- (다음 계획 후보) ruff 0.17 기본 규칙으로는 앱 코드 64건 (blind-except 21·import 순서 19·try-except-pass 9 등, 26건 자동 수정 가능) — 단서: D035
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
 - (정보) `theme`·`language` 설정 키는 기본값만 있고 쓰이지 않음 — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
