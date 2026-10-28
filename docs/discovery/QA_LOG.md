@@ -229,3 +229,23 @@ A: "1안 (자동+1건 눈확인)"
 Q: ruff 기본 규칙 채택 시 BLE001(21)·S110(9) 30건 — 1 규칙에서 제외(추천) / 2 자리마다 noqa+이유 / 3 예외를 좁혀 수정(별도 계획)
 A: "승인" (계획 `docs/plans/2026-10-29-ruff-defaults.md` 관문에서 1안 포함 승인)
 → D037 확정
+
+### Q044 · 2026-10-29 · 계획 · [U]
+Q: 다음 계획 주제 — 1 LGPL 배포 산출물(D022 순서, 추천) / 2 Vimeo curl_cffi(PRD 밖·새 의존성, discover 필요) / 3 병합 진행률·확장자 정직화
+A: "LGPL 배포 산출물 (Recommended)"
+→ 네 번째 계획 `docs/plans/2026-10-29-lgpl-release.md`
+
+### Q045 · 2026-10-29 · 계획 · [U]
+Q: 동결(exe) 빌드의 yt-dlp 자동 업데이트(F7) — 지금은 `sys.executable -m pip` 이라 exe 에선 AVD.exe 를 다시 띄운다. 1 yt_dlp 를 PYZ 밖 평문 폴더에 두고 PyPI 순수 wheel 로 교체(추천) / 2 exe 에선 끄고 새 릴리스 안내만
+A: "평문 폴더+wheel 교체 (Recommended)"
+→ D038 확정
+
+### Q046 · 2026-10-29 · 계획 · [U]
+Q: exe 배포본의 config.json 위치 — 1 exe 옆, 포터블(추천) / 2 %APPDATA%\AVD
+A: "exe 옆 (포터블) (Recommended)"
+→ D039 확정
+
+### Q047 · 2026-10-29 · 계획 · [U]
+Q: 이번 계획의 끝 — 1 첫 릴리스 게시까지(태그·push·gh release, 각 명령 실행 전 확인, 추천) / 2 로컬 빌드·절차서까지
+A: "첫 릴리스 게시까지 (Recommended)"
+→ D040 확정
