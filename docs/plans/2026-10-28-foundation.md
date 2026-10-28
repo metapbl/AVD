@@ -42,9 +42,10 @@
   - 확인: `venv\Scripts\python -m pytest tests/test_download_worker_parsing.py` → 전부 통과 / 변이 확인: `_is_transient_error` 의 반환을 임시로 뒤집으면 실패 → 원복 후 `git diff -- workers/` 출력 없음
   - 결과: 2026-10-28 통과 — 54 passed / 변이(`_is_transient_error` 일시 패턴 반환 True→False) 시 7 failed / 원복 후 `git diff -- workers/` 출력 없음 / `ruff check tests` 통과
   - 커밋: `test: 다운로드 워커 파싱 함수 특성 테스트 추가`
-- [ ] 7. 파일 유틸 특성 테스트 (F9) — `tests/test_file_utils.py`
+- [x] 7. 파일 유틸 특성 테스트 (F9) — `tests/test_file_utils.py`
   - 대상: `utils/file_utils.py > sanitize_filename, normalize_unicode, get_unique_path, format_duration`. NFD 한글 입력 → NFC 출력(T9), Windows 금지 문자, 중복 파일명(`tmp_path`), `None`·0·시간 경계
   - 확인: `venv\Scripts\python -m pytest` → 전부 통과 / 변이 확인 1회 후 `git diff -- utils/` 출력 없음
+  - 결과: 2026-10-28 통과 — 전체 77 passed (이 파일 23) / 변이(`sanitize_filename` 의 NFC 정규화 제거) 시 1 failed / 원복 후 `git diff -- utils/` 출력 없음 / `ruff check tests` 통과
   - 커밋: `test: 파일 유틸 특성 테스트 추가`
 - [ ] 8. 2026-07-09 실기 검증 마무리 (F10) — `docs/VERIFY_2026-07-09.md`, `docs/PROGRESS.md`
   - 사용자가 절차서대로 확인하고 번호별 통과/실패를 알려 준다. 통과는 확인 대기에서 지우고, 실패는 고치지 않고 미해결 + 다음 계획 후보로 기록. 알려 주지 않은 번호는 확인 대기에 남긴다
