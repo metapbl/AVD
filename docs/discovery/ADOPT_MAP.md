@@ -37,6 +37,6 @@
 - CLAUDE.md §8.6·§8.7 서식 규칙 → 새 CLAUDE.md (D018)
 - LESSONS 협업 그룹 → REFERENCE UI·작업 원칙 (D019)
 
-## 4. legacy 이동안 (승인 대기)
+## 4. legacy 이동안 (승인 Q018, 완료 8e494a2)
 - `docs/legacy/` 로 `git mv`: CLAUDE.md, WORKLOG.md, ADR.md, LESSONS.md
 - 제자리: README.md, CHANGELOG.md, LICENSE, NOTICE, docs/VERIFY_2026-07-09.md
