@@ -1,5 +1,5 @@
 # 첫 계획 — 기반 다지기 (venv·라이선스·특성 테스트·실기 검증)
-상태: active | 시작: 2026-10-28 | 근거: PRD F11, F8, F9, F10 (D017, D022, D023, D025~D029, D033, D034)
+상태: done (2026-10-28) | 시작: 2026-10-28 | 근거: PRD F11, F8, F9, F10 (D017, D022, D023, D025~D029, D033, D034)
 
 목표: 이 PC 에서 Python 3.15 로 앱이 돌고, 본체 라이선스가 MIT 로 정리되고, 순수 함수의 현재 동작이 pytest 로 고정되며, 밀린 실기 검증과 표본 8건 확인으로 앱이 깨지지 않았음을 확인한다.
 구조:
@@ -54,9 +54,12 @@
   - 계획 변경 (D036): 사용자 대신 Claude 가 창 없는 하네스로 대리 판정, 탐색기 표시만 사용자 눈 확인
   - 결과: 2026-10-28 통과 — 1-A·1-B·2-A·2-B·2-D·2-E O, 2-C O(수동 재시도 버튼 미확인), 3 O(mp3 태그 탐색기 표시는 눈 확인 대기), 1-C(선택) 미확인. 번호별 근거는 절차서 기록란
   - 커밋: `docs: 2026-07-09 작업분 실기 검증 결과 기록`
-- [ ] 9. 인수 확인 — PRD 성공 기준과 F8~F11 인수 기준 전부
+- [x] 9. 인수 확인 — PRD 성공 기준과 F8~F11 인수 기준 전부
   - 확인: `venv\Scripts\python -m pytest` 통과 / `venv\Scripts\ruff.exe check .` 통과 / 작업 4·5 의 `Select-String` 재실행 / `git diff 301d5b3 -- gaindb/` 출력 없음 / `git log 301d5b3.. --format="%an <%ae>"` 가 모두 `metapbl <ggoyong2@gmail.com>`
   - 실기기: 성공 기준 장면(YouTube 단일) → PRD §1 판정 3항 모두 / 표본 8건(YouTube 단일·플레이리스트, SoundCloud, Vimeo, sendvid, Naver TV, Bandcamp, Dailymotion) → 완료 후 재생 가능. 판정은 D033 (성공 기준·작업 2 실패만 미완, 나머지는 기록, 원인 불명은 보류)
+  - 결과: 2026-10-28 통과 — pytest 77 passed / ruff All checks passed! / LICENSE `MIT License`·`META PUBLIC`, "Apache" 는 NOTICE 47행 서드파티 고지뿐, README "WORKLOG.md"·"사용자 설정 폴더" 0건·상대 링크 14개 존재 / `git diff 301d5b3 -- gaindb/`·앱 `*.py` 출력 없음 / 작성자 7커밋 모두 metapbl
+  - 성공 기준 (D036 하네스 + 사용자 눈 확인): 한글 제목 YouTube mp4 — 탐색기 아이콘이 영상 썸네일, 제목 태그 원제와 같고 깨짐 없음(AIMP 태그 편집기로 확인), 파일명 자모 분리 없음 → 통과
+  - 표본 (하네스): YouTube 단일·플레이리스트·SoundCloud·sendvid·Bandcamp·Dailymotion 완료·전체 디코딩 정상 / Vimeo 실패(DRM·로그인·TLS 지문 차단, AVD 밖) / Naver TV 실패(yt-dlp 추출기 `KeyError('result')`, AVD 밖) → D033 에 따라 기록, 계획 완료
   - 커밋: `docs: 첫 계획 인수 확인 결과 기록` (PROGRESS·계획 상태 done)
 
 ## 자가 검토

@@ -54,7 +54,7 @@
 | T4 | 404 영상을 헛재시도 | `Unable to download webpage: HTTP Error 404` 가 일시 패턴에 걸림 | 영구 4xx(400/401/404/410)를 일시 패턴보다 먼저 검사. 403·429 는 일시 | ADR-007 |
 | T5 | 사전 가공한 info dict 가 무시되거나 403 회귀 | `ydl.download` 가 `extract_info` 재실행 / `process_ie_result` 우회는 토큰 만료 | `pre_process` PostProcessor 로 가공 | ADR-004 |
 | T6 | 미리보기 썸네일이 영영 빔 | `maxresdefault.jpg` 가 없는 영상에서 404 | 후보 리스트 순차 폴백, 최후 `hqdefault` | 2026-07-09 |
-| T7 | MP3 한글 태그가 `?뱀떊…` 로 깨짐 | `-write_id3v1 1` — ID3v1 은 인코딩 필드 없음, 한글 Windows 가 CP949 로 읽음 | ID3v1 기록 안 함 (v2.3 UTF-16 만) | 37855ee |
+| T7 | MP3 한글 태그가 `?뱀떊…` 로 깨짐 | `-write_id3v1 1` — ID3v1 은 인코딩 필드 없음, 한글 Windows 가 CP949 로 읽음 | ID3v1 기록 안 함 (v2.3 UTF-16 만). 단 yt-dlp 자체가 mp3 에 `-write_id3v1 1` 을 붙여 v1 은 남는다 — 탐색기는 v2 를 읽어 정상 (2026-10-28 확인) | 37855ee |
 | T8 | MP3 '주석'만 깨짐 | ffmpeg 가 comment 를 비표준 `TXXX:comment` 로 씀 | `meta_comment` 를 빈 문자열로 → 프레임 미생성 | 21ccde9 |
 | T9 | 한글이 자모로 분리됨 | 소스 사이트·OS 경계에서 NFD 유입 | info dict 진입점 NFC 통일. 판정은 파일 원본 바이트로 (콘솔·VS Code 는 결합해 보여 속는다) | ADR-004 |
 | T10 | m4a→mp3 에 엉뚱한 TXXX(major_brand 등) | ExtractAudio 의 기본 `-map_metadata 0` | `-map_metadata -1` 은 TIT2 까지 지움 → `meta_<key>` 주입으로 선별 | LESSONS |
