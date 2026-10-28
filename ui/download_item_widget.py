@@ -483,8 +483,7 @@ class DownloadItemWidget(QWidget):
         # 잘림 여부를 판정하려면 일단 잘림 없을 때 기준으로 제목 elide 를 한 번 해 본다.
         # 가용 폭에서 ".ext" 폭을 뺀 영역에 제목 전체가 들어가면 잘림 없음 확정.
         budget_no_gap = avail - fm.horizontalAdvance(ext_no_gap)
-        if budget_no_gap < 0:
-            budget_no_gap = 0
+        budget_no_gap = max(budget_no_gap, 0)
         elided_try = fm.elidedText(
             title, Qt.TextElideMode.ElideRight, budget_no_gap
         )
@@ -496,8 +495,7 @@ class DownloadItemWidget(QWidget):
         else:
             # 잘림 발생 — " .mp4" 부착. 가용 폭에서 " .ext" 폭을 빼고 다시 elide.
             budget_with_gap = avail - fm.horizontalAdvance(ext_with_gap)
-            if budget_with_gap < 0:
-                budget_with_gap = 0
+            budget_with_gap = max(budget_with_gap, 0)
             elided = fm.elidedText(
                 title, Qt.TextElideMode.ElideRight, budget_with_gap
             )

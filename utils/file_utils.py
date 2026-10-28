@@ -100,7 +100,7 @@ def format_file_size(bytes_size: int) -> str:
     return f"{bytes_size:.2f} PB"
 
 
-def format_duration(seconds: int | float | None) -> str:
+def format_duration(seconds: float | None) -> str:
     """
     초 단위 영상 길이를 시:분:초 형태로 변환
     예: 3661 → "1:01:01"

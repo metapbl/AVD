@@ -651,7 +651,6 @@ class MainWindow(QMainWindow):
 
     def _on_playlist_finished(self):
         """PlaylistFlow 종료 — 항목들은 이미 게이트에 올라갔다."""
-        pass
 
     # ── 다운로드 워커 매니저 위임 진입점 ──────────────
 

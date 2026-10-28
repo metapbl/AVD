@@ -19,7 +19,7 @@
 - [x] 1. import 순서 정리 (`I001` 19건, 자동) — 앱 코드 전반
   - `venv\Scripts\ruff.exe check --isolated --exclude gaindb,docs,venv --select I --fix .`
   - 확인: 기본 검사 → `I001` 없음, 64→45 | `venv\Scripts\python -m pytest` 통과 | `venv\Scripts\python -c "import main"` 오류 없음
-- [ ] 2. 안전 자동 수정 7건 — `workers/download_worker.py`(`PLR1730` 진행률 0~100 고정 2건, `SIM114` ETA 분기 1건), `ui/download_item_widget.py`(`PLR1730` 2건), `utils/file_utils.py`(`PYI041`), `ui/main_window.py`(`PIE790`)
+- [x] 2. 안전 자동 수정 7건 — `workers/download_worker.py`(`PLR1730` 진행률 0~100 고정 2건, `SIM114` ETA 분기 1건), `ui/download_item_widget.py`(`PLR1730` 2건), `utils/file_utils.py`(`PYI041`), `ui/main_window.py`(`PIE790`)
   - `--select PLR1730,SIM114,PYI041,PIE790 --fix` (unsafe 아님)
   - 확인: 기본 검사 → 해당 규칙 없음, 45→38 | pytest 통과 | `git diff` 를 눈으로 보고 `if x<0: x=0` → `max(x,0)` 같은 같은 뜻 변환만인지 확인
 - [ ] 3. 수동 정리 8건 — 동작 불변

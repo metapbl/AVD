@@ -650,10 +650,8 @@ class DownloadWorker(QThread):
             base_pct  = completed / frag_count * 100.0
             slice_pct = (raw_pct / 100.0) / frag_count * 100.0
             pct       = base_pct + slice_pct
-            if pct < 0.0:
-                pct = 0.0
-            if pct > 100.0:
-                pct = 100.0
+            pct = max(pct, 0.0)
+            pct = min(pct, 100.0)
         else:
             pct = raw_pct
 
@@ -724,10 +722,7 @@ class DownloadWorker(QThread):
         now = time.monotonic()
 
         raw_secs = float(secs)
-        if self._eta_smoothed < 0:
-            self._eta_smoothed      = raw_secs
-            self._eta_last_input_ts = now
-        elif raw_secs <= self._eta_smoothed:
+        if self._eta_smoothed < 0 or raw_secs <= self._eta_smoothed:
             self._eta_smoothed      = raw_secs
             self._eta_last_input_ts = now
         else:
