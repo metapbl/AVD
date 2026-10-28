@@ -8,13 +8,17 @@
 
 import subprocess
 import sys
+from pathlib import Path
 
+import yt_dlp
 from PySide6.QtCore import QThread, Signal
+
+from utils.updater import install_ytdlp_wheel
 
 
 class UpdateWorker(QThread):
     """
-    pip 으로 yt-dlp 를 업그레이드하는 워커 스레드.
+    pip 으로(exe 배포본은 wheel 교체로) yt-dlp 를 업그레이드하는 워커 스레드.
 
     시그널:
         progress_text(str) : pip 출력 한 줄씩. 상태 라벨 갱신용.
@@ -26,6 +30,14 @@ class UpdateWorker(QThread):
     done          = Signal(bool, str)
 
     def run(self):
+        if getattr(sys, "frozen", False):
+            # exe 의 sys.executable 은 AVD.exe — -m pip 이 앱을 다시 띄운다 (R§4 T17, D038)
+            dest = Path(yt_dlp.__file__).parent.parent
+            if install_ytdlp_wheel(dest, self.progress_text.emit):
+                self.done.emit(True, "yt-dlp를 새 버전으로 바꿨습니다.\n앱을 다시 시작하면 적용됩니다.")
+            else:
+                self.done.emit(False, "업데이트에 실패했습니다. 위 기록의 마지막 줄을 확인해 주세요.")
+            return
         try:
             proc = subprocess.Popen(
                 [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"],

@@ -31,11 +31,12 @@
   - 실패하는 테스트 먼저 (네트워크는 가짜 응답, 가짜 wheel zip): 정상 → 새 `version.py` 로 교체됨 / sha256 불일치 → 실패 반환, 기존 폴더 그대로 / 교체 중 예외 → 기존 폴더 복원
   - 확인: `venv\Scripts\python -m pytest tests/test_ytdlp_wheel.py` 통과 → 전체 pytest 통과
   - 결과 (2026-10-29): 3건 먼저 실패 확인 → 구현 뒤 pytest 88 통과, ruff 통과. 실제 PyPI 로 임시 폴더에 시험 → `yt_dlp-2026.10.26-py3-none-any.whl` 받아 sha256 통과·교체, 찌꺼기 없음
-- [ ] 4. UpdateWorker frozen 분기 — `workers/update_worker.py > UpdateWorker.run`
+- [x] 4. UpdateWorker frozen 분기 — `workers/update_worker.py > UpdateWorker.run`
   - frozen 이면 pip 대신 작업 3 함수 호출(`dest_dir = Path(yt_dlp.__file__).parent.parent`), 진행 줄은 `progress_text` 로, 완료 문구 "다시 시작하면 적용됩니다". 소스 실행 경로는 손대지 않는다
   - REFERENCE 함정 대장에 "동결 빌드의 `sys.executable` 은 AVD.exe — `-m pip` 이 앱을 다시 띄운다" 추가
   - 실패하는 테스트 먼저: frozen + 작업 3 함수를 가짜로 → `run()` 직접 호출 시 `done(True, …)`, subprocess 미호출
   - 확인: pytest 통과 | 시험 빌드 후 실기기 확인은 작업 7
+  - 결과 (2026-10-29): `tests/test_update_worker.py` 2건 먼저 실패 확인 → 구현 뒤 pytest 90 통과, ruff 통과. REFERENCE R§4 T17 추가. 시험 빌드·기동 정상 (업데이트 실제 동작은 작업 7)
 - [ ] 5. 루트 THIRD_PARTY_LICENSES 와 NOTICE — `THIRD_PARTY_LICENSES`, `NOTICE`
   - `requirements.txt` 의 각 패키지 + Python(PSF) + PyInstaller 부트로더(GPL 예외)의 라이선스 전문. 원문은 venv 의 `*.dist-info` 라이선스 파일에서 옮긴다 (Qt/PySide6 는 LGPLv3 전문, 참조하는 GPLv3 전문 포함)
   - NOTICE 에 THIRD_PARTY_LICENSES 위치와 배포본 안의 `gaindb` 위치(`_internal\gaindb\`) 한 줄

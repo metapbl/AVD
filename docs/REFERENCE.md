@@ -64,6 +64,7 @@
 | T14 | 문서 속 커밋 해시가 유령 참조 | 히스토리 재작성 | `commit-map` 으로 일괄 치환 후 `git cat-file -t` 전수 확인 | fbbccbf |
 | T15 | HLS 에서 ETA 안 나옴 | `total_bytes`·`total_bytes_estimate` 모두 없음 | placeholder 감지 + 진행률×경과시간 추정 `~M:SS` | LESSONS |
 | T16 | 체크박스 ✓ 가 안 그려짐 | `QCheckBox::indicator` 직접 스타일링 | `setStyle("Fusion")` 먼저, indicator 스타일링 피함 | 2026-05-29 |
+| T17 | exe 에서 yt-dlp 업데이트하면 AVD.exe 가 하나 더 뜸 | 동결 빌드의 `sys.executable` 은 AVD.exe → `[sys.executable, "-m", "pip", …]` 가 앱 실행 | `sys.frozen` 이면 pip 대신 `install_ytdlp_wheel` (D038). `sys.executable` 로 하위 파이썬을 띄우는 코드는 frozen 분기 필수 | 2026-10-29 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
