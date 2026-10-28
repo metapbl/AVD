@@ -25,6 +25,8 @@
 
 ## 2026-10-28
 
+- **`chore(deps)`**: Python 3.15 대응 — PySide6 계열 6.12.0·numpy 2.5.4·scipy 1.18.1, README Python 하한 3.12 로 정정. **(D027, D028)**
+
 - **`docs`**: metarche 문서 체계 완성 — 새 루트 `CLAUDE.md`, `docs/PROGRESS.md`·`docs/REFERENCE.md`(함정 대장 T1~T16), `.claude/settings.json`·훅 3개(PROGRESS 주입·PRD 변경 중 차단·ruff 검사).
 
 - **`docs`**: PRD 승인 — 질의응답 Q014~Q036·결정 D017~D034 반영 (첫 계획: venv 3.15·의존성 상향 → MIT 전환·README 정합 → pytest 특성 테스트 → 실기 검증·표본 8건).

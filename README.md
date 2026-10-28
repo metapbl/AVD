@@ -18,7 +18,7 @@ yt-dlp 기반의 영상·오디오 다운로더입니다. YouTube를 비롯해 y
 
 ## 요구 사항
 
-- **Python 3.10 이상** (3.13/3.14 권장)
+- **Python 3.12 이상** (3.15 에서 개발·검증)
 - **ffmpeg / ffprobe** — 영상·오디오 병합, MP3·M4A 변환, 메타데이터·썸네일 임베드에 필요합니다. 시스템 PATH에 등록되어 있어야 합니다.
   - Windows: [공식 빌드](https://www.gyan.dev/ffmpeg/builds/) 다운로드 후 PATH 등록, 또는 `winget install Gyan.FFmpeg`
 - **Node.js** (선택이지만 YouTube에는 사실상 필수) — yt-dlp가 YouTube의 자바스크립트 챌린지를 해결하기 위해 외부 JS 런타임(EJS)을 요구합니다. Node.js / Deno / Bun 중 하나면 됩니다.
