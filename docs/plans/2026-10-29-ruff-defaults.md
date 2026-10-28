@@ -1,5 +1,5 @@
 # 세 번째 계획 — ruff 0.17 기본 규칙 채택과 위반 정리
-상태: active | 시작: 2026-10-29 | 근거: D035 (고정 규칙의 후속), D037, PRD §5 비기능
+상태: done (2026-10-29) | 시작: 2026-10-29 | 근거: D035 (고정 규칙의 후속), D037, PRD §5 비기능
 
 목표: `pyproject.toml` 의 규칙 고정(`select = ["E4","E7","E9","F"]`)을 풀고 ruff 0.17 기본 규칙으로 앱 코드가 `All checks passed!` 가 된다. 앱 동작은 바뀌지 않는다.
 구조:
@@ -30,9 +30,10 @@
 - [x] 4. 규칙 고정 해제 — `pyproject.toml`, `DECISIONS.md`
   - `select` 줄 제거, `ignore = ["BLE001", "S110"]` 와 이유 주석 (D037, 승인 때 기록됨)
   - 확인: `venv\Scripts\ruff.exe check --force-exclude .` → `All checks passed!`
-- [ ] 5. 인수 확인
+- [x] 5. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | `ruff check` 통과 | `git diff e4ecca5.. -- gaindb/` 비어 있음
   - 실기기: 앱 실행 → 단일 YouTube 영상 하나 다운로드 완료(진행률·ETA 표시 정상), 완료 항목 "폴더 열기"로 탐색기 열림
+  - 결과 (2026-10-29): pytest 83 통과, `ruff check` All checks passed, gaindb diff 없음. 사용자 실기기: 다운로드 완료(진행률·ETA 정상), 폴더 열기 정상
 
 ## 자가 검토
 - PRD 기능 누락: 없음 (동작 불변 정리, 새 기능 없음)

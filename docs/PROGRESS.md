@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-ruff-defaults.md` active (4/5)
-- 갱신: 2026-10-29 · 마지막 커밋: `596dcc9 fix(playlist): PlaylistProbeWorker 결과 시그널을 probe_ready 로 개명` (origin/main 보다 12커밋 앞섬, push 안 함)
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-ruff-defaults.md` done (5/5) — 다음 계획 없음
+- 갱신: 2026-10-29 · 마지막 커밋: `04d130b chore(dev): ruff 0.17 기본 규칙 채택, BLE001·S110 제외` (origin/main 보다 18커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 계획 작업 5 인수 확인 — 실기기: 단일 YouTube 영상 다운로드 완료(진행률·ETA 정상), 완료 항목 "폴더 열기"로 탐색기 열림
+1. 다음 계획 정하기 (/metarche plan) — 남은 후보: Vimeo `curl_cffi` 검토(새 의존성, PRD 범위 확인 필요)
 
 ## 미해결
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
