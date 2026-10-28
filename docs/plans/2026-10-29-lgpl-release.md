@@ -16,11 +16,12 @@
 - 커밋 작성자 `metapbl` 확인, 의미 단위 커밋마다 `CHANGELOG.md` 맨 위 항목 (D014, D020)
 
 ## 작업
-- [ ] 1. PyInstaller 도입과 최소 onedir 빌드 — `requirements-dev.txt`, `AVD.spec`
+- [x] 1. PyInstaller 도입과 최소 onedir 빌드 — `requirements-dev.txt`, `AVD.spec`
   - `pip install pyinstaller` 는 실행 전 확인 (D032). 설치 뒤 버전을 `requirements-dev.txt` 에 핀
   - spec: `windowed`, onedir, `module_collection_mode={"gaindb": "py", "yt_dlp": "py"}`, `gaindb/` 의 `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES` 를 datas 로 같은 폴더에
   - Python 3.15·PySide6 6.12 를 지원하는 PyInstaller 가 없으면 여기서 멈추고 OPEN 에 질문을 넣는다
   - 확인: `venv\Scripts\pyinstaller AVD.spec --noconfirm` 성공 | `dist\AVD\_internal\gaindb\api.py`·`gaindb\LICENSE`·`yt_dlp\version.py` 가 평문으로 존재 | `AVD.exe` 기동 → 메인 창 표시
+  - 결과 (2026-10-29): PyInstaller 6.22.3·Python 3.15.1 빌드 성공(경고는 선택 의존성 `curl_cffi`·`yt_dlp_ejs`·urllib3 emscripten, `scipy.special._cdflib` 숨은 import 없음 — 정규화 동작은 작업 7 에서 확인). 평문 파일 모두 존재(`yt_dlp` .py 1041개, 2026.10.26), 배포 폴더 239 MB. exe 기동 8초 만에 창 제목 "AV Downloader". `config.json` 은 아직 `_internal\` 에 생김 → 작업 2. `*.spec` 무시 규칙에 `!AVD.spec` 예외 추가
 - [ ] 2. exe 옆 config.json (D039) — `utils/config_manager.py > CONFIG_PATH`
   - 실패하는 테스트 먼저: `sys.frozen=True`·`sys.executable` 을 임시 경로로 바꾸고 모듈 reload → `CONFIG_PATH == exe 폴더/config.json` / 바꾸지 않으면 지금 경로(리포 루트) 그대로
   - 확인: `venv\Scripts\python -m pytest tests/test_frozen_paths.py` 통과 → 전체 pytest 통과
