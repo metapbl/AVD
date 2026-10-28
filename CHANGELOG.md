@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`chore(release)`**: v1.0.0 — 첫 GitHub Release. Windows x64 배포본(onedir, yt-dlp 2026.10.26 번들)과 같은 커밋의 소스 zip.
 - **`docs(release)`**: README 설치 절에 Windows 배포본 안내(zip 풀기 → ffmpeg·Node.js → `AVD.exe`, `config.json`·`_internal\gaindb\` 위치) 추가, 릴리스 절차서 `docs/RELEASE.md` 신설.
 - **`feat(updater)`**: yt-dlp 업데이트가 성공하면 완료 창의 "닫기" 를 누를 때 앱이 스스로 다시 시작해 새 버전을 쓴다 (exe·소스 실행 모두). 끝나지 않은 다운로드가 있으면 재시작 대신 안내. **(D041)**
 - **`build`**: 빌드 스크립트 `build.ps1` 추가 — 커밋 안 된 변경이 있으면 멈추고, PyInstaller → `LICENSE`·`NOTICE`·`THIRD_PARTY_LICENSES`·`README.md` 동봉 → `release\` 에 exe zip 과 같은 커밋의 소스 zip(`git archive`). **(D011, D040)**
