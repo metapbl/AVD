@@ -32,9 +32,10 @@
   - 확인: `Select-String -Path LICENSE -Pattern "MIT License","META PUBLIC"` → 2건 / `Select-String -Path NOTICE,README.md -Pattern "Apache"` → 서드파티 고지·변경 이력 문장 외 0건 (결과를 줄 단위로 보인다) / `git diff --stat -- gaindb/` → 출력 없음
   - 결과: 2026-10-28 통과 — LICENSE 1행 `MIT License`·3행 `Copyright (c) 2026 META PUBLIC` / LICENSE·NOTICE·README 의 "Apache" 는 NOTICE 47행 서드파티(requests 등) 고지 1건뿐 / `git diff --stat -- gaindb/` 출력 없음
   - 커밋: `chore: 본체 라이선스 Apache-2.0 → MIT 전환 (D017)`
-- [ ] 5. README 정합 (F8 기준 4) — `README.md > 머리 인용·실행·디렉터리 구조·문서`
+- [x] 5. README 정합 (F8 기준 4) — `README.md > 머리 인용·실행·디렉터리 구조·문서`
   - config 위치를 "앱 폴더의 `config.json`" 으로. `WORKLOG.md` 언급·링크를 지우고 문서 절을 `CLAUDE.md`·`docs/PRD.md`·`docs/PROGRESS.md`·`docs/REFERENCE.md`·`CHANGELOG.md` 안내로 바꾼다. 디렉터리 구조 블록을 실제 구조로(`controllers/playlist_flow.py`, `gaindb/`, `docs/` 등). ADR-003 링크는 `docs/legacy/ADR.md` 로
   - 확인: `Select-String -Path README.md -Pattern "WORKLOG.md","사용자 설정 폴더"` → 0건 / README 의 상대 링크 대상이 모두 존재 (`Select-String` 으로 `](` 링크 추출 → 각각 `Test-Path` True)
+  - 결과: 2026-10-28 통과 — "WORKLOG.md"·"사용자 설정 폴더" 0건 / 상대 링크 14개 모두 존재 / 디렉터리 구조에 playlist·update 모듈·gaindb·docs·개발 도구 파일 반영
   - 커밋: `docs(readme): config 위치·문서 안내·디렉터리 구조를 현행에 맞춤`
 - [ ] 6. 다운로드 워커 파싱 함수 특성 테스트 (F9) — `tests/test_download_worker_parsing.py`
   - 대상: `workers/download_worker.py > _is_transient_error, _parse_eta_secs, _format_eta_secs, _normalize_size_str, _split_size_str, _is_unknown_size`. 기대값은 현 코드 출력에서 얻는다. `_is_transient_error` 는 REFERENCE T3·T4 의 경계(403·429 일시, 400/401/404/410 영구, 포장된 `Unable to download webpage: HTTP Error 404`)를 반드시 포함

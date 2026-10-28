@@ -4,7 +4,7 @@
 
 각 항목 헤더 끝의 7자리 해시는 GitHub 저장소 `metapbl/AVD` 의 해당 커밋을 가리킵니다. 검증 절차·코드 진단 같은 상세는 git 커밋 메시지에 위임합니다.
 
-로드맵·ADR·학습된 교훈은 [`WORKLOG.md`](./WORKLOG.md) 참고.
+로드맵·결정·함정은 [`docs/PROGRESS.md`](./docs/PROGRESS.md)·[`docs/discovery/DECISIONS.md`](./docs/discovery/DECISIONS.md)·[`docs/REFERENCE.md`](./docs/REFERENCE.md) 참고 (2026-10 이전은 `docs/legacy/`).
 
 ---
 
@@ -24,6 +24,8 @@
 ---
 
 ## 2026-10-28
+
+- **`docs(readme)`**: config 위치(앱 폴더)·문서 안내(docs/ 체계)·디렉터리 구조를 현행에 맞춤.
 
 - **`chore`**: 본체 라이선스 Apache-2.0 → MIT 전환 — `LICENSE` MIT 전문(META PUBLIC), `NOTICE`·README 라이선스·면책 절 정정. `gaindb/` 는 LGPL-2.1-or-later 그대로. **(D017, 2026-07-24 `0a85ea5` ADR-009 번복)**
 
