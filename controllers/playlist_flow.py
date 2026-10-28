@@ -28,7 +28,7 @@ class PlaylistFlow(QObject):
     설계 원칙 (v4.7.5 PlaylistFlow 에서 채택):
         1. 한 시점에 활성 플로우는 최대 1개 (_busy 가드).
         2. 워커 시그널 핸들러 안에서 자기 스레드를 wait/종료하지 않는다.
-           스레드 종료는 quit→finished→deleteLater 체인에 맡긴다.
+           워커 정리는 QThread 내장 finished→deleteLater 연결에 맡긴다.
         3. 선택 다이얼로그는 워커 정리가 끝난 뒤 QTimer.singleShot(0) 로
            한 박자 미뤄 modal exec — 시그널 재진입 데드락 방지.
         4. 종료·실패·취소를 모두 _finish() 단일 경로로 수렴 → MainWindow 는
@@ -74,13 +74,10 @@ class PlaylistFlow(QObject):
         self.status.emit("플레이리스트 정보를 가져오는 중...")
 
         worker = PlaylistProbeWorker(url)
-        worker.finished.connect(self._on_probe_done, Qt.ConnectionType.QueuedConnection)
+        worker.probe_ready.connect(self._on_probe_done, Qt.ConnectionType.QueuedConnection)
         worker.error.connect(self._on_probe_error, Qt.ConnectionType.QueuedConnection)
-        # 스레드 종료는 자기 핸들러가 아니라 시그널 체인에 맡긴다(원칙 2).
-        worker.finished.connect(worker.quit)
-        worker.error.connect(worker.quit)
+        # 정리는 run() 이 끝난 뒤 오는 내장 finished 에만 건다(원칙 2, R§4 T2).
         worker.finished.connect(worker.deleteLater)
-        worker.error.connect(worker.deleteLater)
         self._worker = worker
         worker.start()
 

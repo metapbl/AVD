@@ -38,8 +38,8 @@ class PlaylistProbeWorker(QThread):
     플레이리스트 URL 을 flat 모드로 추출해 항목 목록을 emit 하는 워커.
 
     시그널:
-        finished : 추출 성공 시 PlaylistResult 전달
-        error    : 실패 시 에러 메시지 문자열 전달
+        probe_ready : 추출 성공 시 PlaylistResult 전달
+        error       : 실패 시 에러 메시지 문자열 전달
 
     설계 메모:
     - extract_flat="in_playlist" 로 각 항목의 메타만 받는다. 포맷·썸네일
@@ -50,8 +50,8 @@ class PlaylistProbeWorker(QThread):
       판정을 이미 했다는 전제이지만, 판정이 빗나간 경우의 안전망.
     """
 
-    finished = Signal(object)  # PlaylistResult
-    error    = Signal(str)
+    probe_ready = Signal(object)  # PlaylistResult
+    error       = Signal(str)
 
     def __init__(self, url: str):
         super().__init__()
@@ -118,7 +118,7 @@ class PlaylistProbeWorker(QThread):
             entries     = collected,
             total_found = max(total, len(collected)),
         )
-        self.finished.emit(result)
+        self.probe_ready.emit(result)
 
     def _pick_entry_url(self, entry: dict) -> str:
         """

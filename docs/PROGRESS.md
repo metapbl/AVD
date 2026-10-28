@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-foundation.md` done (9/9) — 다음 계획 없음
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-28-playlist-probe-signal.md` active (1/2)
 - 갱신: 2026-10-28 · 마지막 커밋: `2d292bb docs: 첫 계획 인수 확인 결과 기록` (origin/main 보다 11커밋 앞섬, push 안 함)
 
 ## 다음 할 일
-1. 다음 계획 정하기 (/metarche plan) — 추천 첫 후보: `workers/playlist_probe_worker.py > PlaylistProbeWorker` 의 커스텀 `finished` 를 T2 규칙대로 개명, 연결처 `controllers/playlist_flow.py > PlaylistFlow.start`
+1. 계획 작업 2 인수 확인 — 실기기: 플레이리스트 URL 다이얼로그 확인·취소, 깨진 URL 오류 메시지 (크래시·`QThread: Destroyed` 없음)
 
 ## 미해결
 - (다음 계획 후보) `workers/playlist_probe_worker.py > PlaylistProbeWorker.finished = Signal(object)` 가 QThread 내장 `finished` 를 가리고 `controllers/playlist_flow.py` 가 `deleteLater` 를 거기 연결 — T2 규칙 위반. 하네스에선 크래시 없음

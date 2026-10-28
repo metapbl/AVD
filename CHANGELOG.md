@@ -25,6 +25,7 @@
 
 ## 2026-10-28
 
+- **`fix(playlist)`**: `PlaylistProbeWorker` 결과 시그널 `finished`→`probe_ready` — QThread 내장 `finished` 를 가려 스레드 종료 전 `deleteLater` 가 걸릴 수 있던 문제. 정리는 내장 `finished` 에만 연결, 워커가 내장 시그널을 가리지 않음을 테스트로 고정. **(R§4 T2)**
 - **`docs`**: 첫 계획 인수 확인 — pytest 77·ruff 통과, gaindb·앱 코드 무변경, 성공 기준 장면 통과. 표본 6/8 통과(Vimeo·Naver TV 는 AVD 밖 원인으로 기록). **(D033, D036)**
 - **`docs`**: 2026-07-09 작업분(썸네일 동시성 게이트·자동 재시도) 실기 검증 결과 기록 — 창 없는 하네스 대리 판정, 1-A·1-B·2-A~2-E·3 통과. mp3 의 UTF-8 ID3v1(yt-dlp 기본 동작) 발견. **(D036)**
 - **`test`**: 파일 유틸 특성 테스트 23개 — NFD→NFC, Windows 금지 문자·200자 자름, 중복 파일명 `(1)`·`(2)`, 영상 길이 표시 경계. **(D023)**
