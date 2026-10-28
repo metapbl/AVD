@@ -18,9 +18,10 @@
   - 확인: `venv\Scripts\python -m pip check` → `No broken requirements found.` / `venv\Scripts\python -c "import PySide6, numpy, scipy, yt_dlp, gaindb; print(PySide6.__version__)"` → `6.12.0` / `git diff --stat requirements.txt` → 6줄 변경
   - 결과: 2026-10-28 통과 — `pip check` → No broken requirements found. / Python 3.15.1, PySide6 6.12.0, numpy 2.5.4, scipy 1.18.1, yt-dlp 2026.03.17 / `import main` 성공 / requirements.txt 12줄(6±)
   - 커밋: `chore(deps): Python 3.15 대응 — PySide6 6.12.0·numpy 2.5.4·scipy 1.18.1 (D027)`
-- [ ] 2. 기동 실기 확인 (F11 인수 기준 2) — 코드 변경 없음, 커밋 없음
+- [x] 2. 기동 실기 확인 (F11 인수 기준 2) — 코드 변경 없음, 커밋 없음
   - 실기기: 사용자가 `venv\Scripts\python main.py` 실행 → 메인 창이 뜨고 yt-dlp 업데이트 모달이 떠서 완료 후 닫힘. 종료 뒤 내가 `venv\Scripts\python -m pip show yt-dlp` → 버전이 2026.3.17 보다 높음
   - 실패하면 첫 계획 미완 (D033): PROGRESS 미해결에 기록하고 의존성 되돌림을 사용자와 정한다
+  - 결과: 2026-10-28 통과 — 사용자 화면 4장: 메인 창 → 새 버전 확인(2026.03.17→2026.10.26) Yes → 진행 100% "최신 버전으로 업데이트됐습니다" → 닫기 후 메인 창 / `pip show yt-dlp` → 2026.10.26 / `pip check` 이상 없음
 - [x] 3. 개발 도구 마련 — `requirements-dev.txt`, `pyproject.toml`
   - 내용: `-r requirements.txt` + `pytest`·`ruff` 판 고정(설치 시점 최신, ruff 는 0.15.x). `pyproject.toml` 은 위 구조의 키만
   - 확인: `venv\Scripts\python -m pip install -r requirements-dev.txt` 후 `venv\Scripts\ruff.exe check .` → `All checks passed!` (gaindb 제외 반영) / `venv\Scripts\ruff.exe check --force-exclude gaindb/api.py` → 출력 없음 / `venv\Scripts\python -m pytest` → `no tests ran` (종료 코드 5)
@@ -47,9 +48,11 @@
   - 확인: `venv\Scripts\python -m pytest` → 전부 통과 / 변이 확인 1회 후 `git diff -- utils/` 출력 없음
   - 결과: 2026-10-28 통과 — 전체 77 passed (이 파일 23) / 변이(`sanitize_filename` 의 NFC 정규화 제거) 시 1 failed / 원복 후 `git diff -- utils/` 출력 없음 / `ruff check tests` 통과
   - 커밋: `test: 파일 유틸 특성 테스트 추가`
-- [ ] 8. 2026-07-09 실기 검증 마무리 (F10) — `docs/VERIFY_2026-07-09.md`, `docs/PROGRESS.md`
+- [x] 8. 2026-07-09 실기 검증 마무리 (F10) — `docs/VERIFY_2026-07-09.md`, `docs/PROGRESS.md`
   - 사용자가 절차서대로 확인하고 번호별 통과/실패를 알려 준다. 통과는 확인 대기에서 지우고, 실패는 고치지 않고 미해결 + 다음 계획 후보로 기록. 알려 주지 않은 번호는 확인 대기에 남긴다
   - 실기기: 절차서 각 번호 → 절차서의 기대 결과
+  - 계획 변경 (D036): 사용자 대신 Claude 가 창 없는 하네스로 대리 판정, 탐색기 표시만 사용자 눈 확인
+  - 결과: 2026-10-28 통과 — 1-A·1-B·2-A·2-B·2-D·2-E O, 2-C O(수동 재시도 버튼 미확인), 3 O(mp3 태그 탐색기 표시는 눈 확인 대기), 1-C(선택) 미확인. 번호별 근거는 절차서 기록란
   - 커밋: `docs: 2026-07-09 작업분 실기 검증 결과 기록`
 - [ ] 9. 인수 확인 — PRD 성공 기준과 F8~F11 인수 기준 전부
   - 확인: `venv\Scripts\python -m pytest` 통과 / `venv\Scripts\ruff.exe check .` 통과 / 작업 4·5 의 `Select-String` 재실행 / `git diff 301d5b3 -- gaindb/` 출력 없음 / `git log 301d5b3.. --format="%an <%ae>"` 가 모두 `metapbl <ggoyong2@gmail.com>`
