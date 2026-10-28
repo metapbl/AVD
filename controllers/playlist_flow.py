@@ -3,11 +3,11 @@
 # 단일 객체가 소유하는 상태머신. ADR-003 의 매니저 분리 철학과 같은 결로,
 # MainWindow 가 플레이리스트 흐름의 시그널 라우팅을 직접 떠안지 않게 한다.
 
-from PySide6.QtCore import QObject, QThread, QTimer, Signal, Qt
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import QWidget
 
-from workers.playlist_probe_worker import PlaylistProbeWorker
 from ui.playlist_select_dialog import PlaylistSelectDialog
+from workers.playlist_probe_worker import PlaylistProbeWorker
 
 
 class PlaylistFlow(QObject):

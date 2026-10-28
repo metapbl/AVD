@@ -22,13 +22,12 @@ import re
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QDialog,
-    QVBoxLayout,
+    QHBoxLayout,
     QLabel,
     QProgressBar,
     QPushButton,
-    QHBoxLayout,
+    QVBoxLayout,
 )
-
 
 # pip 다운로드 진행 라인의 "3.2/3.2 MB" 같은 받은/전체 용량 패턴.
 _SIZE_RE = re.compile(r"([\d.]+)\s*/\s*([\d.]+)\s*(k|K|M|G)?i?B", re.IGNORECASE)

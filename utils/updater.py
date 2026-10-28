@@ -3,10 +3,10 @@
 
 import subprocess
 import sys
-import requests
-import yt_dlp
 from pathlib import Path
 
+import requests
+import yt_dlp
 
 # 앱 현재 버전 (배포 시 이 값을 변경)
 APP_VERSION = "1.0.0"

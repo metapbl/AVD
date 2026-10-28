@@ -3,29 +3,35 @@
 
 from pathlib import Path
 
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QScrollArea, QMessageBox,
-    QStatusBar
-)
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
 
-from models.download_item import DownloadItem, DownloadStatus
-from ui.download_item_widget import DownloadItemWidget
-from ui.add_link_dialog import AddLinkDialog
-from ui.format_select_dialog import FormatSelectDialog
-from ui.preferences_dialog import PreferencesDialog
-from ui.confirm_remove_dialog import ConfirmRemoveDialog
-from ui.update_progress_dialog import UpdateProgressDialog
-from workers.info_worker import InfoWorker
-from workers.update_worker import UpdateWorker
-from utils.config_manager import ConfigManager
-from utils.updater import YtdlpUpdater
-from utils.file_utils import open_folder
-from core.info_fetcher import VideoInfo, FormatInfo
-from workers.thumbnail_worker import ThumbnailWorker
 from controllers.download_manager import DownloadManager
 from controllers.playlist_flow import PlaylistFlow
+from core.info_fetcher import FormatInfo, VideoInfo
+from models.download_item import DownloadItem, DownloadStatus
+from ui.add_link_dialog import AddLinkDialog
+from ui.confirm_remove_dialog import ConfirmRemoveDialog
+from ui.download_item_widget import DownloadItemWidget
+from ui.format_select_dialog import FormatSelectDialog
+from ui.preferences_dialog import PreferencesDialog
+from ui.update_progress_dialog import UpdateProgressDialog
+from utils.config_manager import ConfigManager
+from utils.file_utils import open_folder
+from utils.updater import YtdlpUpdater
+from workers.info_worker import InfoWorker
+from workers.thumbnail_worker import ThumbnailWorker
+from workers.update_worker import UpdateWorker
 
 
 # ── 플레이리스트 URL 판정 ────────────────────────────

@@ -1,10 +1,10 @@
 import unicodedata
-import yt_dlp
 from pathlib import Path
+
+import yt_dlp
 from yt_dlp.postprocessor.common import PostProcessor
 
 from utils.file_utils import ensure_dir
-
 
 # MP3 후처리 비트레이트 (kbps). 단일 출처 — 이 값을 바꾸면
 # info_fetcher 의 MP3 항목 라벨도 자동으로 따라온다.

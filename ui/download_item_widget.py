@@ -3,15 +3,20 @@
 
 import html
 
-from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QProgressBar, QPushButton, QSizePolicy
-)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap, QFontMetrics
+from PySide6.QtGui import QFontMetrics, QPixmap
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
 from models.download_item import DownloadItem, DownloadStatus
 from utils.file_utils import format_duration
-
 
 # ── 자동 선택 포맷 식별자 ────────────────────────────
 # core/info_fetcher.py 의 _parse_formats 가 통합 포맷에 박는 format_id.

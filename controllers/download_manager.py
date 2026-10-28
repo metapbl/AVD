@@ -1,7 +1,7 @@
 # controllers/download_manager.py
 # 다운로드 워커 오케스트레이션 + 동시성 제어 큐 매니저
 
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Qt, Signal
 
 from models.download_item import DownloadStatus
 from workers.download_worker import DownloadWorker

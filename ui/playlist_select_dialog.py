@@ -3,12 +3,20 @@
 # probe 로 받은 항목 목록을 체크박스 표로 보여주고, 받을 항목과
 # 출력 형태(영상/음원)를 한 번에 고르게 한다.
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QRadioButton, QButtonGroup,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
-)
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QButtonGroup,
+    QDialog,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QRadioButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+)
 
 from utils.file_utils import format_duration
 

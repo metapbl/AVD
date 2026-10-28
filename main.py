@@ -2,8 +2,10 @@
 # 앱 진입점 - 여기서 실행이 시작됨
 
 import sys
-from PySide6.QtWidgets import QApplication
+
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QApplication
+
 from ui.main_window import MainWindow
 
 

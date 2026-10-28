@@ -7,14 +7,14 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
+
 from core.downloader import Downloader
-from gaindb.api import apply_file_track_gain, DB_PER_STEP
+from gaindb.api import DB_PER_STEP, apply_file_track_gain
 from utils.file_utils import (
-    strip_ansi,
     snapshot_child_pids,
+    strip_ansi,
     terminate_pids,
 )
-
 
 # ── MP3 음량 정규화 목표 기준값 ──────────────────────
 # GaindB(mp3gain 파생 Python 재구현, LGPL-2.1-or-later)의 ReplayGain 분석은

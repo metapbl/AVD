@@ -1,16 +1,23 @@
 # ui/preferences_dialog.py
 # 환경설정 팝업 다이얼로그
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QLineEdit,
-    QSlider, QCheckBox, QWidget,
-    QFileDialog, QGroupBox
-)
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPainter, QColor, QDoubleValidator
-from utils.config_manager import ConfigManager
+from PySide6.QtGui import QColor, QDoubleValidator, QPainter
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFileDialog,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
 
+from utils.config_manager import ConfigManager
 
 # ── MP3 음량 정규화 목표 dB 범위 ──────────────────────
 # 슬라이더는 정수 스텝만 다루므로 dB 값을 2배 스케일한 정수로 저장한다

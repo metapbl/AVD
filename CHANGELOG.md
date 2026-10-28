@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`style`**: import 순서 정리 19개 파일 (ruff `I001` 자동 수정, 동작 불변). **(D037)**
 - **`docs`**: 두 번째 계획(PlaylistProbeWorker 시그널 개명) 인수 확인 — 플레이리스트 확인·취소·깨진 URL 실기기 통과, `QThread: Destroyed` 없음.
 
 ## 2026-10-28

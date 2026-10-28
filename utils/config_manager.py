@@ -4,7 +4,6 @@
 import json
 from pathlib import Path
 
-
 # 설정 파일 저장 위치 (앱 폴더 안에 config.json)
 CONFIG_PATH = Path(__file__).parent.parent / "config.json"
 

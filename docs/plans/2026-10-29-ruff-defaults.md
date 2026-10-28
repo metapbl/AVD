@@ -16,7 +16,7 @@
 `venv\Scripts\ruff.exe check --isolated --exclude gaindb,docs,venv --statistics .`
 
 ## 작업
-- [ ] 1. import 순서 정리 (`I001` 19건, 자동) — 앱 코드 전반
+- [x] 1. import 순서 정리 (`I001` 19건, 자동) — 앱 코드 전반
   - `venv\Scripts\ruff.exe check --isolated --exclude gaindb,docs,venv --select I --fix .`
   - 확인: 기본 검사 → `I001` 없음, 64→45 | `venv\Scripts\python -m pytest` 통과 | `venv\Scripts\python -c "import main"` 오류 없음
 - [ ] 2. 안전 자동 수정 7건 — `workers/download_worker.py`(`PLR1730` 진행률 0~100 고정 2건, `SIM114` ETA 분기 1건), `ui/download_item_widget.py`(`PLR1730` 2건), `utils/file_utils.py`(`PYI041`), `ui/main_window.py`(`PIE790`)

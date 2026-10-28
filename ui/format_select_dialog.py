@@ -1,16 +1,21 @@
 # ui/format_select_dialog.py
 # 화질/형식 선택 팝업 다이얼로그
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QListWidget,
-    QListWidgetItem
-)
 from PySide6.QtCore import Qt, Signal
-from core.info_fetcher import VideoInfo, FormatInfo
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+)
+
+from core.info_fetcher import FormatInfo, VideoInfo
+from ui.download_item_widget import AUTO_FORMAT_ID, format_bitrate, humanize_codec
 from utils.config_manager import ConfigManager
 from utils.file_utils import format_duration, format_file_size
-from ui.download_item_widget import humanize_codec, format_bitrate, AUTO_FORMAT_ID
 
 
 class FormatSelectDialog(QDialog):

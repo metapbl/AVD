@@ -4,13 +4,12 @@
 # 이 워커는 extract_flat 로 각 항목의 id/title/duration/url 만 빠르게 긁는다.
 # 포맷은 캐지 않는다 — 항목별 풀 추출은 펼쳐진 뒤 기존 InfoWorker 가 맡는다.
 
-import yt_dlp
 from dataclasses import dataclass
 
+import yt_dlp
 from PySide6.QtCore import QThread, Signal
 
 from utils.file_utils import normalize_info_dict
-
 
 # 한 플레이리스트에서 받아올 최대 항목 수. ADR 합의값.
 # yt-dlp 의 playlistend 와 추출 후 슬라이스 양쪽으로 이중 방어.

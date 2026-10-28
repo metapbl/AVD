@@ -1,8 +1,9 @@
 # core/info_fetcher.py
 # URL에서 영상 정보(제목, 썸네일, 화질 목록 등)를 추출하는 파일
 
-import yt_dlp
 from dataclasses import dataclass
+
+import yt_dlp
 
 from core.downloader import MP3_BITRATE_KBPS
 from utils.file_utils import normalize_info_dict

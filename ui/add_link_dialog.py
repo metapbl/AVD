@@ -1,11 +1,16 @@
 # ui/add_link_dialog.py
 # URL 입력 팝업 다이얼로그
 
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QMessageBox
-)
 from PySide6.QtCore import Signal
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+)
 
 
 class AddLinkDialog(QDialog):
