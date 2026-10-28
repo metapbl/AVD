@@ -28,6 +28,18 @@ yt-dlp 기반의 영상·오디오 다운로더입니다. YouTube를 비롯해 y
 
 ## 설치
 
+### 배포본 (Windows x64)
+
+1. [Releases](https://github.com/metapbl/AVD/releases) 에서 `AVD-v{버전}-win64.zip` 을 받아 원하는 곳에 풉니다. `AVD` 폴더가 생깁니다.
+2. 위 [요구 사항](#요구-사항)의 **ffmpeg/ffprobe** 와 **Node.js** 를 설치해 PATH 에 둡니다. 배포본에는 들어 있지 않습니다.
+3. `AVD\AVD.exe` 를 실행합니다. Python 설치는 필요 없습니다.
+
+- 설정 파일은 `AVD.exe` 옆의 `config.json` 입니다 (첫 실행 뒤 생김). 폴더째 옮기면 설정도 따라갑니다.
+- yt-dlp 는 `AVD\_internal\yt_dlp\` 에 평문 `.py` 로 들어 있고, 기동 때 새 버전이 있으면 앱이 그 폴더를 교체합니다.
+- `gaindb` (LGPL-2.1-or-later) 는 `AVD\_internal\gaindb\` 에 평문 `.py` 로 들어 있습니다. 이 폴더를 자기 수정본으로 바꿔 넣으면 다음 실행부터 그 코드가 쓰입니다. 같은 릴리스의 `AVD-v{버전}-src.zip` 이 해당 소스입니다.
+
+### 소스에서
+
 ```bash
 git clone https://github.com/metapbl/AVD.git AV_Downloader
 cd AV_Downloader
@@ -45,7 +57,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-첫 실행 시 사용자 홈 폴더의 `Downloads`가 저장 경로로 지정되며, 앱 내 **⚙ 설정**에서 변경할 수 있습니다. 설정은 앱 폴더(`main.py` 옆)의 `config.json`에 저장됩니다.
+첫 실행 시 사용자 홈 폴더의 `Downloads`가 저장 경로로 지정되며, 앱 내 **⚙ 설정**에서 변경할 수 있습니다. 설정은 앱 폴더(`main.py` 옆, 배포본은 `AVD.exe` 옆)의 `config.json`에 저장됩니다.
 
 ## 디렉터리 구조
 
@@ -106,6 +118,7 @@ AV_Downloader/
 - [`docs/PROGRESS.md`](docs/PROGRESS.md) — 현재 상태·다음 할 일·미해결 문제
 - [`docs/REFERENCE.md`](docs/REFERENCE.md) — 구조, 외부 사양·제약, 반복해서 부딪힌 함정 대장
 - [`docs/discovery/DECISIONS.md`](docs/discovery/DECISIONS.md) — 결정 기록 (버린 안 포함)
+- [`docs/RELEASE.md`](docs/RELEASE.md) — 릴리스(배포본 빌드·게시) 절차
 - [`CHANGELOG.md`](CHANGELOG.md) — 날짜별 변경 이력
 - [`docs/legacy/`](docs/legacy/) — 2026-10 이전 문서 (WORKLOG·ADR·LESSONS, 참고용)
 
