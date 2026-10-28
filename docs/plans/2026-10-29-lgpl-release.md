@@ -67,6 +67,9 @@
   - `gh release list --repo metapbl/AVD` 와 원격 태그로 기존 번호 확인 → 버전 제안 → 사용자 확인 → `APP_VERSION` 갱신·커밋
   - RELEASE.md 절차대로: 릴리스 빌드(확인) → 태그 → `git push` 와 태그 push(확인) → `gh release create`(확인), 노트에 번들 yt-dlp 버전·ffmpeg 별도 설치 안내
   - 확인: `gh release view v{버전} --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe zip 을 새 폴더에 풀어 기동 → 메인 창
+  - 진행 (2026-10-29): 기존 릴리스·태그 없음(gh 로그인 metapbl) → 사용자 v1.0.0 확정, `APP_VERSION` 이미 1.0.0 → CHANGELOG `2d59687`. `build.ps1` → win64 100.0 MB·1394항목, src 0.3 MB·97항목, 필수 항목·`config.json` 없음 확인
+  - 결과: 2026-10-29 통과 (RELEASE §4) — 사용자 1·2·3 예. Claude 대리: mp4 287.5 MB, `config.json` exe 옆만. 2항은 첫 mp3 가 정규화 꺼진 상태(`no_tag`)라 켜고 다시 받음 → MP3Gain `status ok`·volume 88.3(목표 89)·ffmpeg 디코딩 오류 0
+  - 문제 (2026-10-29): `git push origin main` 거부 — 원격에 2026-08-09 GitHub 웹 커밋 3개(NOTICE "non-commercial use" → "adds no restriction to the license" 문구). `;` 로 이어 실행해 태그 `v1.0.0 → 2d59687` 만 원격에 올라감. 사용자 결정: 병합 → 재빌드 → 태그 옮김. RELEASE.md §1·§5 에 fetch 확인·push 순서 추가
 - [ ] 11. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | `ruff check` 통과 | `git diff 90d1a0e.. -- gaindb/` 비어 있음 | 소스 실행 `venv\Scripts\python main.py` 기동 정상
   - 실기기: 성공 기준 장면(YouTube 단일)을 릴리스에서 받은 exe 로 → PRD §1 판정 3항

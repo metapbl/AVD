@@ -5,6 +5,7 @@
 명령은 모두 리포 루트의 PowerShell 에서 실행한다. 태그·push·`gh release` 는 각각 실행 전 확인한다 (D040).
 
 ## 1. 버전 올리기
+- `git fetch origin` 뒤 `git rev-list --count main..origin/main` 이 0 인지 본다. 아니면 먼저 병합한다 (GitHub 웹에서 고친 커밋이 빌드에서 빠진다)
 - `gh release list --repo metapbl/AVD` 와 `git ls-remote --tags origin` 으로 이미 쓴 번호를 확인한다
 - `utils/updater.py > APP_VERSION` 을 새 번호로 바꾼다 (`build.ps1` 이 여기서 zip 이름을 읽는다)
 
@@ -26,7 +27,7 @@ exe zip 을 리포 밖 새 폴더에 풀어 `AVD\AVD.exe` 로 확인한다. 하�
 
 ## 5. 태그·push
 - `git tag v{버전}`
-- `git push origin main` → `git push origin v{버전}`
+- `git push origin main` → 성공했을 때만 `git push origin v{버전}` (한 줄에 `;` 로 잇지 않는다)
 
 ## 6. GitHub Release
 - 게시:
