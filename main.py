@@ -8,6 +8,7 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
+from utils.updater import APP_VERSION
 
 # 동결 빌드에서도 main.py 는 _internal\ 에 있다고 보므로 datas 경로와 맞는다 (AVD.spec)
 ICON_PATH = Path(__file__).resolve().parent / "assets" / "icons" / "avd.png"
@@ -32,7 +33,7 @@ def main():
 
     # 앱 기본 정보 설정
     app.setApplicationName("AV Downloader")
-    app.setApplicationVersion("1.0.0")
+    app.setApplicationVersion(APP_VERSION)
     app.setOrganizationName("AVDownloader")
     app.setWindowIcon(QIcon(str(ICON_PATH)))
 

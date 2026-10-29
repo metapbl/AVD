@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`chore(release)`**: v1.0.1 — 앱 아이콘(D042) 반영. 앱 정보의 버전도 `APP_VERSION` 하나에서 읽는다.
 - **`feat(ui)`**: 앱 아이콘 추가 — 창 제목줄·작업표시줄·Alt+Tab·`AVD.exe` 파일 아이콘이 모두 같은 그림(`assets/icons/avd.png`·`avd.ico`). 소스 실행도 작업표시줄에 python 대신 AVD 아이콘. **(D042)**
 - **`chore(release)`**: v1.0.0 — 첫 GitHub Release. Windows x64 배포본(onedir, yt-dlp 2026.10.26 번들)과 같은 커밋의 소스 zip.
 - **`docs(release)`**: README 설치 절에 Windows 배포본 안내(zip 풀기 → ffmpeg·Node.js → `AVD.exe`, `config.json`·`_internal\gaindb\` 위치) 추가, 릴리스 절차서 `docs/RELEASE.md` 신설.

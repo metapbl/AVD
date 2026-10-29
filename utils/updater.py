@@ -14,7 +14,7 @@ import requests
 import yt_dlp
 
 # 앱 현재 버전 (배포 시 이 값을 변경)
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 
 # GitHub 저장소 주소 (나중에 본인 저장소로 변경)
 GITHUB_REPO = "metapbl/AVD"
