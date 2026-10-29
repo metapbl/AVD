@@ -71,9 +71,21 @@
   - 결과: 2026-10-29 통과 (RELEASE §4) — 사용자 1·2·3 예. Claude 대리: mp4 287.5 MB, `config.json` exe 옆만. 2항은 첫 mp3 가 정규화 꺼진 상태(`no_tag`)라 켜고 다시 받음 → MP3Gain `status ok`·volume 88.3(목표 89)·ffmpeg 디코딩 오류 0
   - 문제 (2026-10-29): `git push origin main` 거부 — 원격에 2026-08-09 GitHub 웹 커밋 3개(NOTICE "non-commercial use" → "adds no restriction to the license" 문구). `;` 로 이어 실행해 태그 `v1.0.0 → 2d59687` 만 원격에 올라감. 사용자 결정: 병합 → 재빌드 → 태그 옮김. RELEASE.md §1·§5 에 fetch 확인·push 순서 추가
   - 결과: 2026-10-29 통과 — 병합 `f3290d5`(2d59687 대비 NOTICE·문서만 다름) → 재빌드, 두 zip NOTICE 새 문구·옛 문구 없음, 기동 확인 → main push, 원격 태그 지우고 `v1.0.0 → f3290d5` → `gh release create`. `gh release view` assets: win64 104,887,071 B·src 359,136 B 모두 uploaded, draft 아님. 릴리스에서 받은 win64 zip 해시가 로컬과 같음, 새 폴더에 풀어 기동 → 창 "AV Downloader". 실기기 다운로드는 2d59687 빌드로 한 것 (코드 같음)
-- [ ] 11. 인수 확인
+- [x] 11. 인수 확인 (PRD 갱신은 작업 13 끝으로 옮김, Q051)
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | `ruff check` 통과 | `git diff 90d1a0e.. -- gaindb/` 비어 있음 | 소스 실행 `venv\Scripts\python main.py` 기동 정상
   - 실기기: 성공 기준 장면(YouTube 단일)을 릴리스에서 받은 exe 로 → PRD §1 판정 3항
+  - 결과: 2026-10-29 통과 — pytest 94·ruff 통과·`gaindb/` diff 0줄·소스 실행 창 표시(Claude). 사용자 판정 3항 모두 예 (게시본 exe, `E:\다운로드`). Claude 대리: `포토샵을 AI로 똑같이 만들었다고？ 포토크래프트 실사용기.mp4` 파일명 NFC, title 태그 원제와 같음·artist 한글, 표지(mjpeg attached_pic) 있음. PRD 갱신(discover)은 남음
+- [x] 12. 앱 아이콘 (D042) — `assets/icons/avd.png`·`avd.ico`, `main.py > main`, `AVD.spec`
+  - `avd.png` 는 사용자 원본 그대로, `avd.ico` 는 16·24·32·48·64·128·256 PNG 항목 (1회용 변환, 새 의존성 없음 — PySide6 로)
+  - 실패하는 테스트 먼저: `main.ICON_PATH` 가 있고 512×512 로 읽힌다
+  - `main.py`: Windows 면 QApplication 전에 AppUserModelID 지정(소스 실행 작업표시줄이 python 아이콘으로 묶이지 않게), `app.setWindowIcon`
+  - `AVD.spec`: `icon="assets/icons/avd.ico"`, datas 에 `avd.png`
+  - 확인: pytest·ruff 통과 | 시험 빌드에서 `_internal\assets\icons\avd.png` 있음, `AVD.exe` 에 아이콘 리소스 있음 | 실기기 눈 확인: 소스 실행·exe 각각 제목줄·작업표시줄·Alt+Tab·탐색기의 `AVD.exe` 아이콘
+  - 진행 (2026-10-29): `avd.ico` 98,554 B(7 크기, Qt 로 다시 읽힘). 테스트 먼저 실패(`ICON_PATH` 없음) → 구현 뒤 pytest 95·ruff 통과. 시험 빌드 `_internal\assets\icons\avd.png` 있음, `AVD.exe` 연결 아이콘 추출 → 새 아이콘. 소스·exe 각각 기동해 창의 `WM_GETICON` 핸들 → 새 아이콘 그림. 실기기 눈 확인 대기
+  - 결과: 2026-10-29 통과 — 사용자 4항(제목줄·작업표시줄·Alt+Tab·탐색기 `AVD.exe`, 소스·exe 모두) 모두 예
+- [ ] 13. v1.0.1 릴리스 — `docs/RELEASE.md` 절차대로 (`main.py` 의 `setApplicationVersion("1.0.0")` 하드코딩을 `APP_VERSION` 으로)
+  - 확인: `gh release view v1.0.1 --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe 기동, 아이콘 표시
+  - PRD 갱신 (작업 11 에서 옮김): `/metarche discover` 로 §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화
   - PRD 갱신 (2026-10-29 사용자 승인): 인수 확인 뒤 `/metarche discover` 로 §3 F7(exe 는 wheel 교체 D038, 업데이트 뒤 재시작 D041)·§5 배포 형태 "(미착수)" 를 현행화
 
 ## 자가 검토

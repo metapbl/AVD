@@ -9,6 +9,7 @@ a = Analysis(
         ("gaindb/LICENSE", "gaindb"),
         ("gaindb/NOTICE", "gaindb"),
         ("gaindb/THIRD_PARTY_LICENSES", "gaindb"),
+        ("assets/icons/avd.png", "assets/icons"),
     ],
     module_collection_mode={"gaindb": "py", "yt_dlp": "py"},
 )
@@ -20,5 +21,6 @@ exe = EXE(
     exclude_binaries=True,
     name="AVD",
     console=False,
+    icon="assets/icons/avd.ico",
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="AVD")

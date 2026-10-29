@@ -2,14 +2,23 @@
 # 앱 진입점 - 여기서 실행이 시작됨
 
 import sys
+from pathlib import Path
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
 
+# 동결 빌드에서도 main.py 는 _internal\ 에 있다고 보므로 datas 경로와 맞는다 (AVD.spec)
+ICON_PATH = Path(__file__).resolve().parent / "assets" / "icons" / "avd.png"
+
 
 def main():
+    # 소스 실행 때 작업표시줄이 python.exe 아이콘으로 묶이지 않게 앱 ID 를 따로 준다 (D042)
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("metapbl.AVD")
+
     # QApplication 생성 - PySide6 앱의 필수 첫 단계
     app = QApplication(sys.argv)
 
@@ -25,6 +34,7 @@ def main():
     app.setApplicationName("AV Downloader")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("AVDownloader")
+    app.setWindowIcon(QIcon(str(ICON_PATH)))
 
     # 기본 폰트 설정
     font = QFont("맑은 고딕", 10)
