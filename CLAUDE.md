@@ -36,6 +36,7 @@ yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크 테마 GUI). 본인
 
 ## 문서 지도
 - `docs/PRD.md` — 무엇을 왜 (승인본. 바꾸려면 /metarche discover)
+- `docs/SECURITY_POLICY.md` — 데이터 등급·신뢰 경계·암호화 (승인본). 인증·권한·암호화·민감 데이터를 건드리는 작업 전에 해당 절을 읽는다
 - `docs/PROGRESS.md` — 상태·다음 할 일 (머리는 세션 시작 때 자동 주입)
 - `docs/REFERENCE.md` — 구조·외부 사양·함정 대장·UI 원칙. 필요한 절만 검색해 읽는다
 - `docs/plans/` — 작업 계획 (체크박스)
@@ -44,6 +45,7 @@ yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크 테마 GUI). 본인
 
 ## 작업 기록
 - 작업을 끝내면 계획 파일의 체크박스를 갱신한다. 세션을 마칠 때 docs/PROGRESS.md 머리 부분을 갱신하고 /metarche wrap을 제안한다.
+- wrap 때 남은 변경을 `docs:`로 커밋하고, push는 할지 묻는다.
 - 관련 없는 작업으로 넘어갈 때는 /clear를 제안한다.
 - 새 결정은 `docs/discovery/DECISIONS.md`에, 반복된 실수의 원인은 REFERENCE 함정 대장에 적는다.
 - PRD 변경 중(`상태: changing`)에는 docs/ 밖을 수정하지 않는다 (훅이 막는다).
