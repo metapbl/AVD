@@ -25,6 +25,7 @@
 
 ## 2026-10-29
 
+- **`fix(ui)`**: exe 를 새 폴더에서 처음 실행하면 작업표시줄에 Windows 기본 아이콘이 뜨던 문제 — Qt 가 찾는 `IDI_ICON1` 리소스가 PyInstaller exe 에 없어 창 클래스 아이콘이 기본값이었다. 창을 띄우기 전에 클래스 아이콘을 `avd.ico` 로 바꾼다. **(D042)**
 - **`chore(release)`**: v1.0.1 — 앱 아이콘(D042) 반영. 앱 정보의 버전도 `APP_VERSION` 하나에서 읽는다.
 - **`feat(ui)`**: 앱 아이콘 추가 — 창 제목줄·작업표시줄·Alt+Tab·`AVD.exe` 파일 아이콘이 모두 같은 그림(`assets/icons/avd.png`·`avd.ico`). 소스 실행도 작업표시줄에 python 대신 AVD 아이콘. **(D042)**
 - **`chore(release)`**: v1.0.0 — 첫 GitHub Release. Windows x64 배포본(onedir, yt-dlp 2026.10.26 번들)과 같은 커밋의 소스 zip.

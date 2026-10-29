@@ -14,6 +14,28 @@ from utils.updater import APP_VERSION
 ICON_PATH = Path(__file__).resolve().parent / "assets" / "icons" / "avd.png"
 
 
+def set_window_class_icon(window):
+    """창 클래스 아이콘을 앱 아이콘으로 바꾼다 (Windows).
+
+    Qt 는 exe 의 `IDI_ICON1` 리소스만 찾고 없으면 Windows 기본 아이콘을 넣는데,
+    PyInstaller 는 아이콘을 번호 1 로 싣는다. 새 폴더에서 처음 실행할 때 작업표시줄이
+    이 클래스 아이콘을 써서 기본 아이콘이 뜬다 (작업 13 실기기). 창을 띄우기 전에 부른다.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    user32 = ctypes.windll.user32
+    user32.LoadImageW.restype = ctypes.c_void_p
+    user32.SetClassLongPtrW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
+    ico = str(ICON_PATH.with_suffix(".ico"))
+    hwnd = int(window.winId())  # 네이티브 창을 지금 만든다
+    for index, metric in ((-14, 11), (-34, 49)):  # GCLP_HICON·SM_CXICON, GCLP_HICONSM·SM_CXSMICON
+        size = user32.GetSystemMetrics(metric)
+        hicon = user32.LoadImageW(None, ico, 1, size, size, 0x10)  # IMAGE_ICON, LR_LOADFROMFILE
+        if hicon:
+            user32.SetClassLongPtrW(hwnd, index, hicon)
+
+
 def main():
     # 소스 실행 때 작업표시줄이 python.exe 아이콘으로 묶이지 않게 앱 ID 를 따로 준다 (D042)
     if sys.platform == "win32":
@@ -43,6 +65,7 @@ def main():
 
     # 메인 윈도우 생성 및 표시
     window = MainWindow()
+    set_window_class_icon(window)
     window.show()
 
     # 앱 이벤트 루프 시작

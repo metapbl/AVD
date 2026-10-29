@@ -85,6 +85,8 @@
   - 결과: 2026-10-29 통과 — 사용자 4항(제목줄·작업표시줄·Alt+Tab·탐색기 `AVD.exe`, 소스·exe 모두) 모두 예
 - [ ] 13. v1.0.1 릴리스 — `docs/RELEASE.md` 절차대로 (`main.py` 의 `setApplicationVersion("1.0.0")` 하드코딩을 `APP_VERSION` 으로)
   - 확인: `gh release view v1.0.1 --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe 기동, 아이콘 표시
+  - 결과: 2026-10-29 실패 — 빌드 `e674033`, 사용자 1·2·3 예, 4 "작업표시줄만 윈도우 기본아이콘 나머지는 아이콘적용" → §디버그
+  - 디버그 (2026-10-29): 재현 — exe 를 새 폴더에 복사해 처음 실행하면 작업표시줄 기본 아이콘, 두 번째부터 새 아이콘 (2폴더×2회 캡처). 가설 1 "AppUserModelID 탓" → exe 에서 빼고 시험 빌드, 3폴더 모두 첫 실행 기본 아이콘 → 기각·되돌림. 가설 2 "Qt 는 `IDI_ICON1` 리소스만 찾고 PyInstaller 는 번호 1 로 싣는다" → 확인: exe 리소스 1 있음·`IDI_ICON1` 없음, 첫 실행 창 클래스 아이콘 = `IDI_APPLICATION`. 수정 `main.py > set_window_class_icon`(show 전에 `avd.ico` 로 `GCLP_HICON`·`GCLP_HICONSM`), spec datas 에 `avd.ico`. 회귀 테스트 먼저 실패 확인 → pytest 96·ruff 통과. 시험 빌드 3폴더×2회 모두 새 아이콘
   - PRD 갱신 (작업 11 에서 옮김): `/metarche discover` 로 §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화
   - PRD 갱신 (2026-10-29 사용자 승인): 인수 확인 뒤 `/metarche discover` 로 §3 F7(exe 는 wheel 교체 D038, 업데이트 뒤 재시작 D041)·§5 배포 형태 "(미착수)" 를 현행화
 

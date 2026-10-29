@@ -10,6 +10,7 @@ a = Analysis(
         ("gaindb/NOTICE", "gaindb"),
         ("gaindb/THIRD_PARTY_LICENSES", "gaindb"),
         ("assets/icons/avd.png", "assets/icons"),
+        ("assets/icons/avd.ico", "assets/icons"),
     ],
     module_collection_mode={"gaindb": "py", "yt_dlp": "py"},
 )

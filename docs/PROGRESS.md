@@ -10,6 +10,7 @@
 3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
+- (작업 13 실기기 4항 실패) v1.0.1 exe(scratchpad `rel-v1.0.1`)에서 작업표시줄만 Windows 기본 아이콘, 제목줄 등은 새 아이콘. 1~3항은 예. 작업 12 때 `dist\AVD\AVD.exe` 는 작업표시줄도 예였음 — 단서: `main.py > main` 의 AppUserModelID
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기존 코드, D013 위반) `ui/main_window.py > _run_ytdlp_update` 의 `worker.done.connect(_on_done)` 에 `QueuedConnection` 명시 없음 — 이번 계획 전부터
 - (판단 필요) Qt/PySide6 LGPL 소스 제공을 공식 서버 링크로 갈음 (`THIRD_PARTY_LICENSES`) — 직접 첨부가 필요한지 법률 검토 안 함
