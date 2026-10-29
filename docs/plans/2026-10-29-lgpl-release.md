@@ -87,6 +87,8 @@
   - 확인: `gh release view v1.0.1 --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe 기동, 아이콘 표시
   - 결과: 2026-10-29 실패 — 빌드 `e674033`, 사용자 1·2·3 예, 4 "작업표시줄만 윈도우 기본아이콘 나머지는 아이콘적용" → §디버그
   - 디버그 (2026-10-29): 재현 — exe 를 새 폴더에 복사해 처음 실행하면 작업표시줄 기본 아이콘, 두 번째부터 새 아이콘 (2폴더×2회 캡처). 가설 1 "AppUserModelID 탓" → exe 에서 빼고 시험 빌드, 3폴더 모두 첫 실행 기본 아이콘 → 기각·되돌림. 가설 2 "Qt 는 `IDI_ICON1` 리소스만 찾고 PyInstaller 는 번호 1 로 싣는다" → 확인: exe 리소스 1 있음·`IDI_ICON1` 없음, 첫 실행 창 클래스 아이콘 = `IDI_APPLICATION`. 수정 `main.py > set_window_class_icon`(show 전에 `avd.ico` 로 `GCLP_HICON`·`GCLP_HICONSM`), spec datas 에 `avd.ico`. 회귀 테스트 먼저 실패 확인 → pytest 96·ruff 통과. 시험 빌드 3폴더×2회 모두 새 아이콘
+  - 결과: 2026-10-29 통과 — 재빌드 `c21cbbb`(Claude 미실행 폴더), 사용자 4항 모두 예(처음 실행부터 작업표시줄 새 아이콘). Claude 대리: `config.json` exe 옆만, mp3 MP3Gain `ok`·volume 88.5(목표 89)·디코딩 오류 0
+  - 게시 (2026-10-29): fetch behind 0 → `v1.0.1 → c21cbbb`, main push 성공 뒤 태그 push → `gh release create`(노트에 아이콘·v1.0.0 에서 config.json 옮기기). assets win64 105,147,706 B·src 591,917 B uploaded, draft 아님, 목록에서 Latest. 받은 zip 해시가 로컬과 같음, 새 폴더 기동 → 창 "AV Downloader"
   - PRD 갱신 (작업 11 에서 옮김): `/metarche discover` 로 §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화
   - PRD 갱신 (2026-10-29 사용자 승인): 인수 확인 뒤 `/metarche discover` 로 §3 F7(exe 는 wheel 교체 D038, 업데이트 뒤 재시작 D041)·§5 배포 형태 "(미착수)" 를 현행화
 

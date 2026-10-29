@@ -1,16 +1,16 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (10/11)
-- 갱신: 2026-10-29 · v1.0.0 게시(태그 `f3290d5`, https://github.com/metapbl/AVD/releases/tag/v1.0.0). 그 뒤 기록 커밋은 push 안 함
+- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (12/13, 작업 13 은 PRD 갱신만 남음)
+- 갱신: 2026-10-29 · v1.0.1 게시(태그 `c21cbbb`, https://github.com/metapbl/AVD/releases/tag/v1.0.1, Latest). 그 뒤 기록 커밋은 push 안 함
 
 ## 다음 할 일
-1. 작업 11 인수 확인: pytest·ruff·`git diff 90d1a0e.. -- gaindb/`·소스 실행 기동 → 릴리스에서 받은 exe 로 YouTube 단일(PRD §1 판정 3항) → `/metarche discover` 로 PRD §3 F7·§5 배포 형태 현행화
-2. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. 작업 13 끝: `/metarche discover` 로 PRD §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화 → 계획 `상태: done`
+2. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
+3. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+4. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
-- (작업 13 실기기 4항 실패) v1.0.1 exe(scratchpad `rel-v1.0.1`)에서 작업표시줄만 Windows 기본 아이콘, 제목줄 등은 새 아이콘. 1~3항은 예. 작업 12 때 `dist\AVD\AVD.exe` 는 작업표시줄도 예였음 — 단서: `main.py > main` 의 AppUserModelID
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기존 코드, D013 위반) `ui/main_window.py > _run_ytdlp_update` 의 `worker.done.connect(_on_done)` 에 `QueuedConnection` 명시 없음 — 이번 계획 전부터
 - (판단 필요) Qt/PySide6 LGPL 소스 제공을 공식 서버 링크로 갈음 (`THIRD_PARTY_LICENSES`) — 직접 첨부가 필요한지 법률 검토 안 함
