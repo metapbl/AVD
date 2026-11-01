@@ -153,6 +153,16 @@ def open_folder(path: str):
         subprocess.run(["explorer", path], check=False)
 
 
+def open_file(path: str):
+    """
+    파일을 OS 기본 앱으로 열기 (D049). 파일이 없으면 아무것도 하지 않는다
+    """
+    from PySide6.QtCore import QUrl
+    from PySide6.QtGui import QDesktopServices
+    if os.path.isfile(path):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+
+
 # ── 자식 프로세스 추적 헬퍼 ─────────────────────────────────
 # yt-dlp 는 다운로드/후처리 과정에서 ffmpeg.exe 와 node.exe(EJS 챌린지) 를
 # 자식 프로세스로 띄운다. 사용자가 취소를 누른 직후에도 이 자식들이 살아

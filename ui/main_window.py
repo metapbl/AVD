@@ -29,7 +29,7 @@ from ui.format_select_dialog import FormatSelectDialog
 from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
 from utils.config_manager import ConfigManager
-from utils.file_utils import open_folder
+from utils.file_utils import open_file, open_folder
 from utils.updater import YtdlpUpdater, restart_command
 from workers.info_worker import InfoWorker
 from workers.thumbnail_worker import ThumbnailWorker
@@ -312,6 +312,7 @@ class MainWindow(QMainWindow):
         widget.cancel_requested.connect(self._on_cancel)
         widget.retry_requested.connect(self._on_retry)
         widget.open_requested.connect(self._on_open_folder)
+        widget.play_requested.connect(self._on_play_file)
         widget.remove_requested.connect(self._on_remove)
         self.widgets[item.item_id] = widget
 
@@ -900,6 +901,12 @@ class MainWindow(QMainWindow):
         item = self.items.get(item_id)
         if item and item.save_path:
             open_folder(item.save_path)
+
+    def _on_play_file(self, item_id: str):
+        """재생 버튼 클릭 — 받은 파일을 기본 앱으로 (D049)"""
+        item = self.items.get(item_id)
+        if item and item.save_path:
+            open_file(item.save_path)
 
     def _on_remove(self, item_id: str, skip_confirm: bool = False):
         """항목 ✕ 버튼 클릭."""

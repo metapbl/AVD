@@ -157,6 +157,7 @@ class DownloadItemWidget(QWidget):
         cancel_requested  : 취소 버튼 클릭 시 (라벨이 "취소" 일 때)
         retry_requested   : 재시도 버튼 클릭 시 (라벨이 "재시도" 일 때 — ERROR/CANCELLED)
         open_requested    : 폴더 열기 버튼 클릭 시
+        play_requested    : 재생 버튼 클릭 시 (D049)
         remove_requested  : 항목 삭제 버튼 클릭 시
 
     레이아웃 사양 (2026-05-28 합의):
@@ -173,6 +174,7 @@ class DownloadItemWidget(QWidget):
     cancel_requested = Signal(str)  # item_id 전달
     retry_requested  = Signal(str)  # item_id 전달 — ERROR / CANCELLED 상태에서 재시도
     open_requested   = Signal(str)  # item_id 전달
+    play_requested   = Signal(str)  # item_id 전달
     remove_requested = Signal(str)  # item_id 전달
 
     def __init__(self, item: DownloadItem, parent=None):
@@ -319,6 +321,16 @@ class DownloadItemWidget(QWidget):
         )
         btn_layout.addWidget(self.btn_open)
 
+        # 재생 버튼 — 받은 파일을 기본 앱으로 (완료 후 표시, D049)
+        self.btn_play = QPushButton("▶ 재생")
+        self.btn_play.setObjectName("btnPlay")
+        self.btn_play.setFixedWidth(60)
+        self.btn_play.setVisible(False)
+        self.btn_play.clicked.connect(
+            lambda: self.play_requested.emit(self.item.item_id)
+        )
+        btn_layout.addWidget(self.btn_play)
+
         # 삭제 버튼
         self.btn_remove = QPushButton("✕")
         self.btn_remove.setObjectName("btnRemove")
@@ -376,6 +388,14 @@ class DownloadItemWidget(QWidget):
                 font-size: 11px;
             }
             QPushButton#btnOpen:hover { background: #5aa0e9; }
+            QPushButton#btnPlay {
+                background: #2e7d32;
+                color: #fff;
+                border-radius: 4px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton#btnPlay:hover { background: #4caf50; }
             QPushButton#btnRemove {
                 background: #444;
                 color: #aaa;
@@ -609,7 +629,7 @@ class DownloadItemWidget(QWidget):
         - WAITING   : 취소·열기 모두 숨김. ✕ 만 노출 — 큐 대기 중에는 취소할
                       워커가 없으므로 "취소" 버튼은 거짓말이 된다. 큐에서 빼는
                       동작은 ✕ 단일 경로로 통일.
-        - DONE      : 취소/재시도 숨김, "열기" 노출
+        - DONE      : 취소/재시도 숨김, "열기"·"재생" 노출 (재생은 DONE 에서만)
         - ERROR     : "재시도" 라벨, 가시
         - CANCELLED : "재시도" 라벨, 가시 (사용자 취소도 재시도 가능)
         - 그 외(FETCHING/DOWNLOADING/MERGING) : "취소" 라벨로 복원
@@ -636,6 +656,7 @@ class DownloadItemWidget(QWidget):
             DownloadStatus.MERGING,
         )
         self.btn_remove.setVisible(not active)
+        self.btn_play.setVisible(status == DownloadStatus.DONE)
 
         if status == DownloadStatus.WAITING:
             # 큐 대기 — 취소·열기 숨김, ✕ 만 노출.

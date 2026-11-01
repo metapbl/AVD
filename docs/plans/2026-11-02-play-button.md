@@ -13,12 +13,13 @@
 - 커밋 작성자 `metapbl` 확인, 의미 단위 커밋마다 `CHANGELOG.md` 맨 위 항목 (D014, D020)
 
 ## 작업
-- [ ] 1. "▶ 재생" 버튼 — `utils/file_utils.py > open_file`, `ui/download_item_widget.py > DownloadItemWidget`, `ui/main_window.py > _on_play_file`
+- [x] 1. "▶ 재생" 버튼 — `utils/file_utils.py > open_file`, `ui/download_item_widget.py > DownloadItemWidget`, `ui/main_window.py > _on_play_file`
   - 실패하는 테스트 먼저 (`tests/test_play_button.py`):
     - `open_file`: 있는 파일 → `QDesktopServices.openUrl` 이 그 파일 URL 로 한 번 호출 / 없는 경로 → 호출 없음 (openUrl 은 가짜로 바꿈)
     - 위젯: DONE → `btn_play` 보임, 버튼 줄 순서가 열기 → 재생 → ✕ / WAITING·DOWNLOADING·ERROR·CANCELLED → 숨김 / 클릭 → `play_requested(item_id)`
     - 높이: DONE 상태로 띄운 위젯에서 세 버튼이 겹치지 않고 위젯(96px) 안에 들어간다
   - 확인: `venv\Scripts\python -m pytest tests/test_play_button.py` 통과 → 전체 pytest 통과 → ruff 통과
+  - 결과 (2026-11-02): 테스트 먼저 실패 확인(`open_file` 없음 ImportError) → 구현 뒤 새 테스트 6 통과, 전체 pytest 104 통과, ruff 통과. DONE 버튼 세로 위치 열기 8~30·재생 35~57·✕ 62~84 (위젯 96, 아래 여백 8). 색은 기존 팔레트 초록 `#2e7d32`·hover `#4caf50`. 숨김 처리는 상태 분기마다 넣지 않고 `update_status` 에 한 줄(`status == DONE`)
 - [ ] 2. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 | 실기기 (소스 실행): 1 영상 하나 받기 → 완료 항목에 "📂 열기 / ▶ 재생 / ✕" 가 세로로 잘리지 않고 보인다 · 2 "▶ 재생" → 기본 플레이어에서 재생 · 3 MP3 로 받은 항목의 "▶ 재생" → 기본 음악 앱에서 재생 · 4 진행 중 항목에는 "▶ 재생" 이 없다
 
