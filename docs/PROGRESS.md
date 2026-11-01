@@ -1,14 +1,15 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 다섯 번째 계획 `docs/plans/2026-11-02-security-followups.md` active (0/5)
+- 단계: 7 계획 대기 · 다섯 번째 계획 `docs/plans/2026-11-02-security-followups.md` done (5/5). active 계획 없음
 - 갱신: 2026-11-02 · 이전: 2026-10-29 v1.0.1 게시(태그 `c21cbbb`, Latest). PRD·보안 정책 approved (2026-10-29). 그 뒤 커밋은 push 안 함
 
 ## 다음 할 일
-1. 계획 작업 1 — `utils/updater.py > AppUpdater` 삭제(D046). 이어서 2 형식 선택 창 제목 PlainText, 3 pip-audit, 4 `_run_ytdlp_update` QueuedConnection
-2. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
-3. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-4. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. OPEN O19 — pip-audit 보고 certifi·urllib3 핀 올림과 다음 릴리스 여부 판단
+2. (사용자 요청 2026-11-02) 다운로드 항목에 "파일 열기" 버튼 — 폴더 열기와 X 사이. PRD §3 확인 뒤 다음 계획 후보
+3. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
+4. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+5. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
