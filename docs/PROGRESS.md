@@ -2,15 +2,14 @@
 
 ## 상태
 - 단계: 7 계획 대기 · 여섯 번째 계획 `docs/plans/2026-11-02-play-button.md` done (2/2). active 계획 없음
-- 갱신: 2026-11-02 · 다섯 번째(보안 정책 후속)·여섯 번째(재생 버튼) 계획 done, `732d62e` 까지 push. 최신 릴리스는 v1.0.1 (태그 `c21cbbb`) — 이후 변경은 미릴리스
+- 갱신: 2026-11-02 · 다섯 번째(보안 정책 후속)·여섯 번째(재생 버튼) 계획 done, `732d62e` 까지 push. PRD F1 에 완료 항목 폴더 열기·재생 반영(Q055, approved 복귀). 최신 릴리스는 v1.0.1 (태그 `c21cbbb`) — 이후 변경은 미릴리스
 
 ## 다음 할 일
-1. (제안) PRD F1 에 "완료 항목: 폴더 열기·재생(D049)" 한 줄 — 승인본이라 `/metarche discover`
-2. OPEN O19 — pip-audit 보고 certifi·urllib3 핀 올림과 다음 릴리스 여부 판단
-3. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
-4. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
-5. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-6. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. OPEN O19 — pip-audit 보고 certifi·urllib3 핀 올림과 다음 릴리스 여부 판단
+2. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
+3. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
+4. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+5. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
