@@ -23,10 +23,11 @@
   - 확인: `venv\Scripts\python -m pytest tests/test_format_select_dialog.py` 통과 → 전체 pytest 통과
   - 범위 추가 (2026-11-02 사용자 승인): 같은 창의 업로더 줄 `lbl_meta`, `ui/playlist_select_dialog.py` 의 플레이리스트 제목 라벨도 AutoText 였음 → 함께 PlainText
   - 결과 (2026-11-02): 테스트 2건 먼저 실패 확인 → 구현 뒤 pytest 98 통과, ruff 통과. SECURITY_POLICY §4 문구를 "지킴" 으로
-- [ ] 3. pip-audit 도입 (D045) — `requirements-dev.txt`, `docs/RELEASE.md`
+- [x] 3. pip-audit 도입 (D045) — `requirements-dev.txt`, `docs/RELEASE.md`
   - 설치 뒤 버전을 `requirements-dev.txt` 에 핀. Python 3.15 에서 설치·실행이 안 되면 여기서 멈추고 OPEN 에 질문
   - RELEASE.md 에 "3. 빌드" 앞 절로 `venv\Scripts\pip-audit -r requirements.txt` 추가: 취약점이 나오면 게시 전에 판단 (yt-dlp 는 기동 시 자동 업데이트로 최신이 되므로 핀 버전 보고는 기록만)
   - 확인: `venv\Scripts\pip-audit -r requirements.txt` 실행 완료 (종료 코드와 보고 내용을 계획 결과에 기록, 취약점이 있으면 OPEN 에 질문)
+  - 결과 (2026-11-02): pip-audit 2.10.1 이 Python 3.15.1 에 설치·실행됨. 종료 코드 1 — 3개 패키지 14건(중복 ID 포함): certifi 2026.4.22 → 2026.10.18, urllib3 2.7.0 → 2.8.0, yt-dlp 2026.3.17(핀, D002 의도) → 2026.7.4. 버전은 올리지 않고 OPEN O19. RELEASE.md 는 절 번호를 바꾸지 않으려고 "3. 빌드" 첫 줄로 넣음
 - [ ] 4. (선택) D013 위반 정리 — `ui/main_window.py > _run_ytdlp_update`
   - `worker.done.connect(_on_done)` 에 `Qt.ConnectionType.QueuedConnection` 명시. PROGRESS 미해결의 기존 항목
   - 확인: 전체 pytest 통과 | 실기기: 소스 실행에서 yt-dlp 업데이트 질문 → 예 → 완료 문구 표시 (업데이트할 버전이 없으면 `version.py` 를 옛 값으로 바꿔서)

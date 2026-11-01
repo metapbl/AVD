@@ -14,6 +14,8 @@
 - 1·2 를 한 커밋으로: `chore(release): v{버전}`. 작성자 확인 `git log -1 --format="%an <%ae>"`
 
 ## 3. 빌드
+- 먼저 의존성 취약점 검사 (D045): `venv\Scripts\pip-audit -r requirements.txt` — 종료 코드 0 이면 통과. 보고가 있으면 게시 전에 판단한다
+  - `yt-dlp` 핀 버전에 대한 보고는 기록만 한다. 핀은 자동 업데이트 리허설용으로 일부러 낮고(D002), 배포본에는 venv 의 최신 yt-dlp 가 실린다
 - `.\build.ps1` — 커밋 안 된 변경이 있으면 멈춘다
 - 결과: `release\AVD-v{버전}-win64.zip`(안에 `AVD\` 폴더), `release\AVD-v{버전}-src.zip`
 - 번들된 yt-dlp 버전을 적어 둔다 (릴리스 노트용):

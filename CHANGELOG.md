@@ -25,6 +25,7 @@
 
 ## 2026-11-02
 
+- **`build`**: 개발 의존성에 `pip-audit` 2.10.1 추가, 릴리스 절차의 빌드 앞에 의존성 취약점 검사(`pip-audit -r requirements.txt`) 단계. **(D045)**
 - **`fix(ui)`**: 형식 선택 창의 제목·채널명과 플레이리스트 창의 제목을 서식 없는 글자로 표시 — 전에는 HTML 처럼 생긴 제목이 굵은 글씨·링크로 해석됐다. (SECURITY_POLICY §4)
 - **`refactor(updater)`**: 쓰이지 않던 앱 자체 업데이트 코드 `AppUpdater` 삭제 — 무결성 검증 없이 exe 를 받아 `shell=True` 배치로 실행하던 코드. **(D046)**
 
