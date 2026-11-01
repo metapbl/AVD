@@ -58,6 +58,7 @@ class FormatSelectDialog(QDialog):
         title_col = QVBoxLayout()
         lbl_title = QLabel(self.video_info.title)
         lbl_title.setObjectName("videoTitle")
+        lbl_title.setTextFormat(Qt.TextFormat.PlainText)  # 사이트가 준 문자열 (SECURITY_POLICY §4)
         lbl_title.setWordWrap(True)
         title_col.addWidget(lbl_title)
 
@@ -68,6 +69,7 @@ class FormatSelectDialog(QDialog):
         )
         lbl_meta = QLabel(meta)
         lbl_meta.setObjectName("videoMeta")
+        lbl_meta.setTextFormat(Qt.TextFormat.PlainText)
         title_col.addWidget(lbl_meta)
         info_row.addLayout(title_col, stretch=1)
         root.addLayout(info_row)

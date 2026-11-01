@@ -17,10 +17,12 @@
   - 호출처 없음 확인됨 (2026-11-02 grep). `GITHUB_REPO` 는 `APP_API_URL` 에만 쓰여 함께 지운다. `subprocess`·`requests` import 는 `YtdlpUpdater`·`install_ytdlp_wheel` 이 계속 쓴다
   - 확인: `git grep -n "AppUpdater\|APP_API_URL\|GITHUB_REPO\|shell=True" -- "*.py" ":!gaindb" ":!docs"` → 출력 없음 | 전체 pytest 통과 | ruff 통과
   - 결과 (2026-11-02): grep 출력 없음(종료 1), pytest 96 통과, ruff 통과. 88줄 삭제
-- [ ] 2. 형식 선택 창 제목 PlainText (SECURITY_POLICY §4) — `ui/format_select_dialog.py > FormatSelectDialog.__init__`
+- [x] 2. 형식 선택 창 제목 PlainText (SECURITY_POLICY §4) — `ui/format_select_dialog.py > FormatSelectDialog.__init__`
   - 실패하는 테스트 먼저: 제목이 `<b>굵게</b>` 인 `VideoInfo` 로 창을 만들고 `QLabel#videoTitle` 의 `textFormat() == PlainText`, `text()` 가 원문 그대로
   - SECURITY_POLICY §4 의 "고칠 작업 후보 [X]" 문구를 "지킴 [X]" 로 바꾼다 (사실 갱신, 정책 내용은 그대로)
   - 확인: `venv\Scripts\python -m pytest tests/test_format_select_dialog.py` 통과 → 전체 pytest 통과
+  - 범위 추가 (2026-11-02 사용자 승인): 같은 창의 업로더 줄 `lbl_meta`, `ui/playlist_select_dialog.py` 의 플레이리스트 제목 라벨도 AutoText 였음 → 함께 PlainText
+  - 결과 (2026-11-02): 테스트 2건 먼저 실패 확인 → 구현 뒤 pytest 98 통과, ruff 통과. SECURITY_POLICY §4 문구를 "지킴" 으로
 - [ ] 3. pip-audit 도입 (D045) — `requirements-dev.txt`, `docs/RELEASE.md`
   - 설치 뒤 버전을 `requirements-dev.txt` 에 핀. Python 3.15 에서 설치·실행이 안 되면 여기서 멈추고 OPEN 에 질문
   - RELEASE.md 에 "3. 빌드" 앞 절로 `venv\Scripts\pip-audit -r requirements.txt` 추가: 취약점이 나오면 게시 전에 판단 (yt-dlp 는 기동 시 자동 업데이트로 최신이 되므로 핀 버전 보고는 기록만)

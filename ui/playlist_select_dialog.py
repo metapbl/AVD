@@ -71,6 +71,7 @@ class PlaylistSelectDialog(QDialog):
             head += " (상한 500개까지 표시)"
         lbl = QLabel(head)
         lbl.setObjectName("dialogLabel")
+        lbl.setTextFormat(Qt.TextFormat.PlainText)  # 사이트가 준 제목 (SECURITY_POLICY §4)
         lbl.setWordWrap(True)
         root.addWidget(lbl)
 

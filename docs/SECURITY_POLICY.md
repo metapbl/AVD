@@ -37,7 +37,7 @@
 - 외부 명령은 인자 배열로 실행하고 `shell=True` 를 쓰지 않는다 [AI] — 유일한 예외였던 `utils/updater.py > AppUpdater`(검증 없이 exe 를 받아 배치 실행, 호출처 없음)는 지운다 (D046) [U]
 - 원격 코드 교체(yt-dlp wheel)는 받은 파일의 sha256 을 PyPI 값과 대조한 뒤에만 한다. 대조 실패·교체 실패 때는 옛 폴더를 그대로 둔다 (D038, D047) [X]
 - 앱 자체 업데이트(AVD exe 교체)는 하지 않는다. 필요해지면 무결성 검증을 포함해 새로 설계한다 (D046) [U]
-- 사이트가 준 문자열(제목·채널명)은 파일 이름에 쓰기 전에 정리한다 [X]. Qt 위젯에는 `PlainText` 로 넣거나, RichText 면 `html.escape` 뒤에 넣는다 [AI] — `ui/download_item_widget.py` 는 지킴 [X], `ui/format_select_dialog.py` 의 제목 `QLabel` 은 기본(AutoText)이라 HTML 처럼 생긴 제목이 서식으로 해석된다 → 고칠 작업 후보 [X]
+- 사이트가 준 문자열(제목·채널명)은 파일 이름에 쓰기 전에 정리한다 [X]. Qt 위젯에는 `PlainText` 로 넣거나, RichText 면 `html.escape` 뒤에 넣는다 [AI] — `ui/download_item_widget.py`·`ui/format_select_dialog.py`(제목·채널명)·`ui/playlist_select_dialog.py`(플레이리스트 제목) 는 지킴 [X]
 
 ## 5. 서버 규칙
 - 해당 없음 — 서버 구성요소가 없다 (D043) [U]
