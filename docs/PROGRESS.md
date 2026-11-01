@@ -12,7 +12,6 @@
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
-- (기존 코드, D013 위반) `ui/main_window.py > _run_ytdlp_update` 의 `worker.done.connect(_on_done)` 에 `QueuedConnection` 명시 없음 — 이번 계획 전부터
 - (판단 필요) Qt/PySide6 LGPL 소스 제공을 공식 서버 링크로 갈음 (`THIRD_PARTY_LICENSES`) — 직접 첨부가 필요한지 법률 검토 안 함
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기

@@ -28,9 +28,11 @@
   - RELEASE.md 에 "3. 빌드" 앞 절로 `venv\Scripts\pip-audit -r requirements.txt` 추가: 취약점이 나오면 게시 전에 판단 (yt-dlp 는 기동 시 자동 업데이트로 최신이 되므로 핀 버전 보고는 기록만)
   - 확인: `venv\Scripts\pip-audit -r requirements.txt` 실행 완료 (종료 코드와 보고 내용을 계획 결과에 기록, 취약점이 있으면 OPEN 에 질문)
   - 결과 (2026-11-02): pip-audit 2.10.1 이 Python 3.15.1 에 설치·실행됨. 종료 코드 1 — 3개 패키지 14건(중복 ID 포함): certifi 2026.4.22 → 2026.10.18, urllib3 2.7.0 → 2.8.0, yt-dlp 2026.3.17(핀, D002 의도) → 2026.7.4. 버전은 올리지 않고 OPEN O19. RELEASE.md 는 절 번호를 바꾸지 않으려고 "3. 빌드" 첫 줄로 넣음
-- [ ] 4. (선택) D013 위반 정리 — `ui/main_window.py > _run_ytdlp_update`
+- [x] 4. (선택) D013 위반 정리 — `ui/main_window.py > _run_ytdlp_update`
   - `worker.done.connect(_on_done)` 에 `Qt.ConnectionType.QueuedConnection` 명시. PROGRESS 미해결의 기존 항목
   - 확인: 전체 pytest 통과 | 실기기: 소스 실행에서 yt-dlp 업데이트 질문 → 예 → 완료 문구 표시 (업데이트할 버전이 없으면 `version.py` 를 옛 값으로 바꿔서)
+  - 1차 (2026-11-02): pytest 98·ruff 통과. 실기기 준비를 `version.py` 문자열만 바꿔서 함 → 앱 재시작 뒤 사용자 "업데이트 질문이 다시 뜸". 원인: dist-info 가 2026.10.26 이라 pip 가 '이미 최신'으로 아무것도 안 바꿈 (`version.py` 그대로 2026.03.17 확인). 코드가 아닌 준비 문제 — 소스 실행 리허설은 실제 옛 버전 설치가 필요
+  - 결과: 2026-11-02 1~3 통과 — 사용자 "1~3은 정상" (질문 표시, 예 → 진행 줄·완료 문구, 닫기 → 재시작). 4(재시작 뒤 질문 없음)는 위 준비 문제로 판정 못 함 → 사용자 결정: 이번 변경과 무관한 D041 동작이라 이전 계획 작업 8 확인으로 갈음. `version.py` 를 2026.10.26 으로 되돌림. 같은 함수의 `progress_text` 연결도 같은 규칙 위반이라 함께 명시
 - [ ] 5. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 · `venv\Scripts\ruff.exe check` 통과 | 실기기: 소스 실행으로 YouTube 영상 하나 링크 추가 → 형식 선택 창에 제목이 보이고 다운로드 완료
 

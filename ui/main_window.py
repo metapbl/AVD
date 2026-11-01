@@ -995,7 +995,9 @@ class MainWindow(QMainWindow):
         self._update_worker = worker
         self._update_dialog = dialog
 
-        worker.progress_text.connect(dialog.append_line)
+        worker.progress_text.connect(
+            dialog.append_line, Qt.ConnectionType.QueuedConnection
+        )
 
         result = {"success": False}
 
@@ -1006,7 +1008,7 @@ class MainWindow(QMainWindow):
             worker.quit()
             worker.wait(2000)
 
-        worker.done.connect(_on_done)
+        worker.done.connect(_on_done, Qt.ConnectionType.QueuedConnection)
         worker.start()
 
         # 모달 진입: 여기서 메인창 입력이 막힌다. 사용자가 완료 후 '닫기'.
