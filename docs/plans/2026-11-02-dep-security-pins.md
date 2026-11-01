@@ -21,9 +21,10 @@
   - 1차 (2026-11-02): 두 패키지만 설치(venv yt-dlp 2026.10.26 유지 확인). `pip check` 통과, pip-audit 종료 1 — 보고는 yt-dlp 2026.3.17(핀, D002) 9건뿐, pytest 104 통과, ruff 통과. 실기기 대기
   - 실기기: 소스 실행으로 YouTube 영상 하나 링크 추가 → 정보·썸네일(UI 미리보기)이 뜨고 다운로드 완료 (certifi·urllib3 는 HTTPS 요청 경로에 쓰이므로). 통과하면 O19 를 해결로 옮기고 QA_LOG·DECISIONS 에 기록
   - 결과: 2026-11-02 통과 — 사용자 "정상" (정보·썸네일 표시, 다운로드 완료). O19 해결 → D050
-- [ ] 2. 버전 올리기·CHANGELOG (RELEASE §1·§2) — `utils/updater.py > APP_VERSION` → `1.0.2`, `CHANGELOG.md`
+- [x] 2. 버전 올리기·CHANGELOG (RELEASE §1·§2) — `utils/updater.py > APP_VERSION` → `1.0.2`, `CHANGELOG.md`
   - [U] v1.0.2 에는 v1.0.1 이후 미릴리스 변경(보안 정책 후속, 완료 항목 폴더 열기·재생 버튼)도 함께 실린다
   - 확인: `git rev-list --count main..origin/main` → 0 | `gh release list --repo metapbl/AVD` 에 v1.0.2 없음 | 커밋 `chore(release): v1.0.2` 작성자 `metapbl <ggoyong2@gmail.com>`
+  - 결과: 2026-11-02 — origin 대비 behind 0, 릴리스·태그는 v1.0.0·v1.0.1 뿐. `APP_VERSION` 1.0.2
 - [ ] 3. 빌드·exe 실기기 확인 (RELEASE §3·§4) — `.\build.ps1`
   - 확인: `pip-audit -r requirements.txt` 보고가 yt-dlp 만 | `release\AVD-v1.0.2-win64.zip`·`AVD-v1.0.2-src.zip` 생김 | 번들 yt-dlp 버전 기록 | 실기기: 리포 밖 새 폴더에 푼 `AVD.exe` 로 RELEASE §4 의 1~3 → 모두 기대대로 (하나라도 아니면 4 로 가지 않는다)
 - [ ] 4. 태그·push·GitHub Release (RELEASE §5·§6) — 각 명령 실행 전 확인 (D040)
