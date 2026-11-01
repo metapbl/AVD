@@ -1,5 +1,5 @@
 # 네 번째 계획 — LGPL 배포 산출물과 첫 릴리스
-상태: active | 시작: 2026-10-29 | 근거: PRD §2.2 [두 번째 계획] 항목, §2.6, F7 (D011, D022, D038, D039, D040)
+상태: done (2026-10-29) | 시작: 2026-10-29 | 근거: PRD §2.2 [두 번째 계획] 항목, §2.6, F7 (D011, D022, D038, D039, D040)
 
 목표: Windows 사용자가 GitHub Release 의 zip 을 풀어 `AVD.exe` 로 바로 쓴다. `gaindb/` 는 평문 `.py` 로 교체할 수 있고, 릴리스에 소스 zip 과 의존성 라이선스 전문이 함께 있다. exe 에서도 yt-dlp 자동 업데이트가 동작한다.
 구조:
@@ -83,13 +83,14 @@
   - 확인: pytest·ruff 통과 | 시험 빌드에서 `_internal\assets\icons\avd.png` 있음, `AVD.exe` 에 아이콘 리소스 있음 | 실기기 눈 확인: 소스 실행·exe 각각 제목줄·작업표시줄·Alt+Tab·탐색기의 `AVD.exe` 아이콘
   - 진행 (2026-10-29): `avd.ico` 98,554 B(7 크기, Qt 로 다시 읽힘). 테스트 먼저 실패(`ICON_PATH` 없음) → 구현 뒤 pytest 95·ruff 통과. 시험 빌드 `_internal\assets\icons\avd.png` 있음, `AVD.exe` 연결 아이콘 추출 → 새 아이콘. 소스·exe 각각 기동해 창의 `WM_GETICON` 핸들 → 새 아이콘 그림. 실기기 눈 확인 대기
   - 결과: 2026-10-29 통과 — 사용자 4항(제목줄·작업표시줄·Alt+Tab·탐색기 `AVD.exe`, 소스·exe 모두) 모두 예
-- [ ] 13. v1.0.1 릴리스 — `docs/RELEASE.md` 절차대로 (`main.py` 의 `setApplicationVersion("1.0.0")` 하드코딩을 `APP_VERSION` 으로)
+- [x] 13. v1.0.1 릴리스 — `docs/RELEASE.md` 절차대로 (`main.py` 의 `setApplicationVersion("1.0.0")` 하드코딩을 `APP_VERSION` 으로)
   - 확인: `gh release view v1.0.1 --repo metapbl/AVD --json assets` → zip 2개 | 받은 exe 기동, 아이콘 표시
   - 결과: 2026-10-29 실패 — 빌드 `e674033`, 사용자 1·2·3 예, 4 "작업표시줄만 윈도우 기본아이콘 나머지는 아이콘적용" → §디버그
   - 디버그 (2026-10-29): 재현 — exe 를 새 폴더에 복사해 처음 실행하면 작업표시줄 기본 아이콘, 두 번째부터 새 아이콘 (2폴더×2회 캡처). 가설 1 "AppUserModelID 탓" → exe 에서 빼고 시험 빌드, 3폴더 모두 첫 실행 기본 아이콘 → 기각·되돌림. 가설 2 "Qt 는 `IDI_ICON1` 리소스만 찾고 PyInstaller 는 번호 1 로 싣는다" → 확인: exe 리소스 1 있음·`IDI_ICON1` 없음, 첫 실행 창 클래스 아이콘 = `IDI_APPLICATION`. 수정 `main.py > set_window_class_icon`(show 전에 `avd.ico` 로 `GCLP_HICON`·`GCLP_HICONSM`), spec datas 에 `avd.ico`. 회귀 테스트 먼저 실패 확인 → pytest 96·ruff 통과. 시험 빌드 3폴더×2회 모두 새 아이콘
   - 결과: 2026-10-29 통과 — 재빌드 `c21cbbb`(Claude 미실행 폴더), 사용자 4항 모두 예(처음 실행부터 작업표시줄 새 아이콘). Claude 대리: `config.json` exe 옆만, mp3 MP3Gain `ok`·volume 88.5(목표 89)·디코딩 오류 0
   - 게시 (2026-10-29): fetch behind 0 → `v1.0.1 → c21cbbb`, main push 성공 뒤 태그 push → `gh release create`(노트에 아이콘·v1.0.0 에서 config.json 옮기기). assets win64 105,147,706 B·src 591,917 B uploaded, draft 아님, 목록에서 Latest. 받은 zip 해시가 로컬과 같음, 새 폴더 기동 → 창 "AV Downloader"
   - PRD 갱신 (작업 11 에서 옮김): `/metarche discover` 로 §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화
+  - 결과: 2026-10-29 PRD 갱신 승인(Q053) — F7·§2.2·§2.6 보안 줄·§5 배포 형태·아이콘, 변경 이력. metarche U5 보안 정책(D043~D048)을 같은 변경에서 승인
   - PRD 갱신 (2026-10-29 사용자 승인): 인수 확인 뒤 `/metarche discover` 로 §3 F7(exe 는 wheel 교체 D038, 업데이트 뒤 재시작 D041)·§5 배포 형태 "(미착수)" 를 현행화
 
 ## 자가 검토

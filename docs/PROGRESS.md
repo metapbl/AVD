@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 계획: `docs/plans/2026-10-29-lgpl-release.md` active (12/13, 작업 13 은 PRD 갱신만 남음)
-- 갱신: 2026-10-29 · v1.0.1 게시(태그 `c21cbbb`, https://github.com/metapbl/AVD/releases/tag/v1.0.1, Latest). 그 뒤 기록 커밋은 push 안 함
+- 단계: 7 계획 대기 · 네 번째 계획 `docs/plans/2026-10-29-lgpl-release.md` done (13/13). active 계획 없음
+- 갱신: 2026-10-29 · v1.0.1 게시(태그 `c21cbbb`, Latest). PRD·보안 정책 approved (2026-10-29). 그 뒤 커밋은 push 안 함
 
 ## 다음 할 일
-1. 작업 13 끝: `/metarche discover` 로 PRD §3 F7(D038·D041)·§5 배포 형태 "(미착수)"·아이콘(D042) 현행화 → 계획 `상태: done`
+1. 다음 계획(`/metarche plan`) — 보안 정책 후속: `pip-audit` 도입·RELEASE.md 반영(D045), `utils/updater.py > AppUpdater` 삭제(D046), `ui/format_select_dialog.py` 제목 `QLabel` PlainText (SECURITY_POLICY §4)
 2. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
 3. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
 4. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
