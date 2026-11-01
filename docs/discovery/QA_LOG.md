@@ -289,3 +289,8 @@ A: "추천대로"
 Q: PRD F1 에 "완료 항목: 📂 폴더 열기 · ▶ 재생(기본 앱으로 열기, 파일이 없으면 무동작)" 한 줄 반영 (macOS 제한은 폴더 열기만 — `open_file` 은 QDesktopServices [X])
 A: "승인"
 → PRD F1·§8 (D049 반영)
+
+### Q056 · 2026-11-02 · 7 계획 · [U]
+Q: 일곱 번째 계획 묶음 (1 O19 certifi·urllib3 핀 올림 추천, 2 병합 진행률, 3 확장자 표시, 4 Vimeo curl_cffi) / 릴리스를 계획에 넣을지
+A: "1번 핀 올림" → "릴리스도 넣기" → 계획 관문 "승인"
+→ `docs/plans/2026-11-02-dep-security-pins.md` active (v1.0.2 릴리스 포함, 미릴리스 변경도 함께 실림)
