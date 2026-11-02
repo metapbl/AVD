@@ -25,13 +25,14 @@
     - `InfoFetcher._parse_formats` 통합 포맷 행 `ext == "mp4"` (D051 다운로드 값 고정)
   - 확인: `venv\Scripts\python -m pytest tests/test_ext_display.py` 통과 → 전체 pytest 통과 → ruff 통과
   - 결과 (2026-11-02): 테스트 먼저 4개 실패 확인(".mp4" 표시, 조각 ext "webm", 발사 없음 2) → 구현 뒤 새 테스트 7 통과, 전체 pytest 111 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 위젯은 `update_format_meta` 에서 AUTO 면 숨김, `update_format_meta_resolved` 가 `update_ext` 재사용. 워커는 `_without_merge_part_ext` 로 조각 ext 를 비우고 `downloading`·`Merger started` 에서도 발사. 실기기 확인은 작업 4
-- [ ] 2. 병합 진행률 병합기 — `core/downloader.py > _ProgressMergerPP`, 설치 함수
+- [x] 2. 병합 진행률 병합기 — `core/downloader.py > _ProgressMergerPP`, 설치 함수
   - 실패하는 테스트 먼저 (`tests/test_merge_progress.py`):
     - 순수 함수: ffmpeg `-progress` 줄(`out_time_us=…`, `progress=continue|end`) → (퍼센트, 처리한 초). duration 없으면 퍼센트 없음, 100 넘지 않음
     - 실제 ffmpeg: lavfi 로 만든 2초 영상 전용 mp4 + 음성 전용 m4a 를 병합 → 결과 파일 존재, hook 에 `processing` 이 1번 이상, 퍼센트가 줄지 않고 마지막이 100 근처
     - 취소: hook 이 첫 `processing` 에서 `DownloadCancelled` 를 던짐 → 예외가 밖으로 나오고 ffmpeg 프로세스가 끝나 있음
     - 안전망: 부모 메서드 모양을 바꿔 둔 상태에서 설치 → `yt_dlp.YoutubeDL.FFmpegMergerPP` 가 원래 클래스 그대로
   - 확인: `venv\Scripts\python -m pytest tests/test_merge_progress.py` 통과 → 전체 pytest 통과 → ruff 통과
+  - 결과 (2026-11-02): 테스트 먼저 ImportError 실패 확인 → 구현 뒤 새 테스트 10 통과(실제 ffmpeg 2개 포함), 전체 pytest 121 통과, ruff 통과(RUF012 1건 고침), `gaindb/`·`requirements.txt` diff 없음. `run` 은 오버라이드하지 않음 — `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감싸 `started` 가 두 번 나가 슬롯이 이중 해제되므로, duration 은 `_hook_progress` 의 `started` 에서 잡는다. stderr 는 임시 파일. 취소 시 ffmpeg kill + 반쯤 쓴 `.temp` 출력 삭제. 안전망은 `real_run_ffmpeg` 시그니처·모듈의 `FFmpegMergerPP` 정체 확인
 - [ ] 3. 워커·위젯 연결 — `workers/download_worker.py > _on_postprocess`, `controllers/download_manager.py`, `ui/download_item_widget.py > update_merge_progress`
   - 실패하는 테스트 먼저 (`tests/test_merge_progress.py` 에 추가):
     - 워커 `_on_postprocess` 에 Merger `processing` dict → `merge_progress(퍼센트, 초)` 발사 (퍼센트 모르면 -1). `started` 는 기존 `merging` 그대로
