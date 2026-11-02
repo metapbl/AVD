@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 일곱 번째 계획 `docs/plans/2026-11-02-dep-security-pins.md` active (3/5) — certifi·urllib3 핀 올림·v1.0.2 릴리스
-- 갱신: 2026-11-02 · 다섯 번째(보안 정책 후속)·여섯 번째(재생 버튼) 계획 done, `732d62e` 까지 push. PRD F1 에 완료 항목 폴더 열기·재생 반영(Q055, approved 복귀). 최신 릴리스는 v1.0.1 (태그 `c21cbbb`) — 이후 변경은 미릴리스
+- 단계: 7 계획 대기 · 일곱 번째 계획 `docs/plans/2026-11-02-dep-security-pins.md` done (5/5). active 계획 없음
+- 갱신: 2026-11-02 · 일곱 번째 계획(certifi·urllib3 핀 올림, D050) done. **v1.0.2 게시** (태그 `26a52c8`, Latest) — 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. 일곱 번째 계획 작업 4 — 태그 `v1.0.2`(`26a52c8`)·push·`gh release create` (명령마다 확인, D040)
+1. (다음 계획 후보) 병합 단계 진행률 표시 / 확장자 표시 정직화 (PRD §2.2 "그 뒤")
 2. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
 3. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
 4. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지

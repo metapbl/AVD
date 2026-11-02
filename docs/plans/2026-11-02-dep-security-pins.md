@@ -1,5 +1,5 @@
 # 일곱 번째 계획 — 의존성 보안 핀 올림·v1.0.2 릴리스
-상태: active | 시작: 2026-11-02 | 근거: OPEN O19, Q056, SECURITY_POLICY §6, PRD §2.6 (D040, D045)
+상태: done (2026-11-02) | 시작: 2026-11-02 | 근거: OPEN O19, Q056, SECURITY_POLICY §6, PRD §2.6 (D040, D045)
 
 목표: pip-audit 가 보고한 certifi·urllib3 취약점을 핀 상향으로 없애고, 그 빌드를 v1.0.2 로 게시한다. 끝나면 `pip-audit -r requirements.txt` 가 yt-dlp(D002 의도된 옛 핀) 말고는 보고하지 않고, GitHub Release v1.0.2 에 zip 2개가 있다.
 구조:
@@ -29,11 +29,13 @@
   - 확인: `pip-audit -r requirements.txt` 보고가 yt-dlp 만 | `release\AVD-v1.0.2-win64.zip`·`AVD-v1.0.2-src.zip` 생김 | 번들 yt-dlp 버전 기록 | 실기기: 리포 밖 새 폴더에 푼 `AVD.exe` 로 RELEASE §4 의 1~3 → 모두 기대대로 (하나라도 아니면 4 로 가지 않는다)
   - 1차 (2026-11-02, `26a52c8`): pip-audit 보고는 yt-dlp 핀 9건뿐. 빌드 성공 — win64.zip 100.3MB, src.zip 0.6MB. 번들 yt-dlp 2026.10.26. 실기기 대기
   - 결과: 2026-11-02 통과 — 사용자 "모두 정상" (RELEASE §4 1~3). 태그는 빌드한 커밋 `26a52c8` 에 단다 (src.zip 이 그 커밋)
-- [ ] 4. 태그·push·GitHub Release (RELEASE §5·§6) — 각 명령 실행 전 확인 (D040)
+- [x] 4. 태그·push·GitHub Release (RELEASE §5·§6) — 각 명령 실행 전 확인 (D040)
   - 노트 파일은 스크래치패드에 쓰고 내용을 먼저 보여 준다
   - 확인: `gh release view v1.0.2 --repo metapbl/AVD --json assets` → zip 2개
-- [ ] 5. 인수 확인
+  - 결과: 2026-11-02 — 사용자 "모두 실행". 태그 `v1.0.2` → `26a52c8`, main `7938ccf` 까지 push, Release 게시(Latest). assets: win64.zip 105,153,910 B·src.zip 608,365 B
+- [x] 5. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과 · `venv\Scripts\ruff.exe check` 통과 · 작업 1 의 소스 실행 확인과 작업 3 의 exe 확인 결과가 기록됨 · 작업 4 의 assets 2개
+  - 결과: 2026-11-02 통과 — pytest 104·ruff 통과, 작업 1·3 실기기 기록됨, assets 2개
 
 ## 자가 검토
 - PRD 기능 누락: 없음 (기능 추가 없음, 보안 후속과 릴리스)
