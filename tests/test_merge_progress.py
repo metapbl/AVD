@@ -28,6 +28,11 @@ def test_progress_merger_is_installed():
     assert YDL_MODULE.FFmpegMergerPP is _ProgressMergerPP
 
 
+def test_progress_merger_keeps_merger_key():
+    # hook 의 "postprocessor" 와 postprocessor_args 키가 이 값이다 — 워커가 "Merger" 로 거른다
+    assert _ProgressMergerPP.pp_key() == "Merger"
+
+
 def test_install_skips_when_parent_changed(monkeypatch):
     monkeypatch.setattr(YDL_MODULE, "FFmpegMergerPP", FFmpegMergerPP)
     monkeypatch.setattr(FFmpegPostProcessor, "real_run_ffmpeg", lambda self, cmd: None)

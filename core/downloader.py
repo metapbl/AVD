@@ -96,6 +96,12 @@ class _ProgressMergerPP(FFmpegMergerPP):
     _info: dict | None = None  # started hook 이 채운다 (run 앞에서 항상 불림)
     _proc: Popen | None = None
 
+    @classmethod
+    def pp_key(cls):
+        # 클래스 이름에서 만들면 "_ProgressMerger" — hook 의 postprocessor 이름과
+        # postprocessor_args 키가 바뀌어 워커가 병합을 못 알아본다
+        return FFmpegMergerPP.pp_key()
+
     def _hook_progress(self, status, info_dict):
         if status.get("status") == "started":
             self._info = info_dict
