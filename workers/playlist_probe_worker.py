@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import yt_dlp
 from PySide6.QtCore import QThread, Signal
 
-from utils.file_utils import normalize_info_dict
+from utils.file_utils import normalize_info_dict, strip_ansi
 
 # 한 플레이리스트에서 받아올 최대 항목 수. ADR 합의값.
 # yt-dlp 의 playlistend 와 추출 후 슬라이스 양쪽으로 이중 방어.
@@ -70,7 +70,7 @@ class PlaylistProbeWorker(QThread):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(self.url, download=False)
         except Exception as e:
-            self.error.emit(str(e))
+            self.error.emit(strip_ansi(str(e)))
             return
 
         if not isinstance(info, dict):

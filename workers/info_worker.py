@@ -5,6 +5,7 @@
 from PySide6.QtCore import QThread, Signal
 
 from core.info_fetcher import InfoFetcher
+from utils.file_utils import strip_ansi
 
 
 class InfoWorker(QThread):
@@ -42,4 +43,4 @@ class InfoWorker(QThread):
             self.info_ready.emit(info)
 
         except Exception as e:
-            self.error.emit(str(e))
+            self.error.emit(strip_ansi(str(e)))

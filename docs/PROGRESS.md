@@ -1,11 +1,10 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 아홉 번째 계획 `docs/plans/2026-11-03-postprocess-stage-ansi.md` active (1/4)
+- 단계: 8 구현 · 아홉 번째 계획 `docs/plans/2026-11-03-postprocess-stage-ansi.md` active (2/4)
 - 갱신: 2026-11-03 · 아홉 번째 계획(후처리 단계 표시·오류 ANSI 제거·문서 정리, Q059) 승인. **v1.0.2 뒤 미릴리스 변경 있음** (fix·feat 5건). OPEN 미결 0
 
 ## 다음 할 일
-2. 계획 작업 2 오류 원문 ANSI 제거 — 다운로드·정보·플레이리스트 워커의 `str(e)`
 3. 계획 작업 3 문서 정리 — 재료:
   - REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
   - REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정

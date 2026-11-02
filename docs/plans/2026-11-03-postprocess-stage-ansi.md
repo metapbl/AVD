@@ -21,9 +21,10 @@
     - `DownloadWorker` 가 `finished`/`started` 를 가리지 않음 (기존 `test_worker_signals` 통과)
   - 확인: `venv\Scripts\python -m pytest tests/test_postprocess_stage.py` 통과 → 전체 pytest 통과 → ruff 통과
   - 결과 (2026-11-03): 테스트 먼저 12개 실패 확인(속성 없음) → 구현 뒤 새 테스트 12 통과, 전체 pytest 143 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 이름표는 워커 모듈 상수 `_PP_STAGE_LABELS`. 실제 hook 이름 확인은 작업 4 실기기
-- [ ] 2. 오류 원문 ANSI 제거 — `workers/download_worker.py > run`, `workers/info_worker.py`, `workers/playlist_probe_worker.py`
+- [x] 2. 오류 원문 ANSI 제거 — `workers/download_worker.py > run`, `workers/info_worker.py`, `workers/playlist_probe_worker.py`
   - 실패하는 테스트 먼저 (`tests/test_error_ansi.py`): 각 워커의 yt-dlp 호출이 `"\x1b[0;31mERROR:\x1b[0m [youtube] x: Private video"` 를 담은 예외를 던지게 바꿔 두고 실행 → `error` 시그널 문자열에 `\x1b` 가 없고 `"ERROR: [youtube] x: Private video"` 를 담음. 다운로드 워커는 ANSI 가 섞인 일시적 오류 문구도 재시도로 판정
   - 확인: `venv\Scripts\python -m pytest tests/test_error_ansi.py` 통과 → 전체 pytest 통과 → ruff 통과
+  - 결과 (2026-11-03): 테스트 먼저 4개 실패 확인(원문에 `\x1b` 남음) → 세 워커의 `str(e)` 를 `strip_ansi(str(e))` 로 바꾼 뒤 새 테스트 4 통과, 전체 pytest 147 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 재시도 판정은 지운 문자열로 (503 → 재시도 3회 확인)
 - [ ] 3. 문서 정리 — `docs/REFERENCE.md` R§4, `docs/PRD.md` §2.2·§8
   - REFERENCE R§4 표에 T19(exe 아이콘 리소스 번호), T20(소스 실행 업데이트 리허설은 실제 옛 yt-dlp 설치), T21(릴리스 전 `-r requirements.txt` 가 yt-dlp 를 핀으로 내림), T22(PostProcessor 하위 클래스의 `pp_key`·`run` 재포장) 추가, T11 에 리포 로컬 `user.name` 비었던 사례 보강 (재료: PROGRESS 다음 할 일 3)
   - PRD §2.2 [그 뒤] 줄의 병합 진행률·확장자 정직화에 "여덟 번째 계획에서 완료 (D051~D053)" 표시, §8 변경 이력 한 줄

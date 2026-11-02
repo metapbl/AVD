@@ -422,7 +422,7 @@ class DownloadWorker(QThread):
                     break
 
                 errored   = True
-                error_msg = str(e)
+                error_msg = strip_ansi(str(e))
 
                 # 재시도 판단: 일시적 오류 + 횟수 여유 + 미취소.
                 if (
