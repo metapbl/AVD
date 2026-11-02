@@ -1,5 +1,5 @@
 # 여덟 번째 계획 — 확장자 표시 정직화 · 병합 단계 진행률
-상태: active | 시작: 2026-11-02 | 근거: PRD §2.2 [그 뒤], F1, F3 (D022, D051, D052)
+상태: done (2026-11-02) | 시작: 2026-11-02 | 근거: PRD §2.2 [그 뒤], F1, F3 (D022, D051, D052)
 
 목표: (1) "최고 화질 (자동 선택)" 으로 받은 항목은 제목 옆에 거짓 ".mp4" 가 뜨지 않고, 다운로드 중 확정된 확장자(예: SoundCloud ".m4a")로 채워진다. (2) 영상+음성 병합 단계에서 진행률 바가 0→100 으로 차고 상태가 "병합 중 42%" 로 보인다 (길이를 모르면 "병합 중 1:23").
 구조:
@@ -40,7 +40,7 @@
     - `DownloadWorker` 가 `finished`/`started` 를 가리지 않음 (기존 `test_worker_signals` 통과)
   - 확인: 위 테스트 통과 → 전체 pytest 통과 → ruff 통과
   - 결과 (2026-11-02): 테스트 먼저 6개 실패 확인(속성 없음) → 구현 뒤 `tests/test_merge_progress.py` 16 통과, 전체 pytest 127 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 위젯 가드는 `item.status`(`update_status` 가 동기화) — `merging`·`merge_progress` 모두 큐 연결이라 순서 보장. 길이 모를 때 바는 그대로 두고 라벨만 시간 표시
-- [ ] 4. 인수 확인
+- [x] 4. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff -- gaindb/ requirements.txt` 비어 있음 | 실기기 (소스 실행):
     - 1 4K 60fps 등 병합이 30초 넘는 YouTube 영상 → 병합 단계에서 바가 0→100, 라벨 "병합 중 N%" 증가 → 완료, 파일 재생됨
     - 2 SoundCloud "최고 화질 (자동 선택)" → 화질 선택 직후 제목 옆 확장자 없음 → 다운로드 중 ".m4a"(또는 실제 확장자) → 완료까지 유지
@@ -52,6 +52,7 @@
   - 원인 (2026-11-02): yt-dlp 가 hook 의 `postprocessor` 이름을 클래스 이름에서 만든다(`pp_key()`) → `_ProgressMergerPP` 는 "_ProgressMerger" 라 워커의 `== "Merger"` 비교에 걸리지 않아 `merging`·`merge_progress` 가 한 번도 발사되지 않음 (작업 2 회귀, 테스트가 이름을 확인하지 않음). 재현: 스크래치 스크립트로 실제 YouTube 다운로드의 hook 을 찍어 확인. 수정: `pp_key` 를 `FFmpegMergerPP.pp_key()` 로 고정 + 회귀 테스트 `test_progress_merger_keeps_merger_key`. 수정 뒤 실제 다운로드 hook "Merger started/processing/finished", pytest 128·ruff 통과. 실기기 재확인 대기
   - 결과: 2026-11-02 재확인 — 사용자 "전체 확인" (1~6). 단 1: "병합중에서 100퍼센트가 게이지 끝부분이 약간 덜 차는데 정상작동인지?" → 결함으로 보고 고친 뒤 1 만 다시 확인. 계획 밖 발견 3건(720p "Requested format is not available", 같은 이름 파일이 있으면 화질과 관계없이 완료 처리, 오류 창 ANSI 코드)은 PROGRESS 다음 할 일 2~4 로
   - 게이지 원인·수정 (2026-11-02): 라벨은 반올림(`:.0f`)·바는 버림(`int`)이라 99.6 이 "100%" 인데 바 99, 그리고 ffmpeg 마지막 `out_time_us` 가 길이보다 조금 짧음. `_merge_progress` 가 `progress=end` 를 (100, 길이)로, 위젯 바는 `round`. 회귀 테스트 3개 먼저 실패 확인 → pytest 131·ruff 통과. 실기기 1 게이지만 재확인 대기
+  - 결과: 2026-11-02 통과 — 사용자 "게이지 정상으로 100퍼센트까지 됨" (1~6 전체 확인 + 1 게이지 재확인). 질문 "100% 뒤에도 디스크가 바쁘고 완료까지 오래 걸림" → 병합 뒤 `FFmpegMetadata`·`EmbedThumbnail` 후처리가 파일을 다시 씀 (재현 로그의 Metadata·EmbedThumbnail started/finished). 그동안 라벨은 "병합 중 100%" 그대로 → 다음 계획 후보
 
 ## 자가 검토
 - PRD 기능 누락: 없음. §2.2 [그 뒤] 의 macOS 실행 정식화는 이번에 넣지 않음 (Q057). 마칠 때 PRD §2.2 [그 뒤] 줄에 두 항목 완료 표시를 제안한다

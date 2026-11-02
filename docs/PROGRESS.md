@@ -1,19 +1,21 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 여덟 번째 계획 `docs/plans/2026-11-02-merge-progress-ext.md` active (3/4)
-- 갱신: 2026-11-02 · 여덟 번째 계획(확장자 표시 정직화·병합 진행률, D051·D052) 승인. v1.0.2 게시 뒤 미릴리스 변경 없음. OPEN 미결 0
+- 단계: 7 계획 대기 · 여덟 번째 계획 `docs/plans/2026-11-02-merge-progress-ext.md` done (4/4). active 계획 없음
+- 갱신: 2026-11-02 · 여덟 번째 계획(확장자 표시 정직화·병합 진행률, D051~D053) done — 인수 확인 통과. **v1.0.2 뒤 미릴리스 변경 있음** (fix·feat 5건). OPEN 미결 0
 
 ## 다음 할 일
-1. 여덟 번째 계획 작업 4 — 실기기 1 게이지만 재확인 뒤 계획 done (1~6 "전체 확인" 2026-11-02)
+1. (다음 계획 후보) 병합 뒤 후처리(`FFmpegMetadata`·`EmbedThumbnail`)가 파일을 다시 쓰는 동안 라벨이 "병합 중 100%" 그대로라 멈춘 듯 보임 → 단계 표시(예: "태그 기록 중") 검토. 단서 `workers/download_worker.py > _on_postprocess`
 2. (다음 계획 후보, 사용자 제안) 저장 폴더에 같은 이름 파일이 있으면 yt-dlp 가 "이미 받음"으로 건너뛰어 화질과 관계없이 완료 처리 → 임시 이름으로 받고 끝에 이름 정하기 등 정책 결정 필요 (PRD F1 동작 변경). 단서 `utils/file_utils.py > get_unique_path`(있으나 다운로드 경로에 안 쓰임?), `core/downloader.py > Downloader.download`
 3. (다음 계획 후보) 일부 YouTube 영상 720p 만 "Requested format is not available" (LXb3EKWsInQ, EkRmp25XkZc — 480·1080 은 됨). 정보 추출 때 보인 포맷 136 을 다운로드 요청에선 못 받는 것으로 보임, 이번 계획 변경과 무관(포맷 선택 단계 오류). 단서 `core/info_fetcher.py > _parse_formats` (`f"{id}+bestaudio/best"`)
 4. (다음 계획 후보) 오류 창 원문에 ANSI 색 코드가 그대로 보임 ("[0;31mERROR:[0m") — 단서 오류 메시지 경로, `workers/download_worker.py` 의 `strip_ansi`
-5. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
-6. (제안, 미승인) REFERENCE R§4 함정 T21: 릴리스 전 `pip install -r requirements.txt` 는 venv yt-dlp 를 핀(2026.3.17)으로 내려 배포본에 옛 yt-dlp 가 실린다 → 올릴 패키지만 지정해 설치 (2026-11-02 일곱 번째 계획 작업 1)
-7. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
-8. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-9. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+5. (제안, 미승인) REFERENCE R§4 함정 T22: yt-dlp PostProcessor 하위 클래스는 `pp_key()` 가 클래스 이름에서 만들어져 hook 의 `postprocessor` 이름·`postprocessor_args` 키가 바뀐다 → `pp_key` 를 부모 값으로 고정. 또 하위 클래스의 `run` 은 메타클래스가 다시 감싸 started/finished 가 두 번 나간다 (여덟 번째 계획 작업 4 실기기 실패, 389a1b4)
+6. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
+7. (제안, 미승인) REFERENCE R§4 함정 T21: 릴리스 전 `pip install -r requirements.txt` 는 venv yt-dlp 를 핀(2026.3.17)으로 내려 배포본에 옛 yt-dlp 가 실린다 → 올릴 패키지만 지정해 설치 (2026-11-02 일곱 번째 계획 작업 1)
+8. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
+9. (제안) PRD §2.2 [그 뒤] 줄의 병합 진행률·확장자 정직화를 완료로 표시 (여덟 번째 계획 자가 검토)
+10. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+11. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
@@ -25,7 +27,6 @@
 
 ## 확인 대기 (사람만 확인 가능)
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로
-- 여덟 번째 계획 작업 4 실기기 1 재확인 (게이지 수정 뒤) — 기대 결과: 병합 끝에서 바가 끝까지 차고 라벨 "병합 중 100%"
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
 
 ## 완료 기록
@@ -48,3 +49,4 @@
 - 2026-11-02 다섯 번째 계획(보안 정책 후속): AppUpdater 삭제 D046 (fe68393), 제목·채널명 PlainText (fd67868), pip-audit D045·OPEN O19 (6cd8bac), 업데이트 시그널 QueuedConnection D013 (45d99f7), 인수 확인 (747f214)
 - 2026-11-02 여섯 번째 계획: 완료 항목 "▶ 재생" 버튼 D049 (de9bbcd), 인수 확인 (732d62e)
 - 2026-11-02 일곱 번째 계획: certifi·urllib3 핀 상향 D050·O19 해결 (3391c06), `chore(release): v1.0.2` (26a52c8), **v1.0.2 게시** 태그 26a52c8, 인수 확인 (b912bc3)
+- 2026-11-02 여덟 번째 계획: 확장자 표시 정직화 D051·D053 (3fd3249), 병합 진행률 병합기 D052 (9f7f3c2)·표시 (0a2fca7), 실기기 실패 원인 `pp_key` 수정 (389a1b4), 게이지 100% (69b15b6), 인수 확인 통과
