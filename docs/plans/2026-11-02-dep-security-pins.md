@@ -25,8 +25,10 @@
   - [U] v1.0.2 에는 v1.0.1 이후 미릴리스 변경(보안 정책 후속, 완료 항목 폴더 열기·재생 버튼)도 함께 실린다
   - 확인: `git rev-list --count main..origin/main` → 0 | `gh release list --repo metapbl/AVD` 에 v1.0.2 없음 | 커밋 `chore(release): v1.0.2` 작성자 `metapbl <ggoyong2@gmail.com>`
   - 결과: 2026-11-02 — origin 대비 behind 0, 릴리스·태그는 v1.0.0·v1.0.1 뿐. `APP_VERSION` 1.0.2
-- [ ] 3. 빌드·exe 실기기 확인 (RELEASE §3·§4) — `.\build.ps1`
+- [x] 3. 빌드·exe 실기기 확인 (RELEASE §3·§4) — `.\build.ps1`
   - 확인: `pip-audit -r requirements.txt` 보고가 yt-dlp 만 | `release\AVD-v1.0.2-win64.zip`·`AVD-v1.0.2-src.zip` 생김 | 번들 yt-dlp 버전 기록 | 실기기: 리포 밖 새 폴더에 푼 `AVD.exe` 로 RELEASE §4 의 1~3 → 모두 기대대로 (하나라도 아니면 4 로 가지 않는다)
+  - 1차 (2026-11-02, `26a52c8`): pip-audit 보고는 yt-dlp 핀 9건뿐. 빌드 성공 — win64.zip 100.3MB, src.zip 0.6MB. 번들 yt-dlp 2026.10.26. 실기기 대기
+  - 결과: 2026-11-02 통과 — 사용자 "모두 정상" (RELEASE §4 1~3). 태그는 빌드한 커밋 `26a52c8` 에 단다 (src.zip 이 그 커밋)
 - [ ] 4. 태그·push·GitHub Release (RELEASE §5·§6) — 각 명령 실행 전 확인 (D040)
   - 노트 파일은 스크래치패드에 쓰고 내용을 먼저 보여 준다
   - 확인: `gh release view v1.0.2 --repo metapbl/AVD --json assets` → zip 2개
