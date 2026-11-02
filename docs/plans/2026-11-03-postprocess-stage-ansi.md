@@ -25,10 +25,11 @@
   - 실패하는 테스트 먼저 (`tests/test_error_ansi.py`): 각 워커의 yt-dlp 호출이 `"\x1b[0;31mERROR:\x1b[0m [youtube] x: Private video"` 를 담은 예외를 던지게 바꿔 두고 실행 → `error` 시그널 문자열에 `\x1b` 가 없고 `"ERROR: [youtube] x: Private video"` 를 담음. 다운로드 워커는 ANSI 가 섞인 일시적 오류 문구도 재시도로 판정
   - 확인: `venv\Scripts\python -m pytest tests/test_error_ansi.py` 통과 → 전체 pytest 통과 → ruff 통과
   - 결과 (2026-11-03): 테스트 먼저 4개 실패 확인(원문에 `\x1b` 남음) → 세 워커의 `str(e)` 를 `strip_ansi(str(e))` 로 바꾼 뒤 새 테스트 4 통과, 전체 pytest 147 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 재시도 판정은 지운 문자열로 (503 → 재시도 3회 확인)
-- [ ] 3. 문서 정리 — `docs/REFERENCE.md` R§4, `docs/PRD.md` §2.2·§8
+- [x] 3. 문서 정리 — `docs/REFERENCE.md` R§4, `docs/PRD.md` §2.2·§8
   - REFERENCE R§4 표에 T19(exe 아이콘 리소스 번호), T20(소스 실행 업데이트 리허설은 실제 옛 yt-dlp 설치), T21(릴리스 전 `-r requirements.txt` 가 yt-dlp 를 핀으로 내림), T22(PostProcessor 하위 클래스의 `pp_key`·`run` 재포장) 추가, T11 에 리포 로컬 `user.name` 비었던 사례 보강 (재료: PROGRESS 다음 할 일 3)
   - PRD §2.2 [그 뒤] 줄의 병합 진행률·확장자 정직화에 "여덟 번째 계획에서 완료 (D051~D053)" 표시, §8 변경 이력 한 줄
   - 확인: `Select-String -Path docs/REFERENCE.md -Pattern '^\| T(19|20|21|22) '` → 4줄, `Select-String -Path docs/PRD.md -Pattern 'D051'` → §2.2·§8 에 1줄 이상
+  - 결과 (2026-11-03): T19~T22 4줄(근거 c21cbbb·2026-11-02·3391c06·389a1b4), T11 보강, PRD `D051` 27·124행 확인
 - [ ] 4. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff -- gaindb/ requirements.txt` 비어 있음 | 실기기 (소스 실행):
     - 1 YouTube 1080p 병합 영상 → "병합 중 N%" 가 100% 에 이른 뒤 "태그 기록 중" → "썸네일 넣는 중" → 완료, 파일 재생됨

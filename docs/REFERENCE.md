@@ -58,7 +58,7 @@
 | T8 | MP3 '주석'만 깨짐 | ffmpeg 가 comment 를 비표준 `TXXX:comment` 로 씀 | `meta_comment` 를 빈 문자열로 → 프레임 미생성 | 21ccde9 |
 | T9 | 한글이 자모로 분리됨 | 소스 사이트·OS 경계에서 NFD 유입 | info dict 진입점 NFC 통일. 판정은 파일 원본 바이트로 (콘솔·VS Code 는 결합해 보여 속는다) | ADR-004 |
 | T10 | m4a→mp3 에 엉뚱한 TXXX(major_brand 등) | ExtractAudio 의 기본 `-map_metadata 0` | `-map_metadata -1` 은 TIT2 까지 지움 → `meta_<key>` 주입으로 선별 | LESSONS |
-| T11 | 커밋 작성자가 도구 내장 주소로 바뀜 (25개 누적) | 전역 `user.email` 없음 → 도구가 자기 주소 사용 | 리포 로컬 작성자 고정 + push 전 `git log -1 --format="%an <%ae>"` | fbbccbf |
+| T11 | 커밋 작성자가 도구 내장 주소로 바뀜 (25개 누적) | 전역 `user.email` 없음 → 도구가 자기 주소 사용 | 리포 로컬 작성자 고정 + push 전 `git log -1 --format="%an <%ae>"`. 리포 로컬 `user.name` 이 비면 전역 `METAPBL` 로 커밋된다 → 로컬 `user.name`·`user.email` 둘 다 고정 (2026-11-02 재고정) | fbbccbf |
 | T12 | git 이 requirements.txt 를 바이너리로 봄 | PowerShell `>` 가 UTF-16 LE BOM 으로 씀 | `Out-File -Encoding utf8` | LESSONS |
 | T13 | 백업 브랜치까지 재작성됨, origin 사라짐 | `git filter-repo` 동작 | `git bundle create ..\repo.bundle --all` 로 리포 밖 백업 | fbbccbf |
 | T14 | 문서 속 커밋 해시가 유령 참조 | 히스토리 재작성 | `commit-map` 으로 일괄 치환 후 `git cat-file -t` 전수 확인 | fbbccbf |
@@ -66,6 +66,10 @@
 | T16 | 체크박스 ✓ 가 안 그려짐 | `QCheckBox::indicator` 직접 스타일링 | `setStyle("Fusion")` 먼저, indicator 스타일링 피함 | 2026-05-29 |
 | T17 | exe 에서 yt-dlp 업데이트하면 AVD.exe 가 하나 더 뜸 | 동결 빌드의 `sys.executable` 은 AVD.exe → `[sys.executable, "-m", "pip", …]` 가 앱 실행 | `sys.frozen` 이면 pip 대신 `install_ytdlp_wheel` (D038). `sys.executable` 로 하위 파이썬을 띄우는 코드는 frozen 분기 필수 | 2026-10-29 |
 | T18 | 안내한 exe 실행 명령이 경로 문자열만 출력하고 앱이 안 뜸 | PowerShell 은 따옴표로 감싼 경로를 문자열 식으로 본다 | 사용자 안내는 `& "경로\AVD.exe"` (호출 연산자) 또는 `Start-Process` | 2026-10-29 |
+| T19 | 새 폴더에서 exe 첫 실행 때 작업표시줄이 기본 아이콘 | PyInstaller 가 exe 아이콘 리소스를 번호 1 로 넣어 Qt(`IDI_ICON1`)가 못 찾음 | 창 클래스 아이콘을 직접 지정 `main.py > set_window_class_icon` | c21cbbb |
+| T20 | 소스 실행 업데이트 리허설에서 pip 가 '이미 최신' | `version.py` 문자열만 바꾸면 pip 는 dist-info 버전을 본다 | 실제 옛 버전 설치 `pip install yt-dlp==…` 로 리허설 | 2026-11-02 |
+| T21 | 배포본에 옛 yt-dlp 가 실림 | 릴리스 전 `pip install -r requirements.txt` 가 venv yt-dlp 를 핀(D002)으로 내림 | 올릴 패키지만 지정해 설치, 빌드 전 `pip show yt-dlp` 확인 | 3391c06 |
+| T22 | yt-dlp PostProcessor 하위 클래스로 바꾸자 hook 이름 비교·`postprocessor_args` 가 안 맞음, started/finished 가 두 번 | `pp_key()` 가 클래스 이름에서 만들어짐 / `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감쌈 | `pp_key` 를 부모 값으로 고정, `run` 은 오버라이드하지 않음 | 389a1b4 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
