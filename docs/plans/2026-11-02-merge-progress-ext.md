@@ -48,6 +48,8 @@
     - 4 병합 중 취소 → 바로 "취소됨", 저장 폴더에 `.temp` 파일과 ffmpeg 프로세스가 남지 않음
     - 5 병합 없는 단일 포맷(예: MP3 받기) → 기존과 같게 완료 (회귀 없음)
     - 6 동시 2개 이상에서 한 항목이 병합에 들어가면 다음 대기 항목이 바로 출발 (D005 유지)
+  - 결과: 2026-11-02 실패 — 사용자: "병합중이 안나옴. 병합중이 안나오니 병합중 취소도 불가능 / 병합에 들어가면 대기항목이 출발하는지 확인이 안됨 / 다운로드 100퍼센트에서 멈춘상태로 장시간". 2·3·5 는 답 없음 (재확인 때 함께)
+  - 원인 (2026-11-02): yt-dlp 가 hook 의 `postprocessor` 이름을 클래스 이름에서 만든다(`pp_key()`) → `_ProgressMergerPP` 는 "_ProgressMerger" 라 워커의 `== "Merger"` 비교에 걸리지 않아 `merging`·`merge_progress` 가 한 번도 발사되지 않음 (작업 2 회귀, 테스트가 이름을 확인하지 않음). 재현: 스크래치 스크립트로 실제 YouTube 다운로드의 hook 을 찍어 확인. 수정: `pp_key` 를 `FFmpegMergerPP.pp_key()` 로 고정 + 회귀 테스트 `test_progress_merger_keeps_merger_key`. 수정 뒤 실제 다운로드 hook "Merger started/processing/finished", pytest 128·ruff 통과. 실기기 재확인 대기
 
 ## 자가 검토
 - PRD 기능 누락: 없음. §2.2 [그 뒤] 의 macOS 실행 정식화는 이번에 넣지 않음 (Q057). 마칠 때 PRD §2.2 [그 뒤] 줄에 두 항목 완료 표시를 제안한다
