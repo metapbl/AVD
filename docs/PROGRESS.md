@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 일곱 번째 계획 `docs/plans/2026-11-02-dep-security-pins.md` done (5/5). active 계획 없음
-- 갱신: 2026-11-02 · 일곱 번째 계획(certifi·urllib3 핀 올림, D050) done. **v1.0.2 게시** (태그 `26a52c8`, Latest) — 미릴리스 변경 없음. OPEN 미결 0
+- 단계: 8 구현 · 여덟 번째 계획 `docs/plans/2026-11-02-merge-progress-ext.md` active (1/4)
+- 갱신: 2026-11-02 · 여덟 번째 계획(확장자 표시 정직화·병합 진행률, D051·D052) 승인. v1.0.2 게시 뒤 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. (다음 계획 후보) 병합 단계 진행률 표시 / 확장자 표시 정직화 (PRD §2.2 "그 뒤")
+1. 여덟 번째 계획 작업 2 — 병합 진행률 병합기 `core/downloader.py > _ProgressMergerPP` (실패 테스트 `tests/test_merge_progress.py` 먼저)
 2. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
 3. (제안, 미승인) REFERENCE R§4 함정 T21: 릴리스 전 `pip install -r requirements.txt` 는 venv yt-dlp 를 핀(2026.3.17)으로 내려 배포본에 옛 yt-dlp 가 실린다 → 올릴 패키지만 지정해 설치 (2026-11-02 일곱 번째 계획 작업 1)
 4. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
