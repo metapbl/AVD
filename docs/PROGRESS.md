@@ -7,9 +7,10 @@
 ## 다음 할 일
 1. (다음 계획 후보) 병합 단계 진행률 표시 / 확장자 표시 정직화 (PRD §2.2 "그 뒤")
 2. (제안, 미승인) REFERENCE R§4 함정 T20: 소스 실행 업데이트 리허설에 `version.py` 문자열만 바꾸면 pip 가 dist-info 를 보고 '이미 최신' — 실제 옛 버전 `pip install yt-dlp==…` 필요 (2026-11-02 작업 4). T11 보강: 리포 로컬 `user.name` 이 비어 전역 `METAPBL` 로 커밋됨 → 2026-11-02 로컬 설정 재고정
-3. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
-4. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-5. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+3. (제안, 미승인) REFERENCE R§4 함정 T21: 릴리스 전 `pip install -r requirements.txt` 는 venv yt-dlp 를 핀(2026.3.17)으로 내려 배포본에 옛 yt-dlp 가 실린다 → 올릴 패키지만 지정해 설치 (2026-11-02 일곱 번째 계획 작업 1)
+4. (제안, 미승인) REFERENCE R§4 함정 T19: PyInstaller exe 아이콘 리소스는 번호 1 이라 Qt(`IDI_ICON1`)가 못 찾음 → 새 폴더 첫 실행 작업표시줄 기본 아이콘. 대책 `main.py > set_window_class_icon`
+5. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+6. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
@@ -42,3 +43,4 @@
 - 2026-10-29 exe 실기기 확인 통과 (3922d92), 업데이트 뒤 자동 재시작 D041 (cb15588, c59b48e)
 - 2026-11-02 다섯 번째 계획(보안 정책 후속): AppUpdater 삭제 D046 (fe68393), 제목·채널명 PlainText (fd67868), pip-audit D045·OPEN O19 (6cd8bac), 업데이트 시그널 QueuedConnection D013 (45d99f7), 인수 확인 (747f214)
 - 2026-11-02 여섯 번째 계획: 완료 항목 "▶ 재생" 버튼 D049 (de9bbcd), 인수 확인 (732d62e)
+- 2026-11-02 일곱 번째 계획: certifi·urllib3 핀 상향 D050·O19 해결 (3391c06), `chore(release): v1.0.2` (26a52c8), **v1.0.2 게시** 태그 26a52c8, 인수 확인 (b912bc3)
