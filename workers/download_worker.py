@@ -233,6 +233,20 @@ def _extract_codec_info(info_dict: dict) -> tuple[str, str, str, float, float] |
     return (vcodec, acodec, ext, abr, tbr)
 
 
+def _without_merge_part_ext(filename: str, info_dict: dict) -> dict:
+    """
+    병합 조각의 진행 hook 이면 ext 를 비운 사본을, 아니면 그대로 돌려준다.
+
+    yt-dlp 는 병합할 조각을 "제목.f{format_id}.{ext}" 로 받으며 hook 의
+    info_dict 도 조각 하나의 값(예: webm)이라 최종 컨테이너가 아니다 (D053).
+    """
+    fid = info_dict.get("format_id")
+    ext = info_dict.get("ext")
+    if fid and ext and (filename or "").endswith(f".f{fid}.{ext}"):
+        return {**info_dict, "ext": ""}
+    return info_dict
+
+
 class DownloadWorker(QThread):
     """
     다운로드를 백그라운드로 실행하는 워커 스레드
@@ -594,6 +608,13 @@ class DownloadWorker(QThread):
             if size_text:
                 self.file_size.emit(size_text)
 
+            # 단일 포맷은 받는 동안 확장자를 채운다 (같은 값은 _maybe_emit 이 거른다)
+            info_dict = d.get("info_dict")
+            if isinstance(info_dict, dict):
+                self._maybe_emit_codec_info(
+                    _without_merge_part_ext(d.get("filename", ""), info_dict)
+                )
+
         elif status == "finished":
             self._output_path = d.get("filename", "") or self._output_path
             self.progress.emit(100.0)
@@ -603,7 +624,9 @@ class DownloadWorker(QThread):
             # 갖지만, 머지 없는 단일 progressive 경로는 여기가 끝일 수 있다.
             info_dict = d.get("info_dict")
             if isinstance(info_dict, dict):
-                self._maybe_emit_codec_info(info_dict)
+                self._maybe_emit_codec_info(
+                    _without_merge_part_ext(d.get("filename", ""), info_dict)
+                )
             # ETA 라벨을 명시적으로 비운다. 단조 하향으로 raw 가 0 까지
             # 따라간다 해도, 마지막 emit 이 1~2 초에서 멈춘 채 finished
             # 가 들어오는 경우의 잔재를 방어. update_status(DONE) 이
@@ -805,6 +828,8 @@ class DownloadWorker(QThread):
 
         if postprocessor == "Merger" and status == "started":
             self.merging.emit()
+            # 병합 대상 info 는 최종 컨테이너(merge_output_format)를 담고 있다 (D053)
+            self._maybe_emit_codec_info(d.get("info_dict") or {})
 
         if status == "finished":
             info_dict = d.get("info_dict") or {}

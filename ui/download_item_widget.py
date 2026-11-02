@@ -859,6 +859,12 @@ class DownloadItemWidget(QWidget):
         self._fmt_is_audio  = bool(is_audio)
         self.lbl_meta.setText(self._build_meta_text())
 
+        # 통합 포맷의 ext("mp4")는 병합 컨테이너 지정일 뿐 결과가 아니다
+        # (오디오 전용 소스면 m4a 등). 확정 값이 올 때까지 숨긴다 (D051).
+        if self._fmt_format_id == AUTO_FORMAT_ID:
+            self._ext_known = False
+            self._apply_title_elide()
+
     def update_format_meta_resolved(
         self,
         vcodec: str,
@@ -909,6 +915,7 @@ class DownloadItemWidget(QWidget):
             self._fmt_acodec = a
         if ext:
             self._fmt_ext = ext
+            self.update_ext(ext)
         if abr and abr > 0:
             self._fmt_abr = float(abr)
         if tbr and tbr > 0:
