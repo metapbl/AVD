@@ -304,3 +304,8 @@ A: "둘 다 한 계획" · "바 재활용" · "경과 시간 표시" · "받음 
 Q: 작업 1 계획 수정 — 병합 조각 다운로드 hook 의 ext(예: `.f137.webm` 의 webm)가 거짓이라 위젯만으로는 정직화 불가. (1 추천) 워커가 병합 조각의 ext 를 비워 보내고 `Merger started` 에서 최종 ext 를 한 번 더 발사 / (2) 다운로드 단계 ext 를 버리고 후처리 때만 반영
 A: "1번 (추천)"
 → D053, 계획 작업 1 범위에 `workers/download_worker.py` 추가
+
+### Q059 · 2026-11-03 · 7 계획 · [U]
+Q: 아홉 번째 계획 묶음 — (1 추천) 표시 정리: 병합 뒤 후처리 단계 라벨 + 오류 창 ANSI 제거 + 문서 정리(PRD §2.2 완료 표시, 함정 T19~T22) / (2) 1 + 720p "Requested format is not available" 진단·수정 / 같은 이름 파일 건너뜀은 PRD F1 변경이라 discover 로 분리
+A: "1번 추천대로"
+→ `docs/plans/2026-11-03-postprocess-stage-ansi.md` (draft). 720p·같은 이름 파일은 PROGRESS 다음 할 일에 남김

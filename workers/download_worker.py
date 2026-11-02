@@ -82,6 +82,15 @@ _PERMANENT_PATTERNS = (
 )
 
 
+# 후처리 hook 이름 → 단계 라벨. 표에 없는 후처리(Merger·MoveFiles 등)는 보내지 않는다.
+_PP_STAGE_LABELS = {
+    "FFmpegExtractAudio"       : "MP3 변환 중",
+    "FFmpegMetadata"           : "태그 기록 중",
+    "FFmpegThumbnailsConvertor": "썸네일 넣는 중",
+    "EmbedThumbnail"           : "썸네일 넣는 중",
+}
+
+
 def _is_transient_error(msg: str) -> bool:
     """
     오류 메시지가 재시도 가치 있는 일시적 오류인지 판정.
@@ -259,7 +268,9 @@ class DownloadWorker(QThread):
         merging              : 영상+음성 병합 시작 알림
         merge_progress       : 병합 진행 (퍼센트, 처리한 초). 길이를 모르면
                                퍼센트는 -1 (D052)
-        normalizing          : MP3 음량 정규화 시작 알림. 다운로드·후처리가
+        postprocess_stage    : 병합·다운로드 뒤 후처리 단계 라벨
+                               (예: "태그 기록 중"). 위젯 상태 라벨만 바꾼다
+        normalizing         : MP3 음량 정규화 시작 알림. 다운로드·후처리가
                                모두 끝난 mp3 파일에 GaindB 게인 적용을 시작할
                                때 발사. 매니저가 위젯을 NORMALIZING 상태로
                                전이시키고 동시성 슬롯을 회수하는 트리거로 쓴다.
@@ -292,6 +303,7 @@ class DownloadWorker(QThread):
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
     merge_progress       = Signal(float, float)                 # 퍼센트(-1=모름), 처리한 초
+    postprocess_stage    = Signal(str)                          # 후처리 단계 라벨
     normalizing          = Signal()                             # 음량 정규화 시작
     normalize_done       = Signal(float, bool)                  # 음량 정규화 완료 (적용 dB, 클리핑 여부)
     normalize_failed     = Signal(str)                          # 음량 정규화 실패 (사유)
@@ -837,6 +849,9 @@ class DownloadWorker(QThread):
         if postprocessor == "Merger" and status == "processing":
             pct = d.get("merge_percent")
             self.merge_progress.emit(-1.0 if pct is None else pct, d.get("merge_secs", 0.0))
+
+        if status == "started" and postprocessor in _PP_STAGE_LABELS:
+            self.postprocess_stage.emit(_PP_STAGE_LABELS[postprocessor])
 
         if status == "finished":
             info_dict = d.get("info_dict") or {}

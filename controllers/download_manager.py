@@ -217,6 +217,9 @@ class DownloadManager(QObject):
         worker.merge_progress.connect(
             widget.update_merge_progress, Qt.ConnectionType.QueuedConnection
         )
+        worker.postprocess_stage.connect(
+            widget.update_postprocess_stage, Qt.ConnectionType.QueuedConnection
+        )
         worker.normalizing.connect(
             lambda: widget.update_status(DownloadStatus.NORMALIZING)
         )

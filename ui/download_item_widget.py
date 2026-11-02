@@ -738,6 +738,15 @@ class DownloadItemWidget(QWidget):
         else:
             self.lbl_status.setText(f"병합 중 {format_duration(secs)}")
 
+    def update_postprocess_stage(self, text: str):
+        """
+        병합·다운로드 뒤 후처리 단계(예: "태그 기록 중")를 상태 라벨에 쓴다.
+        바는 그대로 둔다. 활성 상태가 아닐 때 늦게 도착한 값은 버린다.
+        """
+        if self.item.status not in (DownloadStatus.DOWNLOADING, DownloadStatus.MERGING):
+            return
+        self.lbl_status.setText(text)
+
     def update_normalize_done(self, applied_db: float, will_clip: bool):
         """
         음량 정규화 완료 결과 수신(worker.normalize_done → 매니저 중계).
