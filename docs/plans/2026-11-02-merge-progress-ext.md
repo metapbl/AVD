@@ -33,12 +33,13 @@
     - 안전망: 부모 메서드 모양을 바꿔 둔 상태에서 설치 → `yt_dlp.YoutubeDL.FFmpegMergerPP` 가 원래 클래스 그대로
   - 확인: `venv\Scripts\python -m pytest tests/test_merge_progress.py` 통과 → 전체 pytest 통과 → ruff 통과
   - 결과 (2026-11-02): 테스트 먼저 ImportError 실패 확인 → 구현 뒤 새 테스트 10 통과(실제 ffmpeg 2개 포함), 전체 pytest 121 통과, ruff 통과(RUF012 1건 고침), `gaindb/`·`requirements.txt` diff 없음. `run` 은 오버라이드하지 않음 — `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감싸 `started` 가 두 번 나가 슬롯이 이중 해제되므로, duration 은 `_hook_progress` 의 `started` 에서 잡는다. stderr 는 임시 파일. 취소 시 ffmpeg kill + 반쯤 쓴 `.temp` 출력 삭제. 안전망은 `real_run_ffmpeg` 시그니처·모듈의 `FFmpegMergerPP` 정체 확인
-- [ ] 3. 워커·위젯 연결 — `workers/download_worker.py > _on_postprocess`, `controllers/download_manager.py`, `ui/download_item_widget.py > update_merge_progress`
+- [x] 3. 워커·위젯 연결 — `workers/download_worker.py > _on_postprocess`, `controllers/download_manager.py`, `ui/download_item_widget.py > update_merge_progress`
   - 실패하는 테스트 먼저 (`tests/test_merge_progress.py` 에 추가):
     - 워커 `_on_postprocess` 에 Merger `processing` dict → `merge_progress(퍼센트, 초)` 발사 (퍼센트 모르면 -1). `started` 는 기존 `merging` 그대로
     - 위젯 MERGING 상태에서 `update_merge_progress(42.0, 10)` → 바 42, 라벨 "병합 중 42%" / `(-1, 83)` → 라벨 "병합 중 1:23" / DONE·CANCELLED 뒤 늦게 온 값은 무시
     - `DownloadWorker` 가 `finished`/`started` 를 가리지 않음 (기존 `test_worker_signals` 통과)
   - 확인: 위 테스트 통과 → 전체 pytest 통과 → ruff 통과
+  - 결과 (2026-11-02): 테스트 먼저 6개 실패 확인(속성 없음) → 구현 뒤 `tests/test_merge_progress.py` 16 통과, 전체 pytest 127 통과, ruff 통과, `gaindb/`·`requirements.txt` diff 없음. 위젯 가드는 `item.status`(`update_status` 가 동기화) — `merging`·`merge_progress` 모두 큐 연결이라 순서 보장. 길이 모를 때 바는 그대로 두고 라벨만 시간 표시
 - [ ] 4. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff -- gaindb/ requirements.txt` 비어 있음 | 실기기 (소스 실행):
     - 1 4K 60fps 등 병합이 30초 넘는 YouTube 영상 → 병합 단계에서 바가 0→100, 라벨 "병합 중 N%" 증가 → 완료, 파일 재생됨
