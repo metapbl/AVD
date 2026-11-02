@@ -71,6 +71,9 @@ class _NFCNormalizePP(PostProcessor):
 def _merge_progress(line: str, duration: float | None) -> tuple[float | None, float] | None:
     """ffmpeg `-progress` 한 줄 → (퍼센트 또는 None, 처리한 초). out_time_us 줄이 아니면 None."""
     key, _, value = line.strip().partition("=")
+    if key == "progress" and value == "end":
+        # 마지막 out_time 은 길이보다 조금 짧아 100 에 닿지 않는다 — 끝났으면 100
+        return (100.0, float(duration)) if duration else None
     if key != "out_time_us":
         return None
     try:

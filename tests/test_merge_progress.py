@@ -18,6 +18,8 @@ YDL_MODULE = importlib.import_module("yt_dlp.YoutubeDL")  # yt_dlp.YoutubeDL 은
     ("out_time_us=83000000", None, (None, 83.0)),  # 길이 모름 → 경과 시간만
     ("out_time_us=N/A", 4.0, None),
     ("progress=continue", 4.0, None),
+    ("progress=end", 4.0, (100.0, 4.0)),   # 마지막 out_time 은 길이보다 조금 짧다 — 끝은 100
+    ("progress=end", None, None),
     ("frame=10", 4.0, None),
 ])
 def test_merge_progress_parses_out_time(line, duration, expected):
@@ -135,6 +137,13 @@ def test_widget_shows_merge_percent():
     w.update_merge_progress(42.0, 10.0)
     assert w.progress_bar.value() == 42
     assert w.lbl_status.text() == "병합 중 42%"
+
+
+def test_widget_bar_matches_rounded_label():
+    w = _widget()
+    w.update_merge_progress(99.6, 10.0)
+    assert w.progress_bar.value() == 100
+    assert w.lbl_status.text() == "병합 중 100%"
 
 
 def test_widget_shows_elapsed_without_duration():

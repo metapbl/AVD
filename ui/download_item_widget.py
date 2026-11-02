@@ -733,7 +733,7 @@ class DownloadItemWidget(QWidget):
         if self.item.status != DownloadStatus.MERGING:
             return
         if pct >= 0:
-            self.progress_bar.setValue(int(pct))
+            self.progress_bar.setValue(round(pct))  # 라벨의 반올림과 맞춘다
             self.lbl_status.setText(f"병합 중 {pct:.0f}%")
         else:
             self.lbl_status.setText(f"병합 중 {format_duration(secs)}")
