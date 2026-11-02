@@ -724,6 +724,20 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
 
+    def update_merge_progress(self, pct: float, secs: float):
+        """
+        병합 진행 표시 — 진행률 바를 0→100 으로 다시 쓰고 라벨에 퍼센트를,
+        길이를 몰라 pct 가 -1 이면 처리한 시간을 붙인다 (D052). MERGING 이 아닐
+        때 늦게 도착한 값은 버린다.
+        """
+        if self.item.status != DownloadStatus.MERGING:
+            return
+        if pct >= 0:
+            self.progress_bar.setValue(int(pct))
+            self.lbl_status.setText(f"병합 중 {pct:.0f}%")
+        else:
+            self.lbl_status.setText(f"병합 중 {format_duration(secs)}")
+
     def update_normalize_done(self, applied_db: float, will_clip: bool):
         """
         음량 정규화 완료 결과 수신(worker.normalize_done → 매니저 중계).

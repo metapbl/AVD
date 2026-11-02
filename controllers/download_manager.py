@@ -214,6 +214,9 @@ class DownloadManager(QObject):
         worker.merging.connect(
             lambda iid=item_id: self._on_worker_merging(iid)
         )
+        worker.merge_progress.connect(
+            widget.update_merge_progress, Qt.ConnectionType.QueuedConnection
+        )
         worker.normalizing.connect(
             lambda: widget.update_status(DownloadStatus.NORMALIZING)
         )

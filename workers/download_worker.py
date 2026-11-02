@@ -257,6 +257,8 @@ class DownloadWorker(QThread):
         eta                  : 남은 시간 문자열 (예: "0:42", HLS 폴백 시 "~0:42")
         file_size            : 파일 크기 문자열 (예: "128.5 MiB")
         merging              : 영상+음성 병합 시작 알림
+        merge_progress       : 병합 진행 (퍼센트, 처리한 초). 길이를 모르면
+                               퍼센트는 -1 (D052)
         normalizing          : MP3 음량 정규화 시작 알림. 다운로드·후처리가
                                모두 끝난 mp3 파일에 GaindB 게인 적용을 시작할
                                때 발사. 매니저가 위젯을 NORMALIZING 상태로
@@ -289,6 +291,7 @@ class DownloadWorker(QThread):
     eta                  = Signal(str)                          # 남은 시간
     file_size            = Signal(str)                          # 파일 크기
     merging              = Signal()                             # 병합 시작
+    merge_progress       = Signal(float, float)                 # 퍼센트(-1=모름), 처리한 초
     normalizing          = Signal()                             # 음량 정규화 시작
     normalize_done       = Signal(float, bool)                  # 음량 정규화 완료 (적용 dB, 클리핑 여부)
     normalize_failed     = Signal(str)                          # 음량 정규화 실패 (사유)
@@ -830,6 +833,10 @@ class DownloadWorker(QThread):
             self.merging.emit()
             # 병합 대상 info 는 최종 컨테이너(merge_output_format)를 담고 있다 (D053)
             self._maybe_emit_codec_info(d.get("info_dict") or {})
+
+        if postprocessor == "Merger" and status == "processing":
+            pct = d.get("merge_percent")
+            self.merge_progress.emit(-1.0 if pct is None else pct, d.get("merge_secs", 0.0))
 
         if status == "finished":
             info_dict = d.get("info_dict") or {}

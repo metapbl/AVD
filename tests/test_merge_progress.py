@@ -85,3 +85,64 @@ def test_cancel_during_merge_stops_ffmpeg(merge_info, tmp_path):
         pp.run(merge_info)
     assert pp._proc.poll() is not None
     assert not (tmp_path / "t.temp.mp4").exists()
+
+
+# ── 워커·위젯 연결 (작업 3) ──
+
+def _worker():
+    from workers.download_worker import DownloadWorker
+    w = DownloadWorker("u", "bestvideo+bestaudio/best", "mp4", ".")
+    got = []
+    w.merge_progress.connect(lambda pct, secs: got.append((pct, secs)))
+    return w, got
+
+
+def test_worker_emits_merge_progress():
+    w, got = _worker()
+    w._on_postprocess({"status": "processing", "postprocessor": "Merger",
+                       "merge_percent": 42.0, "merge_secs": 10.0, "info_dict": {}})
+    w._on_postprocess({"status": "processing", "postprocessor": "Merger",
+                       "merge_percent": None, "merge_secs": 83.0, "info_dict": {}})
+    assert got == [(42.0, 10.0), (-1.0, 83.0)]
+
+
+def test_worker_started_still_emits_merging_only():
+    w, got = _worker()
+    merging = []
+    w.merging.connect(lambda: merging.append(1))
+    w._on_postprocess({"status": "started", "postprocessor": "Merger", "info_dict": {}})
+    assert merging == [1] and got == []
+
+
+def _widget():
+    from PySide6.QtWidgets import QApplication
+
+    from models.download_item import DownloadItem, DownloadStatus
+    from ui.download_item_widget import DownloadItemWidget
+    app = QApplication.instance() or QApplication([])  # noqa: F841 — 위젯에 필요
+    w = DownloadItemWidget(DownloadItem(url="u", title="t"))
+    w.update_status(DownloadStatus.MERGING)
+    return w
+
+
+def test_widget_shows_merge_percent():
+    w = _widget()
+    w.update_merge_progress(42.0, 10.0)
+    assert w.progress_bar.value() == 42
+    assert w.lbl_status.text() == "병합 중 42%"
+
+
+def test_widget_shows_elapsed_without_duration():
+    w = _widget()
+    w.update_merge_progress(-1.0, 83.0)
+    assert w.lbl_status.text() == "병합 중 1:23"
+
+
+@pytest.mark.parametrize("late", ["DONE", "CANCELLED"])
+def test_widget_ignores_late_merge_progress(late):
+    from models.download_item import DownloadStatus
+    w = _widget()
+    w.update_status(DownloadStatus[late])
+    before = (w.progress_bar.value(), w.lbl_status.text())
+    w.update_merge_progress(42.0, 10.0)
+    assert (w.progress_bar.value(), w.lbl_status.text()) == before
