@@ -209,6 +209,9 @@ class DownloadItemWidget(QWidget):
         self._gain_clip     : bool  = False   # 클리핑 여부
         self._gain_failed   : bool  = False   # 정규화 실패
 
+        # 진행률 옆 문구. 워커가 받는 파일에 따라 "영상/음성 받는 중" 으로 바꾼다.
+        self._download_stage: str   = "다운로드 중"
+
         self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
         self._apply_style()
@@ -562,7 +565,7 @@ class DownloadItemWidget(QWidget):
     def update_progress(self, pct: float):
         """
         진행률 바 업데이트.
-        다운로드 단계에서는 상태 라벨도 "38.5% 다운로드 중" 형식으로 함께 갱신.
+        다운로드 단계에서는 상태 라벨도 "38.5% 영상 받는 중" 형식으로 함께 갱신.
         병합 등 다른 단계에서 들어오는 progress 시그널은 라벨을 덮지 않는다.
 
         비활성 상태(DONE/ERROR/CANCELLED/WAITING) 진입 후 큐에 남아 있던
@@ -581,7 +584,11 @@ class DownloadItemWidget(QWidget):
         self.progress_bar.setValue(int(pct))
 
         if self.item.status == DownloadStatus.DOWNLOADING:
-            self.lbl_status.setText(f"{pct:.1f}% 다운로드 중")
+            self.lbl_status.setText(f"{pct:.1f}% {self._download_stage}")
+
+    def update_download_stage(self, text: str):
+        """받는 파일 문구를 바꾼다. 라벨은 다음 update_progress 가 그린다."""
+        self._download_stage = text
 
     def update_speed(self, speed: str):
         """

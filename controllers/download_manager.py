@@ -237,6 +237,9 @@ class DownloadManager(QObject):
         worker.speed.connect(widget.update_speed)
         worker.eta.connect(widget.update_eta)
         worker.file_size.connect(widget.update_file_size)
+        worker.download_stage.connect(
+            widget.update_download_stage, Qt.ConnectionType.QueuedConnection
+        )
         # 병합·정규화 시작: 위젯 상태 전이(직결) + 매니저 슬롯 회수(별도 슬롯).
         # ADR-003 정합 — 위젯 직결은 유지하고 매니저는 라이프사이클(_dispatch_next)만.
         worker.merging.connect(

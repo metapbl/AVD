@@ -247,6 +247,18 @@ def _extract_codec_info(info_dict: dict) -> tuple[str, str, str, float, float] |
     return (vcodec, acodec, ext, abr, tbr)
 
 
+def _stream_label(info_dict: dict | None) -> str:
+    """지금 받는 파일의 상태 문구. 영상·음성을 따로 받으면 진행률이 두 번 돌기 때문이다."""
+    info_dict = info_dict or {}
+    has_video = (info_dict.get("vcodec") or "none") != "none"
+    has_audio = (info_dict.get("acodec") or "none") != "none"
+    if has_video and not has_audio:
+        return "영상 받는 중"
+    if has_audio and not has_video:
+        return "음성 받는 중"
+    return "다운로드 중"
+
+
 def _without_merge_part_ext(filename: str, info_dict: dict) -> dict:
     """
     병합 조각의 진행 hook 이면 ext 를 비운 사본을, 아니면 그대로 돌려준다.
@@ -306,6 +318,7 @@ class DownloadWorker(QThread):
     speed                = Signal(str)                          # 속도
     eta                  = Signal(str)                          # 남은 시간
     file_size            = Signal(str)                          # 파일 크기
+    download_stage       = Signal(str)                          # 받는 파일 문구 (영상/음성)
     merging              = Signal()                             # 병합 시작
     merge_progress       = Signal(float, float)                 # 퍼센트(-1=모름), 처리한 초
     postprocess_stage    = Signal(str)                          # 후처리 단계 라벨
@@ -337,6 +350,7 @@ class DownloadWorker(QThread):
         self._downloader = Downloader()
         self._output_path = ""  # 완료된 파일 경로 저장용
         self._temp_dir = ""  # 이 항목의 작업 폴더 (D056)
+        self._last_stage = ""  # 마지막으로 보낸 download_stage 문구
 
         # ETA 폴백용 — 다운로드 시작 시각.
         # native HTTP 단일 progressive 다운로더는 yt-dlp 가 매 5초마다 ETA 를
@@ -615,6 +629,12 @@ class DownloadWorker(QThread):
         if status == "downloading":
             if self._dl_start_ts == 0.0:
                 self._dl_start_ts = time.monotonic()
+
+            # 진행률보다 먼저 보내 라벨이 새 문구로 바로 그려지게 한다.
+            stage = _stream_label(d.get("info_dict"))
+            if stage != self._last_stage:
+                self._last_stage = stage
+                self.download_stage.emit(stage)
 
             pct_str = strip_ansi(d.get("_percent_str", "0%")).strip()
             raw_pct: float | None
