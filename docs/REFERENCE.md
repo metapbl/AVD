@@ -8,17 +8,17 @@
 - `ui/main_window.py` > `MainWindow` — UI 구성·항목 추가·썸네일·제거·업데이터의 시그널 허브 (items/widgets dict 소유)
 - `controllers/download_manager.py` > `DownloadManager` — 대기열과 동시성. `active_count` 는 MERGING·NORMALIZING 을 슬롯에서 제외, `_dispatch_next` 로 다음 항목 출발
 - `controllers/playlist_flow.py` > `PlaylistFlow` — 플레이리스트 경량 목록(상한 500) → 선택 다이얼로그 → 일괄 등록 (D007)
-- `workers/download_worker.py` > `DownloadWorker.run` — 세션 단위 재시도 루프(`_is_transient_error`, 2→5→10초, 최대 3회), 진행률·ETA 파싱, MP3 정규화 호출 (D008, D009)
+- `workers/download_worker.py` > `DownloadWorker.run` — 세션 단위 재시도 루프(`_is_transient_error`, 2→5→10초, 최대 3회), 진행률·ETA 파싱, MP3 정규화 호출 (D008, D009) 항목별 임시 폴더(`.avd_*`)에서 작업을 끝낸 뒤 `move_unique` 로 저장 폴더로 옮긴다 (D056)
 - `workers/info_worker.py` > `InfoWorker`, `thumbnail_worker.py` > `ThumbnailWorker`, `playlist_probe_worker.py` > `PlaylistProbeWorker`, `update_worker.py` > `UpdateWorker`
-- `core/downloader.py` > `Downloader.download` — `YoutubeDL` 옵션 구성, `_NFCNormalizePP`(pre_process) 등록 (D006)
+- `core/downloader.py` > `Downloader.download` — `YoutubeDL` 옵션 구성, `_NFCNormalizePP`(pre_process) 등록 (D006). `JS_CHALLENGE_OPTS` 는 정보 추출·플레이리스트 확인과 공유 (D055)
 - `core/info_fetcher.py` > `InfoFetcher.fetch` — `VideoInfo`/`FormatInfo` 생성
 - `utils/config_manager.py` > `ConfigManager` — 앱 폴더 `config.json`, `DEFAULT_CONFIG` 병합
 - `utils/updater.py` > `YtdlpUpdater` — 기동 시 yt-dlp 갱신 (D002) / `AppUpdater`
-- `utils/file_utils.py` — `sanitize_filename`, `normalize_unicode`, `get_unique_path`, `snapshot_child_pids`·`terminate_pids`(취소 시 ffmpeg/Node 정리)
+- `utils/file_utils.py` — `sanitize_filename`, `normalize_unicode`, `get_unique_path`, `snapshot_child_pids`·`terminate_pids`(취소 시 ffmpeg/Node 정리), `move_unique`(번호 붙여 이동, D054), `sweep_stale_temp_dirs`(기동 시 1일 지난 임시 폴더 삭제)
 - `gaindb/api.py` > `apply_file_track_gain`, `analyze_file` — 본체가 부르는 유일한 경계 (D017)
 
 ## R§2 외부 사양·제약
-- yt-dlp (핀 2026.3.17, 기동 시 최신화): YouTube 는 JS 런타임(Node/Deno/Bun) 필요, 런타임 고정하지 않는다 (출처: https://github.com/yt-dlp/yt-dlp/wiki/EJS)
+- yt-dlp (핀 2026.3.17, 기동 시 최신화): YouTube 는 JS 런타임(Node/Deno/Bun) 필요. `js_runtimes` 를 빼면 Deno 만 켜지므로 셋을 모두 켜서 특정 런타임에 고정하지 않는다 (D055, 출처: https://github.com/yt-dlp/yt-dlp/wiki/EJS)
 - yt-dlp 후처리 체인 (2026.3.17 기준): `ThumbnailsConvertor → Merger → Metadata → EmbedThumbnail → MoveFiles`. `postprocessor_hook` 은 started/finished 만, 퍼센트 없음
 - yt-dlp `retries` 는 세션 내 HTTP 재시도일 뿐 — 토큰 만료 403 은 새 `YoutubeDL` 세션으로만 회복 (D008)
 - yt-dlp 지원 사이트: https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md — sendvid 는 전용 추출기 없음, 범용 추출기 (Q026, 2026-10-28)
@@ -44,6 +44,8 @@
 - D027 — Python 3.15 venv, PySide6 6.12.0·numpy 2.5.4·scipy 1.18.1
 - D028 — 지원 Python 하한 3.12
 - D033 — 첫 계획 완료 조건 (성공 기준·F11 기동 실패만 미완)
+- D055 — JS 런타임 옵션을 세 경로가 공유, Node·Deno·Bun 모두 켬
+- D056 — 항목별 임시 폴더에서 완료 후 저장 폴더로 이동, 같은 이름은 번호 보관 (D054)
 
 ## R§4 함정 대장
 | ID | 증상 | 원인 | 대처 | 근거 |
@@ -70,6 +72,8 @@
 | T20 | 소스 실행 업데이트 리허설에서 pip 가 '이미 최신' | `version.py` 문자열만 바꾸면 pip 는 dist-info 버전을 본다 | 실제 옛 버전 설치 `pip install yt-dlp==…` 로 리허설 | 2026-11-02 |
 | T21 | 배포본에 옛 yt-dlp 가 실림 | 릴리스 전 `pip install -r requirements.txt` 가 venv yt-dlp 를 핀(D002)으로 내림 | 올릴 패키지만 지정해 설치, 빌드 전 `pip show yt-dlp` 확인 | 3391c06 |
 | T22 | yt-dlp PostProcessor 하위 클래스로 바꾸자 hook 이름 비교·`postprocessor_args` 가 안 맞음, started/finished 가 두 번 | `pp_key()` 가 클래스 이름에서 만들어지고 "FFmpeg" 접두사·"PP" 가 빠짐(`FFmpegMetadataPP` → `Metadata`). hook 이름을 문자열로 비교하는 테스트는 실제 클래스의 `pp_key()` 로 쓴다 / `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감쌈 | `pp_key` 를 부모 값으로 고정, `run` 은 오버라이드하지 않음 | 389a1b4 |
+| T23 | 목록에 보인 화질이 다운로드 때 "Requested format is not available" | `js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜진다. Node 만 있는 PC 는 JS 챌린지를 못 풀어 일부 포맷을 잃고, 옵션이 있는 정보 추출과 목록이 달라진다 | 세 경로가 `JS_CHALLENGE_OPTS` 를 공유, 포맷 개수는 응답마다 달라지므로 해당 포맷 유무로 확인 | D055 |
+| T24 | 저장 폴더의 같은 이름 파일이 삭제되거나 태그가 바뀌고, 요청과 다른 화질인데 완료 처리 | 기본 `overwrites` 에서 yt-dlp 는 같은 이름 파일을 받은 것으로 보고 후처리한다. MP3 변환은 그 파일을 원본으로 쓰고 지운다 | 저장 폴더를 yt-dlp 에 넘기지 않고 항목별 임시 폴더에서 작업 | D056 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

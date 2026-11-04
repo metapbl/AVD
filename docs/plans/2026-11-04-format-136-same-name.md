@@ -42,7 +42,7 @@
 - [x] 4. 오래된 임시 폴더 청소 — `utils/file_utils.py > sweep_stale_temp_dirs`, `controllers/download_manager.py`
   - 실패하는 테스트 먼저 (`tests/test_move_unique.py`에 추가): 수정 2일 전 `.avd_x` 삭제 / 방금 만든 `.avd_y` 유지 / `.avd_` 로 시작하지 않는 폴더·파일 유지 / 저장 폴더 없음 → 오류 없이 통과
   - 확인: 위 테스트·전체 pytest·ruff 통과
-- [ ] 5. 문서 — `docs/REFERENCE.md` R§2 JS 런타임 설명·구조, R§4 함정 T23(`js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜짐)·T24(같은 이름 파일이 있으면 yt-dlp 가 그 파일을 원본으로 후처리하고 삭제할 수 있음), `README.md` 에 관련 안내가 있으면 수정
+- [x] 5. 문서 — `docs/REFERENCE.md` R§2 JS 런타임 설명·구조, R§4 함정 T23(`js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜짐)·T24(같은 이름 파일이 있으면 yt-dlp 가 그 파일을 원본으로 후처리하고 삭제할 수 있음), `README.md` 에 관련 안내가 있으면 수정
   - 확인: `grep -n "T23\|T24" docs/REFERENCE.md` → 항목 있음, R§2 가 D055 와 일치
 - [ ] 6. 인수 확인 — F1 변경 인수 기준을 실제 다운로드로 실행
   - Given 빈 임시 폴더 / When 같은 영상을 480p, 720p 순서로 받음 / Then `제목.mp4`(높이 480)와 `제목 (1).mp4`(높이 720)가 있고 첫 파일 해시 그대로, `(1)` 파일의 제목 태그에 번호 없음
