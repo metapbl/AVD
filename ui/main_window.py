@@ -110,6 +110,18 @@ def _is_bot_block_error(msg: str) -> bool:
     return "sign in to confirm" in low or "not a bot" in low or "confirm you" in low
 
 
+def _warn_if_missing(parent, path: str) -> bool:
+    """받은 파일이 없으면 알리고 True 를 돌려준다."""
+    if Path(path).exists():
+        return False
+    QMessageBox.warning(
+        parent,
+        "파일을 찾을 수 없음",
+        f"파일이 옮겨졌거나 삭제되었을 수 있습니다.\n\n{path}",
+    )
+    return True
+
+
 class MainWindow(QMainWindow):
     """AV Downloader 메인 윈도우"""
 
@@ -842,16 +854,14 @@ class MainWindow(QMainWindow):
         self.download_manager.cancel_all()
 
         if dlg.delete_disk_files:
-            for it in list(self.items.values()):
+            self._delete_files([
+                it.save_path for it in self.items.values()
                 if (
                     it.status == DownloadStatus.DONE
                     and it.save_path
                     and Path(it.save_path).is_file()
-                ):
-                    try:
-                        Path(it.save_path).unlink(missing_ok=True)
-                    except OSError:
-                        pass
+                )
+            ])
 
         for item_id in list(self.items.keys()):
             self._remove_item_quiet(item_id)
@@ -896,16 +906,36 @@ class MainWindow(QMainWindow):
         # 게이트 슬롯이 풀렸을 수 있으니 다음 대기 항목을 깨운다.
         self._dispatch_info()
 
+    def _delete_files(self, paths: list[str]):
+        """받은 파일을 지운다. 지우지 못한 파일은 사용자에게 알린다."""
+        failed = []
+        for path in paths:
+            try:
+                Path(path).unlink(missing_ok=True)
+            except OSError:
+                failed.append(path)
+        if failed:
+            QMessageBox.warning(
+                self,
+                "파일 삭제 실패",
+                "다음 파일을 삭제하지 못했습니다. 다른 프로그램에서 열려 있을 수 있습니다.\n\n"
+                + "\n".join(failed),
+            )
+
     def _on_open_folder(self, item_id: str):
         """폴더 열기 버튼 클릭"""
         item = self.items.get(item_id)
         if item and item.save_path:
+            if _warn_if_missing(self, item.save_path):
+                return
             open_folder(item.save_path)
 
     def _on_play_file(self, item_id: str):
         """재생 버튼 클릭 — 받은 파일을 기본 앱으로 (D049)"""
         item = self.items.get(item_id)
         if item and item.save_path:
+            if _warn_if_missing(self, item.save_path):
+                return
             open_file(item.save_path)
 
     def _on_remove(self, item_id: str, skip_confirm: bool = False):
@@ -951,10 +981,7 @@ class MainWindow(QMainWindow):
             self.download_manager.cancel(item_id)
 
         if delete_file and is_done_with_file:
-            try:
-                Path(item.save_path).unlink(missing_ok=True)
-            except OSError:
-                pass
+            self._delete_files([item.save_path])
 
         self._remove_item_quiet(item_id)
 
