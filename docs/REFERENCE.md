@@ -74,6 +74,7 @@
 | T22 | yt-dlp PostProcessor 하위 클래스로 바꾸자 hook 이름 비교·`postprocessor_args` 가 안 맞음, started/finished 가 두 번 | `pp_key()` 가 클래스 이름에서 만들어지고 "FFmpeg" 접두사·"PP" 가 빠짐(`FFmpegMetadataPP` → `Metadata`). hook 이름을 문자열로 비교하는 테스트는 실제 클래스의 `pp_key()` 로 쓴다 / `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감쌈 | `pp_key` 를 부모 값으로 고정, `run` 은 오버라이드하지 않음 | 389a1b4 |
 | T23 | 목록에 보인 화질이 다운로드 때 "Requested format is not available" | `js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜진다. Node 만 있는 PC 는 JS 챌린지를 못 풀어 일부 포맷을 잃고, 옵션이 있는 정보 추출과 목록이 달라진다 | 세 경로가 `JS_CHALLENGE_OPTS` 를 공유, 포맷 개수는 응답마다 달라지므로 해당 포맷 유무로 확인 | D055 |
 | T24 | 저장 폴더의 같은 이름 파일이 삭제되거나 태그가 바뀌고, 요청과 다른 화질인데 완료 처리 | 기본 `overwrites` 에서 yt-dlp 는 같은 이름 파일을 받은 것으로 보고 후처리한다. MP3 변환은 그 파일을 원본으로 쓰고 지운다 | 저장 폴더를 yt-dlp 에 넘기지 않고 항목별 임시 폴더에서 작업 | D056 |
+| T25 | 취소·앱 종료 뒤 항목은 취소됨인데 `.avd_*` 와 `.part` 가 남음 (HLS 등 조각 포맷만, 예: YouTube 312) | 조각 다운로더가 취소 예외 때 `dest_stream` 을 닫지 않고 참조 순환에 남겨 GC 전까지 이 프로세스가 파일을 잠금. `rmtree(ignore_errors=True)` 는 조용히 실패 | 지우기 전에 `gc.collect()`. 취소 시험은 조각 포맷으로도 한다 | D056 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
