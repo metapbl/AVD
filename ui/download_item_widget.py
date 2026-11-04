@@ -176,6 +176,7 @@ class DownloadItemWidget(QWidget):
     open_requested   = Signal(str)  # item_id 전달
     play_requested   = Signal(str)  # item_id 전달
     remove_requested = Signal(str)  # item_id 전달
+    detail_requested = Signal(str)  # item_id 전달 — 오류 내용 보기
 
     def __init__(self, item: DownloadItem, parent=None):
         super().__init__(parent)
@@ -314,6 +315,17 @@ class DownloadItemWidget(QWidget):
         self.btn_cancel.clicked.connect(self._on_cancel_or_retry)
         btn_layout.addWidget(self.btn_cancel)
 
+        # 오류 내용 보기 버튼 (오류 상태에서만 표시, D061)
+        self.btn_detail = QPushButton("자세히")
+        self.btn_detail.setObjectName("btnDetail")
+        self.btn_detail.setToolTip("오류 원인과 원문 보기")
+        self.btn_detail.setFixedWidth(60)
+        self.btn_detail.setVisible(False)
+        self.btn_detail.clicked.connect(
+            lambda: self.detail_requested.emit(self.item.item_id)
+        )
+        btn_layout.addWidget(self.btn_detail)
+
         # 폴더 열기 버튼 (완료 후 표시)
         self.btn_open = QPushButton("📂 열기")
         self.btn_open.setObjectName("btnOpen")
@@ -405,6 +417,14 @@ class DownloadItemWidget(QWidget):
                 font-size: 11px;
             }
             QPushButton#btnPlay:hover { background: #57b884; }
+            QPushButton#btnDetail {
+                background: #363636;
+                color: #cfcfcf;
+                border-radius: 4px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            QPushButton#btnDetail:hover { background: #454545; }
             QPushButton#btnRemove {
                 background: #363636;
                 color: #cfcfcf;
@@ -670,6 +690,7 @@ class DownloadItemWidget(QWidget):
         )
         self.btn_remove.setVisible(not active)
         self.btn_play.setVisible(status == DownloadStatus.DONE)
+        self.btn_detail.setVisible(status == DownloadStatus.ERROR)
 
         if status == DownloadStatus.WAITING:
             # 큐 대기 — 취소·열기 숨김, ✕ 만 노출.
@@ -741,6 +762,10 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setText("취소")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
+
+    def update_error_summary(self, summary: str):
+        """오류 상태 라벨에 사유 요약을 붙인다. 원문은 "자세히" 에서 본다 (D061)."""
+        self.lbl_status.setText(f"{DownloadStatus.ERROR.value} · {summary}")
 
     def update_merge_progress(self, pct: float, secs: float):
         """

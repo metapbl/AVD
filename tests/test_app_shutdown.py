@@ -76,7 +76,9 @@ def _close(monkeypatch, count, reply=None):
 
     monkeypatch.setattr(QMessageBox, "question", question)
     hidden = []
-    window = SimpleNamespace(download_manager=_Manager(count), hide=lambda: hidden.append(True))
+    window = SimpleNamespace(
+        download_manager=_Manager(count), hide=lambda: hidden.append(True), _update_check_worker=None
+    )
     event = _Event()
     MainWindow.closeEvent(window, event)
     return window.download_manager, event, asked, hidden

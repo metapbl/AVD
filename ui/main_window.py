@@ -30,9 +30,10 @@ from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
 from utils.config_manager import ConfigManager
 from utils.file_utils import open_file, open_folder
-from utils.updater import YtdlpUpdater, restart_command
+from utils.updater import restart_command
 from workers.info_worker import InfoWorker
 from workers.thumbnail_worker import ThumbnailWorker
+from workers.update_check_worker import UpdateCheckWorker
 from workers.update_worker import UpdateWorker
 
 
@@ -96,7 +97,7 @@ def _friendly_error(msg: str) -> tuple[str, str]:
             "현재 지역에서는 이 영상을 볼 수 없습니다.",
         )
     return (
-        "다운로드 중 오류가 발생했습니다",
+        "다운로드하지 못했습니다",
         (
             "아래 '자세히' 를 눌러 원문 오류를 확인하세요. 일시적 문제라면 "
             "수동 재시도 버튼으로 다시 시도할 수 있습니다."
@@ -160,15 +161,15 @@ class MainWindow(QMainWindow):
         # item_id → 재시도 횟수. 실패 시 1 회에 한해 지연 후 재큐잉한다.
         self._thumb_retry   : dict[str, int] = {}
 
-        # 봇 감지 안내 다이얼로그 쿨다운 플래그. 봇 차단은 여러 항목이
-        # 연달아 실패하므로, 한 번 안내한 뒤 잠깐 억제해 다이얼로그 폭주를
-        # 막는다. QTimer 로 일정 시간 뒤 해제.
-        self._bot_notice_suppressed = False
-
         # ── 플레이리스트 사전결정 항목 ──
         # item_id → (format_id, ext). 정보 추출 완료 시 화질 다이얼로그를
         # 건너뛰고 곧장 큐로 보내는 항목들.
         self._predetermined : dict[str, tuple[str, str]] = {}
+        # 정보 가져오기에 실패한 플레이리스트 항목의 사양 — 재시도 때 되살린다 (D061).
+        self._failed_specs  : dict[str, tuple[str, str]] = {}
+
+        # 버전 확인 워커. 창을 닫을 때 끝나기를 기다린다 (D062).
+        self._update_check_worker: UpdateCheckWorker | None = None
 
         # 다운로드 워커 오케스트레이션은 매니저로 위임.
         self.download_manager = DownloadManager(
@@ -326,6 +327,7 @@ class MainWindow(QMainWindow):
         widget.open_requested.connect(self._on_open_folder)
         widget.play_requested.connect(self._on_play_file)
         widget.remove_requested.connect(self._on_remove)
+        widget.detail_requested.connect(self._on_error_detail)
         self.widgets[item.item_id] = widget
 
         self.lbl_empty.setVisible(False)
@@ -628,36 +630,53 @@ class MainWindow(QMainWindow):
 
         self._dispatch_thumb()
 
-    def _on_info_error(self, item_id: str, err: str):
-        """
-        영상 정보 추출 실패.
-
-        단일 항목은 에러 다이얼로그 후 정리. 플레이리스트 출신(사전결정)은
-        다이얼로그를 N 번 띄우지 않도록 조용히 ERROR 상태로만 둔다.
-        """
-        was_predetermined = item_id in self._predetermined
-        self._predetermined.pop(item_id, None)
-
+    def _mark_error(self, item_id: str, err: str):
+        """항목을 오류 상태로 두고 사유를 남긴다. "자세히" 가 이 원문을 보여 준다 (D061)."""
+        item   = self.items.get(item_id)
         widget = self.widgets.get(item_id)
+        if item:
+            item.error_msg = err
         if widget:
             widget.update_status(DownloadStatus.ERROR)
+            widget.update_error_summary(_friendly_error(err)[0])
+
+    def _on_info_error(self, item_id: str, err: str):
+        """
+        영상 정보 추출 실패. 항목은 목록에 남겨 재시도할 수 있게 한다 (D061).
+
+        제목을 아직 모르므로 URL 을 제목 자리에 보인다. 플레이리스트 출신은
+        고른 형태를 잃지 않게 사양을 보관한다.
+        """
+        spec = self._predetermined.pop(item_id, None)
+        if spec is not None:
+            self._failed_specs[item_id] = spec
+
+        self._mark_error(item_id, err)
+
+        item   = self.items.get(item_id)
+        widget = self.widgets.get(item_id)
+        if item and widget:
+            widget.update_title(item.url)
 
         self._release_info_slot(item_id)
+        self.status_bar.showMessage("영상 정보를 가져오지 못했습니다.")
 
-        if was_predetermined:
-            self.status_bar.showMessage("일부 항목의 정보를 가져오지 못했습니다.")
+    def _on_error_detail(self, item_id: str):
+        """"자세히" 버튼 — 원인·대처법과 오류 원문을 보여 준다."""
+        item = self.items.get(item_id)
+        if item is None:
             return
-
+        title, desc = _friendly_error(item.error_msg)
         dialog = QMessageBox(self)
-        dialog.setWindowTitle("오류")
-        dialog.setIcon(QMessageBox.Icon.Critical)
-        dialog.setText("영상 정보를 가져오지 못했습니다.")
-        dialog.setDetailedText(err)
+        dialog.setWindowTitle(title)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setText(title)
+        dialog.setInformativeText(desc)
+        dialog.setDetailedText(item.error_msg)
         dialog.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
         dialog.exec()
-        self._on_remove(item_id, skip_confirm=True)
 
     # ── 플레이리스트 플로우 콜백 ─────────────────────
 
@@ -720,11 +739,10 @@ class MainWindow(QMainWindow):
 
         never_fetched = (item.duration == 0 and not item.uploader)
         if never_fetched:
-            fmt_id = (
-                "bestaudio/best" if item.ext == "mp3"
-                else "bestvideo+bestaudio/best"
-            )
-            self._predetermined[item_id] = (fmt_id, item.ext or "mp4")
+            # 단일 영상은 사양이 없어 정보 추출 뒤 화질 선택 창이 뜬다.
+            spec = self._failed_specs.pop(item_id, None)
+            if spec is not None:
+                self._predetermined[item_id] = spec
             widget.update_status(DownloadStatus.FETCHING)
             self.status_bar.showMessage(f"정보 재요청: {item.url}")
             self._enqueue_info(item_id)
@@ -776,39 +794,16 @@ class MainWindow(QMainWindow):
         QApplication.alert(self)
 
     def _on_download_error(self, item_id: str, err: str):
-        """다운로드 오류 (매니저 시그널)"""
-        widget = self.widgets.get(item_id)
-        if widget:
-            widget.update_status(DownloadStatus.ERROR)
+        """다운로드 오류 (매니저 시그널). 창을 띄우지 않고 항목에 남긴다 (D061)."""
+        self._mark_error(item_id, err)
 
-        # 봇 감지 오류는 대량으로 연달아 터지므로, 한 번 안내한 뒤 잠깐
-        # 억제해 다이얼로그 폭주를 막는다 (상태 라벨은 계속 ERROR 로 표시).
         if _is_bot_block_error(err):
             self.status_bar.showMessage(
                 "YouTube 봇 감지로 일부 다운로드가 차단되었습니다. 잠시 후 다시 시도하세요."
             )
-            if self._bot_notice_suppressed:
-                return
-            self._bot_notice_suppressed = True
-            # 30초 뒤 억제 해제 — 다음 봇 차단 물결 때 다시 한 번 안내.
-            QTimer.singleShot(30000, self._reset_bot_notice)
-
-        title, desc = _friendly_error(err)
-
-        dialog = QMessageBox(self)
-        dialog.setWindowTitle(title)
-        dialog.setIcon(QMessageBox.Icon.Warning)
-        dialog.setText(title)
-        dialog.setInformativeText(desc)
-        dialog.setDetailedText(err)
-        dialog.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        dialog.exec()
-
-    def _reset_bot_notice(self):
-        """봇 감지 안내 쿨다운 해제."""
-        self._bot_notice_suppressed = False
+        else:
+            self.status_bar.showMessage("다운로드하지 못한 항목이 있습니다.")
+        QApplication.alert(self)
 
     def _on_download_cancelled(self, item_id: str):
         """다운로드 취소 완료 (매니저 시그널)"""
@@ -896,6 +891,7 @@ class MainWindow(QMainWindow):
             self._info_pending.remove(item_id)
         self._info_running.discard(item_id)
         self._predetermined.pop(item_id, None)
+        self._failed_specs.pop(item_id, None)
 
         widget = self.widgets.pop(item_id, None)
         if widget:
@@ -998,29 +994,36 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _check_ytdlp_update(self):
-        """앱 시작 시 yt-dlp 업데이트 체크
+        """앱 시작 3초 뒤 yt-dlp 새 버전을 확인한다 (D062).
 
-        업데이트 자체는 UpdateWorker(백그라운드 스레드) + 모달 진행
-        다이얼로그로 처리한다. 예전처럼 GUI 스레드에서 pip 을 동기 실행하면
-        10 초간 창이 얼어붙어 '강제 종료된 것처럼' 보였기 때문이다.
+        네트워크를 쓰므로 워커에서 돌린다. 업데이트 자체도 UpdateWorker
+        (백그라운드 스레드) + 모달 진행 다이얼로그로 처리한다.
         """
-        def check():
-            updater = YtdlpUpdater()
-            needed, current, latest = updater.is_update_available()
-            if not needed:
-                return
-            reply = QMessageBox.question(
-                self,
-                "yt-dlp 업데이트",
-                f"yt-dlp 새 버전이 있습니다.\n\n"
-                f"현재: {current}\n"
-                f"최신: {latest}\n\n"
-                f"지금 업데이트 하시겠습니까?",
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                self._run_ytdlp_update(current, latest)
+        QTimer.singleShot(3000, self._start_update_check)
 
-        QTimer.singleShot(3000, check)
+    def _start_update_check(self):
+        """버전 확인 워커를 띄운다. 창을 닫을 때 끝나기를 기다리므로 지우지 않고 둔다."""
+        worker = UpdateCheckWorker(self)
+        worker.checked.connect(
+            self._on_update_checked, Qt.ConnectionType.QueuedConnection
+        )
+        self._update_check_worker = worker
+        worker.start()
+
+    def _on_update_checked(self, needed: bool, current: str, latest: str):
+        """버전 확인 결과 — 새 버전이 있으면 업데이트할지 묻는다."""
+        if not needed:
+            return
+        reply = QMessageBox.question(
+            self,
+            "yt-dlp 업데이트",
+            f"yt-dlp 새 버전이 있습니다.\n\n"
+            f"현재: {current}\n"
+            f"최신: {latest}\n\n"
+            f"지금 업데이트 하시겠습니까?",
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._run_ytdlp_update(current, latest)
 
     def _run_ytdlp_update(self, current: str, latest: str):
         """업데이트를 워커+모달 다이얼로그로 실행(메인창 차단, 비동기)."""
@@ -1088,6 +1091,10 @@ class MainWindow(QMainWindow):
             self.hide()
 
         self.download_manager.shutdown()
+        if self._update_check_worker is not None:
+            # 도는 중인 QThread 가 소멸하면 앱이 죽는다. 요청 제한시간 5초에 여유를 둔 값.
+            self.hide()
+            self._update_check_worker.wait(15000)
         event.accept()
 
     # ── 스타일 ───────────────────────────────────────
