@@ -6,7 +6,6 @@ import pytest
 
 from utils.file_utils import (
     format_duration,
-    get_unique_path,
     normalize_unicode,
     sanitize_filename,
 )
@@ -40,21 +39,6 @@ def test_sanitize_filename(name, expected):
 
 def test_sanitize_filename_nfd_to_nfc():
     assert sanitize_filename(NFD) == NFC
-
-
-def test_get_unique_path_numbering(tmp_path):
-    first = get_unique_path(str(tmp_path), "video", "mp4")
-    assert first == str(tmp_path / "video.mp4")
-
-    (tmp_path / "video.mp4").touch()
-    assert get_unique_path(str(tmp_path), "video", "mp4") == str(tmp_path / "video (1).mp4")
-
-    (tmp_path / "video (1).mp4").touch()
-    assert get_unique_path(str(tmp_path), "video", "mp4") == str(tmp_path / "video (2).mp4")
-
-
-def test_get_unique_path_sanitizes_title(tmp_path):
-    assert get_unique_path(str(tmp_path), "a:b", "mp3") == str(tmp_path / "a_b.mp3")
 
 
 @pytest.mark.parametrize("seconds, expected", [

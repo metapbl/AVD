@@ -70,22 +70,6 @@ def ensure_dir(path: str) -> str:
     return path
 
 
-def get_unique_path(save_dir: str, title: str, ext: str) -> str:
-    """
-    저장 경로에 같은 이름의 파일이 있으면
-    (1), (2) 형태로 번호를 붙여서 고유한 경로 반환
-    """
-    base_name = sanitize_filename(title)
-    target = Path(save_dir) / f"{base_name}.{ext}"
-
-    counter = 1
-    while target.exists():
-        target = Path(save_dir) / f"{base_name} ({counter}).{ext}"
-        counter += 1
-
-    return str(target)
-
-
 def move_unique(src: str, save_dir: str) -> str:
     """
     완료된 파일을 저장 폴더로 옮기고 최종 경로를 반환한다 (D054, D056).

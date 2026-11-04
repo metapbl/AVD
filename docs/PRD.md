@@ -66,7 +66,7 @@
 - 확인 방법: 자동 (grep·git diff)
 ### F9 [첫 계획 B] pytest 특성 테스트 (D023, D025)
 - 인수 기준:
-  - Given 테스트 추가 / When `pytest` / Then 다음 함수의 현재 동작 고정 테스트 전부 통과 — `workers/download_worker.py`: `_is_transient_error`, `_parse_eta_secs`, `_format_eta_secs`, `_normalize_size_str`, `_split_size_str`, `_is_unknown_size` / `utils/file_utils.py`: `sanitize_filename`, `normalize_unicode`, `get_unique_path`, `format_duration`
+  - Given 테스트 추가 / When `pytest` / Then 다음 함수의 현재 동작 고정 테스트 전부 통과 — `workers/download_worker.py`: `_is_transient_error`, `_parse_eta_secs`, `_format_eta_secs`, `_normalize_size_str`, `_split_size_str`, `_is_unknown_size` / `utils/file_utils.py`: `sanitize_filename`, `normalize_unicode`, `format_duration`
   - 기대값은 특성 테스트 원칙대로 현 코드의 출력에서 얻는다 (PRD 가 정하지 않음)
   - Given F9 커밋 / When 그 커밋의 diff 를 본다 / Then 기존 `.py` 무수정, pytest 는 개발용 의존성 파일로 분리, `requirements.txt` 변경 없음 (상향은 앞선 F11 커밋)
   - Given 대상 함수 동작을 일부러 바꾼다 / When `pytest` / Then 해당 테스트 실패 (한 번 확인 후 원복)
@@ -128,3 +128,4 @@
 | 2026-11-04 | F1 항목별 임시 폴더에서 완료 후 이동, 같은 이름 파일은 번호 붙여 보관 | D054, D056, Q061, Q062 |
 | 2026-11-04 | F4 창 닫기 확인·종료 정리 한 줄 (현행 반영) | D057, Q068 |
 | 2026-11-04 | §2.6 "비영리 무료" → 저작자 무료 배포 (라이선스에 제한 없음) | D058, Q069 |
+| 2026-11-04 | F9 대상에서 삭제한 `get_unique_path` 제외 | Q070 |

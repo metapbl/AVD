@@ -14,7 +14,7 @@
 - `core/info_fetcher.py` > `InfoFetcher.fetch` — `VideoInfo`/`FormatInfo` 생성
 - `utils/config_manager.py` > `ConfigManager` — 앱 폴더 `config.json`, `DEFAULT_CONFIG` 병합
 - `utils/updater.py` > `YtdlpUpdater` — 기동 시 yt-dlp 갱신 (D002) / `AppUpdater`
-- `utils/file_utils.py` — `sanitize_filename`, `normalize_unicode`, `get_unique_path`, `snapshot_child_pids`·`terminate_pids`(취소 시 ffmpeg/Node 정리), `move_unique`(번호 붙여 이동, D054), `sweep_stale_temp_dirs`(기동 시 1일 지난 임시 폴더 삭제)
+- `utils/file_utils.py` — `sanitize_filename`, `normalize_unicode`, `snapshot_child_pids`·`terminate_pids`(취소 시 ffmpeg/Node 정리), `move_unique`(번호 붙여 이동, D054), `sweep_stale_temp_dirs`(기동 시 1일 지난 임시 폴더 삭제)
 - `gaindb/api.py` > `apply_file_track_gain`, `analyze_file` — 본체가 부르는 유일한 경계 (D017)
 
 ## R§2 외부 사양·제약
