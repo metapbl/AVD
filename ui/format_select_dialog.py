@@ -77,7 +77,7 @@ class FormatSelectDialog(QDialog):
         # 구분선
         line = QLabel()
         line.setFixedHeight(1)
-        line.setStyleSheet("background: #3a3a3a;")
+        line.setStyleSheet("background: #323232;")
         root.addWidget(line)
 
         # ── 포맷 목록 ──
@@ -214,25 +214,25 @@ class FormatSelectDialog(QDialog):
         """스타일 적용"""
         self.setStyleSheet("""
             QDialog {
-                background: #2b2b2b;
+                background: #272727;
             }
             QLabel#videoTitle {
-                color: #ffffff;
+                color: #f3f3f3;
                 font-size: 13px;
                 font-weight: bold;
             }
             QLabel#videoMeta {
-                color: #888888;
+                color: #9a9a9a;
                 font-size: 11px;
             }
             QLabel#sectionLabel {
-                color: #aaaaaa;
+                color: #cfcfcf;
                 font-size: 12px;
             }
             QListWidget {
-                background: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #3a3a3a;
+                background: #1c1c1c;
+                color: #f3f3f3;
+                border: 1px solid #383838;
                 border-radius: 6px;
                 font-size: 12px;
                 outline: none;
@@ -242,25 +242,25 @@ class FormatSelectDialog(QDialog):
                 border-radius: 4px;
             }
             QListWidget::item:selected {
-                background: #4a90d9;
-                color: #ffffff;
+                background: #4cc2ff;
+                color: #06222f;
             }
             QListWidget::item:hover {
-                background: #3a3a3a;
+                background: #323232;
             }
             QPushButton#btnCancel {
-                background: #444;
-                color: #ccc;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: #555; }
+            QPushButton#btnCancel:hover { background: #454545; }
             QPushButton#btnConfirm {
-                background: #4a90d9;
-                color: #fff;
+                background: #4cc2ff;
+                color: #06222f;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: #5aa0e9; }
+            QPushButton#btnConfirm:hover { background: #7dd3ff; }
         """)

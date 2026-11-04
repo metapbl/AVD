@@ -41,7 +41,7 @@ class ConcurrentSlider(QSlider):
     로 처리하므로 본 클래스는 점 그리기만 책임진다.
     """
 
-    DOT_COLOR    = QColor("#cccccc")
+    DOT_COLOR    = QColor("#9a9a9a")
     DOT_DIAMETER = 3
 
     def paintEvent(self, event):
@@ -449,12 +449,12 @@ class PreferencesDialog(QDialog):
         """스타일 적용"""
         self.setStyleSheet("""
             QDialog {
-                background: #2b2b2b;
+                background: #272727;
             }
             QGroupBox#settingsGroup {
-                color: #aaaaaa;
+                color: #cfcfcf;
                 font-size: 12px;
-                border: 1px solid #3a3a3a;
+                border: 1px solid #383838;
                 border-radius: 6px;
                 margin-top: 8px;
                 padding: 12px 8px 8px 8px;
@@ -465,13 +465,13 @@ class PreferencesDialog(QDialog):
                 padding: 0 4px;
             }
             QLabel {
-                color: #cccccc;
+                color: #cfcfcf;
                 font-size: 12px;
             }
             QLineEdit {
-                background: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                color: #f3f3f3;
+                border: 1px solid #4a4a4a;
                 border-radius: 4px;
                 padding: 0 8px;
                 font-size: 12px;
@@ -479,21 +479,21 @@ class PreferencesDialog(QDialog):
 
             /* 현재 값 큰 숫자 — 동적 색 (zone property) */
             QLabel#concurrentValue {
-                color: #4caf50;
+                color: #57b884;
                 font-size: 22px;
                 font-weight: bold;
                 padding: 0;
             }
-            QLabel#concurrentValue[zone="green"]  { color: #4caf50; }
-            QLabel#concurrentValue[zone="yellow"] { color: #e6b800; }
-            QLabel#concurrentValue[zone="red"]    { color: #e05555; }
+            QLabel#concurrentValue[zone="green"]  { color: #57b884; }
+            QLabel#concurrentValue[zone="yellow"] { color: #e0b050; }
+            QLabel#concurrentValue[zone="red"]    { color: #e5636b; }
 
             /* 컬러 바 — 그라데이션 단일 띠 */
             QLabel#zoneGradientBar {
                 background: qlineargradient(
                     x1:0, y1:0, x2:1, y2:0,
-                    stop:0.000 #2e7d32,
-                    stop:0.222 #2e7d32,
+                    stop:0.000 #3f9c6a,
+                    stop:0.222 #3f9c6a,
                     stop:0.333 #c9a227,
                     stop:0.556 #c9a227,
                     stop:0.667 #b03030,
@@ -506,7 +506,7 @@ class PreferencesDialog(QDialog):
             QLabel#zoneLabelGreen,
             QLabel#zoneLabelYellow,
             QLabel#zoneLabelRed {
-                color: #cccccc;
+                color: #cfcfcf;
                 font-size: 10px;
                 font-weight: bold;
                 padding: 2px 0 0 0;
@@ -514,86 +514,86 @@ class PreferencesDialog(QDialog):
 
             /* 슬라이더 — 핸들 색은 zone property 로 동적 변경 */
             QSlider#concurrentSlider::groove:horizontal {
-                background: #1e1e1e;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                border: 1px solid #4a4a4a;
                 height: 6px;
                 border-radius: 3px;
             }
             QSlider#concurrentSlider::handle:horizontal {
-                background: #4caf50;
+                background: #57b884;
                 width: 16px;
                 height: 16px;
                 margin: -6px 0;
                 border-radius: 8px;
-                border: 2px solid #1e1e1e;
+                border: 2px solid #1c1c1c;
             }
-            QSlider#concurrentSlider[zone="green"]::handle:horizontal  { background: #4caf50; }
+            QSlider#concurrentSlider[zone="green"]::handle:horizontal  { background: #57b884; }
             QSlider#concurrentSlider[zone="yellow"]::handle:horizontal { background: #e6b800; }
-            QSlider#concurrentSlider[zone="red"]::handle:horizontal    { background: #e05555; }
+            QSlider#concurrentSlider[zone="red"]::handle:horizontal    { background: #e5636b; }
 
             QCheckBox {
-                color: #cccccc;
+                color: #cfcfcf;
                 font-size: 12px;
             }
 
             /* 게인 목표 dB 입력창 */
             QLineEdit#gainInput {
-                background: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                color: #f3f3f3;
+                border: 1px solid #4a4a4a;
                 border-radius: 4px;
                 font-size: 13px;
                 font-weight: bold;
             }
-            QLineEdit#gainInput:focus { border: 1px solid #4a90d9; }
+            QLineEdit#gainInput:focus { border: 1px solid #4cc2ff; }
 
             /* 게인 슬라이더 — 파란 핸들(동시성 슬라이더의 위험색과 구분) */
             QSlider#gainSlider::groove:horizontal {
-                background: #1e1e1e;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                border: 1px solid #4a4a4a;
                 height: 6px;
                 border-radius: 3px;
             }
             QSlider#gainSlider::handle:horizontal {
-                background: #4a90d9;
+                background: #4cc2ff;
                 width: 16px;
                 height: 16px;
                 margin: -6px 0;
                 border-radius: 8px;
-                border: 2px solid #1e1e1e;
+                border: 2px solid #1c1c1c;
             }
-            QSlider#gainSlider::handle:horizontal:hover { background: #5aa0e9; }
+            QSlider#gainSlider::handle:horizontal:hover { background: #7dd3ff; }
 
             /* 게인 범위 안내 라벨 */
             QLabel#gainHint {
-                color: #888888;
+                color: #9a9a9a;
                 font-size: 10px;
             }
             QLabel#gainClipNote {
-                color: #b58900;
+                color: #e0b050;
                 font-size: 10px;
             }
 
             QPushButton#btnBrowse {
-                background: #444;
-                color: #ccc;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnBrowse:hover { background: #555; }
+            QPushButton#btnBrowse:hover { background: #454545; }
             QPushButton#btnCancel {
-                background: #444;
-                color: #ccc;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: #555; }
+            QPushButton#btnCancel:hover { background: #454545; }
             QPushButton#btnConfirm {
-                background: #4a90d9;
-                color: #fff;
+                background: #4cc2ff;
+                color: #06222f;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: #5aa0e9; }
+            QPushButton#btnConfirm:hover { background: #7dd3ff; }
         """)

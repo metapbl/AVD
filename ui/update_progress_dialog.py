@@ -88,7 +88,7 @@ class UpdateProgressDialog(QDialog):
 
         self.lbl_status = QLabel("준비 중…")
         self.lbl_status.setWordWrap(True)
-        self.lbl_status.setStyleSheet("color: #9aa0a6; font-size: 12px;")
+        self.lbl_status.setStyleSheet("color: #9a9a9a; font-size: 12px;")
         layout.addWidget(self.lbl_status)
 
         # 다이얼로그가 뜨는 즉시 heartbeat 시작(막대가 살아 움직이도록).
@@ -157,7 +157,7 @@ class UpdateProgressDialog(QDialog):
         self._set_pct(100)
         self.lbl_status.setText(message)
         self.lbl_status.setStyleSheet(
-            "color: %s; font-size: 12px;" % ("#4caf50" if success else "#e57373")
+            "color: %s; font-size: 12px;" % ("#57b884" if success else "#e5636b")
         )
         self.btn_close.setText("닫기")
         self.btn_close.setEnabled(True)

@@ -11,6 +11,8 @@ a = Analysis(
         ("gaindb/THIRD_PARTY_LICENSES", "gaindb"),
         ("assets/icons/avd.png", "assets/icons"),
         ("assets/icons/avd.ico", "assets/icons"),
+        ("assets/icons/check.svg", "assets/icons"),
+        ("assets/icons/radio.svg", "assets/icons"),
     ],
     module_collection_mode={"gaindb": "py", "yt_dlp": "py"},
 )

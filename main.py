@@ -8,6 +8,7 @@ from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
+from ui.theme import apply_theme
 from utils.updater import APP_VERSION
 
 # 동결 빌드에서도 main.py 는 _internal\ 에 있다고 보므로 datas 경로와 맞는다 (AVD.spec)
@@ -46,12 +47,13 @@ def main():
     app = QApplication(sys.argv)
 
     # 스타일 통일 — Fusion 은 OS 와 무관하게 Qt 가 자체 렌더링하는
-    # 크로스플랫폼 스타일. 다크 팔레트(앱 전반의 #1e1e1e / #2b2b2b 계열)와
+    # 크로스플랫폼 스타일. Graphite 팔레트(앱 전반의 #1c1c1c / #272727 계열, D059)와
     # 자연스럽게 어울리고, Windows / macOS 에서 동일하게 보인다.
     # 체크박스·라디오버튼 등 indicator 위젯의 체크 마크가 Qt 내부에서
     # 그려지므로 별도 SVG / 이미지 없이 일관된 룩을 얻는다.
     # WORKLOG 3.2 "체크박스 디자인 일관화" 참조.
     app.setStyle("Fusion")
+    apply_theme(app)
 
     # 앱 기본 정보 설정
     app.setApplicationName("AV Downloader")

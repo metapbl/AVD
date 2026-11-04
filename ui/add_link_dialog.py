@@ -110,40 +110,40 @@ class AddLinkDialog(QDialog):
         """스타일 적용"""
         self.setStyleSheet("""
             QDialog {
-                background: #2b2b2b;
+                background: #272727;
             }
             QLabel#dialogLabel {
-                color: #cccccc;
+                color: #cfcfcf;
                 font-size: 13px;
             }
             QLineEdit {
-                background: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                color: #f3f3f3;
+                border: 1px solid #4a4a4a;
                 border-radius: 4px;
                 padding: 0 10px;
                 font-size: 13px;
             }
             QLineEdit:focus {
-                border: 1px solid #4a90d9;
+                border: 1px solid #4cc2ff;
             }
             QPushButton#btnCancel {
-                background: #444;
-                color: #ccc;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 4px;
                 font-size: 12px;
             }
             QPushButton#btnCancel:hover {
-                background: #555;
+                background: #454545;
             }
             QPushButton#btnConfirm {
-                background: #4a90d9;
-                color: #fff;
+                background: #4cc2ff;
+                color: #06222f;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
             }
             QPushButton#btnConfirm:hover {
-                background: #5aa0e9;
+                background: #7dd3ff;
             }
         """)

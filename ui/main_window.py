@@ -1067,54 +1067,57 @@ class MainWindow(QMainWindow):
         """전체 앱 스타일 적용"""
         self.setStyleSheet("""
             QMainWindow {
-                background: #1e1e1e;
+                background: #1c1c1c;
             }
             QWidget#toolbar {
-                background: #2b2b2b;
-                border-bottom: 1px solid #3a3a3a;
+                background: #272727;
+                border-bottom: 1px solid #383838;
             }
             QLabel#appTitle {
-                color: #ffffff;
+                color: #f3f3f3;
                 font-size: 16px;
                 font-weight: bold;
             }
             QPushButton#btnAdd {
-                background: #4a90d9;
-                color: #ffffff;
+                background: #4cc2ff;
+                color: #06222f;
                 border-radius: 6px;
                 padding: 0 16px;
                 font-size: 13px;
                 font-weight: bold;
             }
-            QPushButton#btnAdd:hover { background: #5aa0e9; }
+            QPushButton#btnAdd:hover { background: #7dd3ff; }
             QPushButton#btnClearList {
-                background: #555;
-                color: #ccc;
+                background: #454545;
+                color: #cfcfcf;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnClearList:hover { background: #e05555; color: #fff; }
+            QPushButton#btnClearList:hover { background: #e5636b; color: #ffffff; }
             QPushButton#btnPrefs {
-                background: #444;
-                color: #ccc;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnPrefs:hover { background: #555; }
+            QPushButton#btnPrefs:hover { background: #454545; }
             QScrollArea#listScroll {
-                background: #1e1e1e;
+                background: #1c1c1c;
                 border: none;
             }
+            QScrollArea#listScroll > QWidget > QWidget {
+                background: #1c1c1c;
+            }
             QLabel#emptyLabel {
-                color: #555555;
+                color: #6e6e6e;
                 font-size: 14px;
                 line-height: 1.8;
             }
             QStatusBar#mainStatusBar {
-                background: #2b2b2b;
-                color: #888888;
+                background: #272727;
+                color: #9a9a9a;
                 font-size: 11px;
             }
         """)

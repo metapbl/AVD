@@ -113,33 +113,33 @@ class ConfirmRemoveDialog(QDialog):
         """다이얼로그 스타일 — 메인 윈도우의 다크 테마와 결을 맞춤"""
         self.setStyleSheet("""
             QDialog {
-                background: #2b2b2b;
+                background: #272727;
             }
             QLabel#confirmMessage {
-                color: #e0e0e0;
+                color: #f3f3f3;
                 font-size: 13px;
             }
             QCheckBox#confirmCheck {
-                color: #c0c0c0;
+                color: #cfcfcf;
                 font-size: 12px;
                 spacing: 8px;
             }
             QPushButton#confirmClose {
-                background: #555;
-                color: #fff;
+                background: #454545;
+                color: #cfcfcf;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;
             }
-            QPushButton#confirmClose:hover { background: #666; }
+            QPushButton#confirmClose:hover { background: #454545; }
             QPushButton#confirmRemove {
-                background: #555;
-                color: #fff;
+                background: #454545;
+                color: #cfcfcf;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;
             }
-            QPushButton#confirmRemove:hover { background: #e05555; }
+            QPushButton#confirmRemove:hover { background: #e5636b; }
         """)
 
     def _on_close(self):

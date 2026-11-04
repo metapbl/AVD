@@ -226,7 +226,7 @@ class DownloadItemWidget(QWidget):
         self.lbl_thumb.setFixedSize(120, 80)
         self.lbl_thumb.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_thumb.setStyleSheet(
-            "background:#1e1e1e; border-radius:4px;"
+            "background: #1c1c1c; border-radius:4px;"
         )
         self.lbl_thumb.setText("🎬")
         root.addWidget(self.lbl_thumb)
@@ -345,65 +345,68 @@ class DownloadItemWidget(QWidget):
 
     def _apply_style(self):
         """위젯 스타일 적용"""
+        # QWidget 서브클래스는 이 속성이 있어야 QSS 의 카드 배경·테두리를 그린다.
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setStyleSheet("""
             DownloadItemWidget {
-                background: #2b2b2b;
+                background: #272727;
                 border-radius: 8px;
-                border: 1px solid #3a3a3a;
+                border: 1px solid #383838;
             }
             QLabel#itemTitle {
-                color: #ffffff;
+                color: #f3f3f3;
                 font-size: 13px;
                 font-weight: bold;
             }
             QLabel#itemMeta {
-                color: #888888;
+                color: #9a9a9a;
                 font-size: 11px;
             }
             QLabel#itemStatus {
-                color: #4a90d9;
+                color: #4cc2ff;
                 font-size: 11px;
             }
             QProgressBar {
-                background: #3c3c3c;
+                margin: 5px 0;
+                background: #3a3a3a;
                 border-radius: 3px;
             }
             QProgressBar::chunk {
-                background: #4a90d9;
+                background: #4cc2ff;
                 border-radius: 3px;
             }
             QPushButton#btnCancel {
-                background: #555;
-                color: #fff;
+                background: #454545;
+                color: #cfcfcf;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnCancel:hover { background: #e05555; }
+            QPushButton#btnCancel:hover { background: #e5636b; }
             QPushButton#btnOpen {
-                background: #4a90d9;
-                color: #fff;
+                background: #4cc2ff;
+                color: #06222f;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnOpen:hover { background: #5aa0e9; }
+            QPushButton#btnOpen:hover { background: #7dd3ff; }
             QPushButton#btnPlay {
-                background: #2e7d32;
-                color: #fff;
+                background: #3f9c6a;
+                color: #ffffff;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnPlay:hover { background: #4caf50; }
+            QPushButton#btnPlay:hover { background: #57b884; }
             QPushButton#btnRemove {
-                background: #444;
-                color: #aaa;
+                background: #363636;
+                color: #cfcfcf;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnRemove:hover { background: #e05555; color: #fff; }
+            QPushButton#btnRemove:hover { background: #e5636b; color: #ffffff; }
         """)
 
     # ── 사적 포맷 헬퍼 ───────────────────────────────
@@ -522,10 +525,10 @@ class DownloadItemWidget(QWidget):
             title_html = html.escape(elided)
             ext_html   = html.escape(ext_with_gap)
 
-        # 확장자만 #ffd060 (노란빛) 으로 강조. 굵기·크기는 라벨 기본을 따른다.
+        # 확장자만 #7dd3ff (하늘색) 으로 강조. 굵기·크기는 라벨 기본을 따른다.
         self.lbl_title.setText(
             f'{title_html}'
-            f'<span style="color:#ffd060;">{ext_html}</span>'
+            f'<span style="color:#7dd3ff;">{ext_html}</span>'
         )
 
     def resizeEvent(self, event):
@@ -689,7 +692,7 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setText("재시도")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
-            self.lbl_status.setStyleSheet("color: #e05555;")
+            self.lbl_status.setStyleSheet("color: #e5636b;")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")
@@ -809,7 +812,7 @@ class DownloadItemWidget(QWidget):
         다음 progress 콜백이 곧 다시 채운다.
         """
         self.lbl_status.setText(f"재시도 중 ({current}/{maximum})")
-        self.lbl_status.setStyleSheet("color: #e0a355;")
+        self.lbl_status.setStyleSheet("color: #e0b050;")
 
     def update_title(self, title: str):
         """제목 레이블 업데이트"""
@@ -824,7 +827,7 @@ class DownloadItemWidget(QWidget):
 
         화질 선택이 끝나 항목의 ext 가 확정되면 MainWindow._on_format_selected
         가 호출한다. 호출 후부터 lbl_title 의 우측 끝에 ".ext" 가 노란빛
-        (#ffd060) 으로 표시되며, 폭이 좁아 잘릴 때도 확장자는 잘리지 않고
+        (#7dd3ff) 으로 표시되며, 폭이 좁아 잘릴 때도 확장자는 잘리지 않고
         제목만 줄임표 처리된다.
 
         ext 는 점 없이 ("mp4", "webm" 등) 받는다.

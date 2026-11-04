@@ -185,39 +185,39 @@ class PlaylistSelectDialog(QDialog):
 
     def _apply_style(self):
         self.setStyleSheet("""
-            QDialog { background: #2b2b2b; }
-            QLabel#dialogLabel { color: #cccccc; font-size: 13px; }
+            QDialog { background: #272727; }
+            QLabel#dialogLabel { color: #cfcfcf; font-size: 13px; }
             QTableWidget {
-                background: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #555;
+                background: #1c1c1c;
+                color: #f3f3f3;
+                border: 1px solid #4a4a4a;
                 border-radius: 4px;
-                gridline-color: #3a3a3a;
+                gridline-color: #383838;
                 font-size: 12px;
             }
             QHeaderView::section {
-                background: #333;
-                color: #ccc;
+                background: #323232;
+                color: #cfcfcf;
                 border: none;
                 padding: 4px;
                 font-size: 12px;
             }
-            QTableWidget::item:selected { background: #34507a; }
-            QRadioButton { color: #cccccc; font-size: 13px; }
+            QTableWidget::item:selected { background: #23465a; }
+            QRadioButton { color: #cfcfcf; font-size: 13px; }
             QPushButton#btnGhost {
-                background: #444; color: #ccc;
+                background: #363636; color: #cfcfcf;
                 border-radius: 4px; padding: 4px 12px; font-size: 12px;
             }
-            QPushButton#btnGhost:hover { background: #555; }
+            QPushButton#btnGhost:hover { background: #454545; }
             QPushButton#btnCancel {
-                background: #444; color: #ccc;
+                background: #363636; color: #cfcfcf;
                 border-radius: 4px; font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: #555; }
+            QPushButton#btnCancel:hover { background: #454545; }
             QPushButton#btnConfirm {
-                background: #4a90d9; color: #fff;
+                background: #4cc2ff; color: #06222f;
                 border-radius: 4px; font-size: 12px; font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: #5aa0e9; }
-            QPushButton#btnConfirm:disabled { background: #3a4a5a; color: #888; }
+            QPushButton#btnConfirm:hover { background: #7dd3ff; }
+            QPushButton#btnConfirm:disabled { background: #4a4a4a; color: #9a9a9a; }
         """)
