@@ -177,6 +177,7 @@ class DownloadItemWidget(QWidget):
     play_requested   = Signal(str)  # item_id 전달
     remove_requested = Signal(str)  # item_id 전달
     detail_requested = Signal(str)  # item_id 전달 — 오류 내용 보기
+    status_changed   = Signal()     # 상태 변경 — 목록 요약 갱신용
 
     def __init__(self, item: DownloadItem, parent=None):
         super().__init__(parent)
@@ -762,6 +763,8 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setText("취소")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
+
+        self.status_changed.emit()
 
     def update_error_summary(self, summary: str):
         """오류 상태 라벨에 사유 요약을 붙인다. 원문은 "자세히" 에서 본다 (D061)."""

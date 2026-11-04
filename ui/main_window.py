@@ -46,6 +46,20 @@ def _is_playlist_url(url: str) -> bool:
     return ("list=" in low) or ("/playlist" in low)
 
 
+def _summary_text(items: dict) -> str:
+    """상태 표시줄의 목록 요약. 0개인 묶음은 뺀다."""
+    counts = {"진행": 0, "대기": 0, "완료": 0, "오류": 0, "취소": 0}
+    group = {
+        DownloadStatus.WAITING: "대기",
+        DownloadStatus.DONE: "완료",
+        DownloadStatus.ERROR: "오류",
+        DownloadStatus.CANCELLED: "취소",
+    }
+    for item in items.values():
+        counts[group.get(item.status, "진행")] += 1
+    return " · ".join(f"{name} {n}" for name, n in counts.items() if n)
+
+
 # ── 오류 메시지 → 사용자 친화 안내 ───────────────────
 # yt-dlp 원문 오류(영어)는 사용자가 원인·대처를 알기 어렵다. 대표적인
 # 케이스를 인식해 한국어 제목·설명으로 바꿔 준다. 인식 안 되면 일반 안내.
@@ -221,6 +235,14 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("준비")
 
+        self.lbl_summary = QLabel("")
+        self.lbl_summary.setObjectName("statusInfo")
+        self.status_bar.addPermanentWidget(self.lbl_summary)
+        self.lbl_save_path = QLabel("")
+        self.lbl_save_path.setObjectName("statusInfo")
+        self.status_bar.addPermanentWidget(self.lbl_save_path)
+        self._refresh_save_path()
+
     def _build_toolbar(self) -> QWidget:
         """상단 툴바 구성"""
         toolbar = QWidget()
@@ -240,6 +262,13 @@ class MainWindow(QMainWindow):
         self.btn_add.setFixedHeight(36)
         self.btn_add.clicked.connect(self._on_add_link)
         layout.addWidget(self.btn_add)
+
+        self.btn_clear_done = QPushButton("완료 지우기")
+        self.btn_clear_done.setObjectName("btnClearDone")
+        self.btn_clear_done.setToolTip("완료된 항목을 목록에서 지웁니다. 파일은 지우지 않습니다.")
+        self.btn_clear_done.setFixedHeight(36)
+        self.btn_clear_done.clicked.connect(self._on_clear_done)
+        layout.addWidget(self.btn_clear_done)
 
         self.btn_clear_list = QPushButton("목록 비우기")
         self.btn_clear_list.setObjectName("btnClearList")
@@ -335,6 +364,7 @@ class MainWindow(QMainWindow):
         widget.play_requested.connect(self._on_play_file)
         widget.remove_requested.connect(self._on_remove)
         widget.detail_requested.connect(self._on_error_detail)
+        widget.status_changed.connect(self._refresh_summary)
         self.widgets[item.item_id] = widget
 
         self.lbl_empty.setVisible(False)
@@ -877,6 +907,31 @@ class MainWindow(QMainWindow):
         self.lbl_empty.setVisible(True)
         self.status_bar.showMessage("목록을 비웠습니다.")
 
+    def _on_clear_done(self):
+        """'완료 지우기' 버튼 — 목록에서만 지우고 파일은 그대로 둔다 (D063)."""
+        done = [i for i, it in self.items.items() if it.status == DownloadStatus.DONE]
+        if not done:
+            self.status_bar.showMessage("완료된 항목이 없습니다.")
+            return
+        for item_id in done:
+            self._remove_item_quiet(item_id)
+        if not self.widgets:
+            self.lbl_empty.setVisible(True)
+        self.status_bar.showMessage(f"완료 항목 {len(done)}개를 목록에서 지웠습니다.")
+
+    def _refresh_summary(self):
+        """상태 표시줄의 목록 요약을 다시 쓴다."""
+        self.lbl_summary.setText(_summary_text(self.items))
+
+    def _refresh_save_path(self):
+        """상태 표시줄의 저장 폴더를 다시 쓴다. 긴 경로는 가운데를 줄이고 툴팁에 전체를 둔다."""
+        path = self.config.get("save_path", "")
+        elided = self.lbl_save_path.fontMetrics().elidedText(
+            path, Qt.TextElideMode.ElideMiddle, 320
+        )
+        self.lbl_save_path.setText(f"저장: {elided}")
+        self.lbl_save_path.setToolTip(path)
+
     def _remove_item_quiet(self, item_id: str):
         """다이얼로그·확인 없이 항목을 정리하는 내부 헬퍼."""
         # 진행 중 썸네일 워커 무효화 (객체 소멸은 내장 finished 가 처리).
@@ -911,6 +966,8 @@ class MainWindow(QMainWindow):
 
         self.items.pop(item_id, None)
         self.download_manager.forget(item_id)
+
+        self._refresh_summary()
 
         # 게이트 슬롯이 풀렸을 수 있으니 다음 대기 항목을 깨운다.
         self._dispatch_info()
@@ -1003,6 +1060,7 @@ class MainWindow(QMainWindow):
         """환경설정 버튼 클릭"""
         dialog = PreferencesDialog(self.config, self)
         dialog.exec()
+        self._refresh_save_path()
 
     def _check_ytdlp_update(self):
         """앱 시작 3초 뒤 yt-dlp 새 버전을 확인한다 (D062).
@@ -1142,6 +1200,14 @@ class MainWindow(QMainWindow):
                 font-size: 12px;
             }
             QPushButton#btnClearList:hover { background: #e5636b; color: #ffffff; }
+            QPushButton#btnClearDone {
+                background: #363636;
+                color: #cfcfcf;
+                border-radius: 6px;
+                padding: 0 12px;
+                font-size: 12px;
+            }
+            QPushButton#btnClearDone:hover { background: #454545; }
             QPushButton#btnPrefs {
                 background: #363636;
                 color: #cfcfcf;
@@ -1161,6 +1227,12 @@ class MainWindow(QMainWindow):
                 color: #6e6e6e;
                 font-size: 14px;
                 line-height: 1.8;
+            }
+            QStatusBar#mainStatusBar::item { border: none; }
+            QLabel#statusInfo {
+                color: #9a9a9a;
+                font-size: 11px;
+                padding: 0 8px;
             }
             QStatusBar#mainStatusBar {
                 background: #272727;
