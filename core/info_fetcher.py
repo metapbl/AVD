@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import yt_dlp
 
-from core.downloader import MP3_BITRATE_KBPS
+from core.downloader import JS_CHALLENGE_OPTS, MP3_BITRATE_KBPS
 from utils.file_utils import normalize_info_dict
 
 
@@ -59,8 +59,7 @@ class InfoFetcher:
             "quiet"             : True,
             "no_warnings"       : True,
             "extract_flat"      : False,
-            "js_runtimes"       : {"node": {}},
-            "remote_components" : ["ejs:github"],
+            **JS_CHALLENGE_OPTS,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

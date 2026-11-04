@@ -9,6 +9,7 @@ from dataclasses import dataclass
 import yt_dlp
 from PySide6.QtCore import QThread, Signal
 
+from core.downloader import JS_CHALLENGE_OPTS
 from utils.file_utils import normalize_info_dict, strip_ansi
 
 # 한 플레이리스트에서 받아올 최대 항목 수. ADR 합의값.
@@ -62,8 +63,7 @@ class PlaylistProbeWorker(QThread):
             "no_warnings"       : True,
             "extract_flat"      : "in_playlist",
             "playlistend"       : PLAYLIST_ITEM_LIMIT,
-            "js_runtimes"       : {"node": {}},
-            "remote_components" : ["ejs:github"],
+            **JS_CHALLENGE_OPTS,
         }
 
         try:

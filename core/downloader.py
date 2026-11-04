@@ -191,11 +191,18 @@ def _install_progress_merger() -> bool:
 _install_progress_merger()
 
 
+# YouTube JS 챌린지 옵션. 정보 추출·플레이리스트 확인·다운로드가 함께 쓴다 —
+# 어긋나면 목록에 보인 포맷을 다운로드 때 못 찾는다 (D055). 옵션을 빼면 yt-dlp 는
+# 자동 탐지가 아니라 Deno 만 켜므로, 고정하지 않으려면 모두 켜 둔다 (D003).
+JS_CHALLENGE_OPTS = {
+    "js_runtimes"      : {"node": {}, "deno": {}, "bun": {}},
+    "remote_components": ["ejs:github"],
+}
+
 _BASE_OPTS = {
     "quiet"                : True,
     "no_warnings"          : True,
-    # YouTube JS 챌린지 — 사용 가능한 런타임(node/deno/bun) 자동 탐지에 맡김.
-    # 명시 고정은 외부 환경 변화에 취약하다는 것이 통제 실험으로 확인됨.
+    **JS_CHALLENGE_OPTS,
     "socket_timeout"       : 30,
     "retries"              : 10,
     "fragment_retries"     : float("inf"),
