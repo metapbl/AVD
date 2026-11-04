@@ -1,12 +1,12 @@
 # 아홉 번째 계획 — 후처리 단계 표시 · 오류 원문 ANSI 제거 · 문서 정리
-상태: active | 시작: 2026-11-03 | 근거: PRD F1, F4 (Q059)
+상태: done (2026-11-04) | 시작: 2026-11-03 | 근거: PRD F1, F4 (Q059)
 
 목표: (1) 다운로드·병합이 끝난 뒤 후처리(MP3 변환·태그 기록·썸네일 임베드)가 파일을 다시 쓰는 동안 상태 라벨이 "병합 중 100%"·"100.0% 다운로드 중" 에 멈춰 있지 않고 지금 단계를 보여 준다. (2) 오류 창 원문에 `[0;31mERROR:[0m` 같은 ANSI 색 코드가 보이지 않는다. (3) 여덟 번째 계획에서 미룬 문서 정리(PRD §2.2 완료 표시, 함정 T19~T22)를 반영한다.
 구조:
 - 바뀜: `workers/download_worker.py`(새 시그널 `postprocess_stage`, `_on_postprocess`, `run` 의 오류 문자열), `workers/info_worker.py`·`workers/playlist_probe_worker.py`(오류 문자열), `controllers/download_manager.py`(시그널 연결), `ui/download_item_widget.py`(새 `update_postprocess_stage`), `docs/REFERENCE.md` R§4, `docs/PRD.md` §2.2·§8, `CHANGELOG.md`
 - 생김: `tests/test_postprocess_stage.py`, `tests/test_error_ansi.py`
 전역 제약:
-- [AI] 단계 라벨은 후처리 hook 의 `status == "started"` 일 때 `postprocessor` 이름으로만 고른다. 이름표: `FFmpegExtractAudio` → "MP3 변환 중", `FFmpegMetadata` → "태그 기록 중", `FFmpegThumbnailsConvertor`·`EmbedThumbnail` → "썸네일 넣는 중". 표에 없는 이름(`Merger`·`MoveFiles`·NFC `pre_process` 등)은 보내지 않는다. `Merger` 는 기존 `merging`·`merge_progress` 그대로
+- [AI] 단계 라벨은 후처리 hook 의 `status == "started"` 일 때 `postprocessor` 이름으로만 고른다. 이름표(`pp_key`): `ExtractAudio` → "MP3 변환 중", `Metadata` → "태그 기록 중", `EmbedThumbnail` → "썸네일 넣는 중". 표에 없는 이름(`Merger`·`MoveFiles`·`ThumbnailsConvertor`·NFC `pre_process` 등)은 보내지 않는다. (2026-11-04 정정 — 작업 4 결과 참고) `Merger` 는 기존 `merging`·`merge_progress` 그대로
 - [AI] 위젯은 라벨만 바꾸고 진행률 바는 그대로 둔다(100 근처). 상태가 DOWNLOADING·MERGING 이 아니면 늦게 온 값은 버린다. `DownloadStatus` 와 슬롯 해제 시점(D005)은 바꾸지 않는다
 - [AI] ANSI 제거는 워커가 오류 문자열을 만들 때 기존 `utils.file_utils.strip_ansi` 를 한 번 거친다. 재시도 판단 `_is_transient_error` 도 지운 문자열로 한다
 - 워커→위젯 연결은 `Qt.ConnectionType.QueuedConnection` 명시, 새 Signal 이름에 `finished`/`started` 금지 (D013, R§4 T2)
@@ -30,13 +30,22 @@
   - PRD §2.2 [그 뒤] 줄의 병합 진행률·확장자 정직화에 "여덟 번째 계획에서 완료 (D051~D053)" 표시, §8 변경 이력 한 줄
   - 확인: `Select-String -Path docs/REFERENCE.md -Pattern '^\| T(19|20|21|22) '` → 4줄, `Select-String -Path docs/PRD.md -Pattern 'D051'` → §2.2·§8 에 1줄 이상
   - 결과 (2026-11-03): T19~T22 4줄(근거 c21cbbb·2026-11-02·3391c06·389a1b4), T11 보강, PRD `D051` 27·124행 확인
-- [ ] 4. 인수 확인
+- [x] 4. 인수 확인
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff -- gaindb/ requirements.txt` 비어 있음 | 실기기 (소스 실행):
     - 1 YouTube 1080p 병합 영상 → "병합 중 N%" 가 100% 에 이른 뒤 "태그 기록 중" → "썸네일 넣는 중" → 완료, 파일 재생됨
     - 2 YouTube MP3 받기 → "100.0% 다운로드 중" 뒤 "MP3 변환 중" → "태그 기록 중" → "썸네일 넣는 중" → (정규화 켜졌으면 정규화) → 완료
     - 3 후처리 단계("태그 기록 중" 등)에서 취소 → "취소됨", 저장 폴더에 임시 파일·ffmpeg 프로세스가 남지 않음
     - 4 비공개·삭제된 영상 URL 로 정보 추출 실패, 그리고 다운로드 오류 하나 → 오류 창 원문에 `[0;31m` 같은 코드가 없음
     - 5 동시 2개 이상에서 한 항목이 병합에 들어가면 다음 대기 항목이 바로 출발 (D005 유지)
+  - 방법 변경 (2026-11-04): 사용자 "표시들이 너무 빨리 지나가 육안 확인이 어렵다, 직접 검증할 방법은?" → 눈 확인 대신 스크래치 스크립트로 실제 `DownloadManager`·`DownloadWorker`·`DownloadItemWidget` 을 화면 없이(offscreen) 돌려 실제 다운로드 중 상태 라벨 변화를 시각과 함께 기록
+  - 실패·수정 (2026-11-04): 첫 기록에서 "MP3 변환 중"·"태그 기록 중" 이 나오지 않음. 원인: 작업 1 이름표가 틀림 — hook 이름은 `pp_key()` 라 "FFmpeg" 접두사가 빠진다(`ExtractAudio`·`Metadata`). 테스트도 같은 틀린 문자열을 직접 적어 통과. 또 `ThumbnailsConvertor` 는 다운로드 전에 돌아 라벨이 거짓 → 표에서 뺌. 테스트를 실제 PP 클래스의 `pp_key()` 기준으로 바꿔 2개 실패 확인 → 수정 뒤 통과
+  - 결과: 2026-11-04 통과 — 사용자 "통과, 커밋" (기계 기록, pytest 147·ruff 통과, `gaindb/`·`requirements.txt` diff 없음)
+    - 1 Big Buck Bunny 자동 선택(4K AV1, 722MB): 병합 중 100% 29.72s → 태그 기록 중 30.01s → 썸네일 넣는 중 31.27s → 완료 32.64s. ffprobe 로 av1 2160 읽힘
+    - 2 Me at the zoo MP3: MP3 변환 중 5.80s → 태그 기록 중 6.17s → 썸네일 넣는 중 6.22s → 완료 6.34s
+    - 3 태그 기록 중(43.23s) 자동 취소 → 취소됨 44.39s, 저장 폴더 비어 있음, ffmpeg 프로세스 없음
+    - 4 `color: always` 로 실제 ANSI 오류 생성: strip_ansi 입력에 `[0;31m` 있음 → 정보 추출·다운로드 오류 원문 모두 `ERROR: [youtube] xxxxxxxxxxx: This video is unavailable`
+    - 5 동시 1개: first 병합 중 18.50s 와 같은 시각 second 다운로드 중 18.50s
+    - 덮지 못한 것: 실제 화면을 눈으로 보지 않음, 오류 창은 시그널 문자열까지만, 1080p 명시 선택은 포맷 137 이 "Requested format is not available" 로 끊겨 4K 자동 선택으로 대체(병합 경로는 같음. PROGRESS 720p 후보의 단서), 음량 정규화는 꺼 둠, 재생은 ffprobe 만
 
 ## 자가 검토
 - PRD 기능 누락: 없음. 720p 포맷 오류는 원인 진단이 먼저라 넣지 않음, 같은 이름 파일 건너뜀은 F1 동작 변경이라 discover 로 분리 (Q059)

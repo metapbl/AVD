@@ -1,15 +1,14 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 아홉 번째 계획 `docs/plans/2026-11-03-postprocess-stage-ansi.md` active (3/4)
-- 갱신: 2026-11-03 · 아홉 번째 계획(후처리 단계 표시·오류 ANSI 제거·문서 정리, Q059) 승인. **v1.0.2 뒤 미릴리스 변경 있음** (fix·feat 5건). OPEN 미결 0
+- 단계: 7 계획 대기 · 아홉 번째 계획 `docs/plans/2026-11-03-postprocess-stage-ansi.md` done (4/4). active 계획 없음
+- 갱신: 2026-11-04 · 아홉 번째 계획(후처리 단계 표시·오류 ANSI 제거·문서 정리, Q059) done — 인수 확인은 실제 다운로드 라벨 기록으로 통과(사용자가 눈 대신 기계 검증 요청). **v1.0.2 뒤 미릴리스 변경 있음**. OPEN 미결 0
 
 ## 다음 할 일
-4. 계획 작업 4 인수 확인 (실기기 5개)
-5. (다음 계획 후보, 사용자 제안) 저장 폴더에 같은 이름 파일이 있으면 yt-dlp 가 "이미 받음"으로 건너뛰어 화질과 관계없이 완료 처리 → 임시 이름으로 받고 끝에 이름 정하기 등 정책 결정 필요 (PRD F1 동작 변경). 단서 `utils/file_utils.py > get_unique_path`(있으나 다운로드 경로에 안 쓰임?), `core/downloader.py > Downloader.download`
-6. (다음 계획 후보) 일부 YouTube 영상 720p 만 "Requested format is not available" (LXb3EKWsInQ, EkRmp25XkZc — 480·1080 은 됨). 정보 추출 때 보인 포맷 136 을 다운로드 요청에선 못 받는 것으로 보임, 이번 계획 변경과 무관(포맷 선택 단계 오류). 단서 `core/info_fetcher.py > _parse_formats` (`f"{id}+bestaudio/best"`)
-7. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-8. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. (다음 계획 후보, 사용자 제안) 저장 폴더에 같은 이름 파일이 있으면 yt-dlp 가 "이미 받음"으로 건너뛰어 화질과 관계없이 완료 처리 → 임시 이름으로 받고 끝에 이름 정하기 등 정책 결정 필요 (PRD F1 동작 변경). 단서 `utils/file_utils.py > get_unique_path`(있으나 다운로드 경로에 안 쓰임?), `core/downloader.py > Downloader.download`
+2. (다음 계획 후보) 일부 YouTube 영상 720p 만 "Requested format is not available" (LXb3EKWsInQ, EkRmp25XkZc — 480·1080 은 됨). 정보 추출 때 보인 포맷 136 을 다운로드 요청에선 못 받는 것으로 보임, 이번 계획 변경과 무관(포맷 선택 단계 오류). 단서 `core/info_fetcher.py > _parse_formats` (`f"{id}+bestaudio/best"`)
+3. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
+4. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`

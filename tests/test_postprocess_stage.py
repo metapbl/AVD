@@ -1,5 +1,12 @@
 """병합·다운로드 뒤 후처리 단계 라벨 (아홉 번째 계획 작업 1)."""
 import pytest
+from yt_dlp.postprocessor import (
+    EmbedThumbnailPP,
+    FFmpegExtractAudioPP,
+    FFmpegMergerPP,
+    FFmpegMetadataPP,
+    FFmpegThumbnailsConvertorPP,
+)
 
 
 def _worker():
@@ -10,22 +17,24 @@ def _worker():
     return w, got
 
 
-@pytest.mark.parametrize("pp, label", [
-    ("FFmpegExtractAudio", "MP3 변환 중"),
-    ("FFmpegMetadata", "태그 기록 중"),
-    ("FFmpegThumbnailsConvertor", "썸네일 넣는 중"),
-    ("EmbedThumbnail", "썸네일 넣는 중"),
+@pytest.mark.parametrize("pp_class, label", [
+    (FFmpegExtractAudioPP, "MP3 변환 중"),
+    (FFmpegMetadataPP, "태그 기록 중"),
+    (EmbedThumbnailPP, "썸네일 넣는 중"),
 ])
-def test_worker_emits_stage_on_started(pp, label):
+def test_worker_emits_stage_on_started(pp_class, label):
+    # hook 이름은 yt-dlp 의 pp_key() 그대로 — "FFmpeg" 접두사가 빠진다 (R§4 T22)
     w, got = _worker()
-    w._on_postprocess({"status": "started", "postprocessor": pp, "info_dict": {}})
+    w._on_postprocess({"status": "started", "postprocessor": pp_class.pp_key(), "info_dict": {}})
     assert got == [label]
 
 
 @pytest.mark.parametrize("d", [
-    {"status": "finished", "postprocessor": "FFmpegMetadata"},
-    {"status": "started", "postprocessor": "Merger"},
+    {"status": "finished", "postprocessor": FFmpegMetadataPP.pp_key()},
+    {"status": "started", "postprocessor": FFmpegMergerPP.pp_key()},
     {"status": "started", "postprocessor": "MoveFiles"},
+    # 썸네일 변환은 다운로드 전에 돌아 라벨이 거짓이 된다
+    {"status": "started", "postprocessor": FFmpegThumbnailsConvertorPP.pp_key()},
 ])
 def test_worker_ignores_other_hooks(d):
     w, got = _worker()

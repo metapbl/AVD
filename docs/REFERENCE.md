@@ -69,7 +69,7 @@
 | T19 | 새 폴더에서 exe 첫 실행 때 작업표시줄이 기본 아이콘 | PyInstaller 가 exe 아이콘 리소스를 번호 1 로 넣어 Qt(`IDI_ICON1`)가 못 찾음 | 창 클래스 아이콘을 직접 지정 `main.py > set_window_class_icon` | c21cbbb |
 | T20 | 소스 실행 업데이트 리허설에서 pip 가 '이미 최신' | `version.py` 문자열만 바꾸면 pip 는 dist-info 버전을 본다 | 실제 옛 버전 설치 `pip install yt-dlp==…` 로 리허설 | 2026-11-02 |
 | T21 | 배포본에 옛 yt-dlp 가 실림 | 릴리스 전 `pip install -r requirements.txt` 가 venv yt-dlp 를 핀(D002)으로 내림 | 올릴 패키지만 지정해 설치, 빌드 전 `pip show yt-dlp` 확인 | 3391c06 |
-| T22 | yt-dlp PostProcessor 하위 클래스로 바꾸자 hook 이름 비교·`postprocessor_args` 가 안 맞음, started/finished 가 두 번 | `pp_key()` 가 클래스 이름에서 만들어짐 / `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감쌈 | `pp_key` 를 부모 값으로 고정, `run` 은 오버라이드하지 않음 | 389a1b4 |
+| T22 | yt-dlp PostProcessor 하위 클래스로 바꾸자 hook 이름 비교·`postprocessor_args` 가 안 맞음, started/finished 가 두 번 | `pp_key()` 가 클래스 이름에서 만들어지고 "FFmpeg" 접두사·"PP" 가 빠짐(`FFmpegMetadataPP` → `Metadata`). hook 이름을 문자열로 비교하는 테스트는 실제 클래스의 `pp_key()` 로 쓴다 / `PostProcessorMetaClass` 가 하위 클래스 `run` 을 다시 감쌈 | `pp_key` 를 부모 값으로 고정, `run` 은 오버라이드하지 않음 | 389a1b4 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

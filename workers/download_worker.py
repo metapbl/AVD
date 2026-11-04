@@ -82,12 +82,12 @@ _PERMANENT_PATTERNS = (
 )
 
 
-# 후처리 hook 이름 → 단계 라벨. 표에 없는 후처리(Merger·MoveFiles 등)는 보내지 않는다.
+# 후처리 hook 이름(pp_key) → 단계 라벨. 표에 없는 후처리(Merger·MoveFiles 등)는
+# 보내지 않는다. 썸네일 변환(ThumbnailsConvertor)은 다운로드 전에 돌아서 뺀다.
 _PP_STAGE_LABELS = {
-    "FFmpegExtractAudio"       : "MP3 변환 중",
-    "FFmpegMetadata"           : "태그 기록 중",
-    "FFmpegThumbnailsConvertor": "썸네일 넣는 중",
-    "EmbedThumbnail"           : "썸네일 넣는 중",
+    "ExtractAudio"  : "MP3 변환 중",
+    "Metadata"      : "태그 기록 중",
+    "EmbedThumbnail": "썸네일 넣는 중",
 }
 
 
