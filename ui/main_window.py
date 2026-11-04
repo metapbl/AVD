@@ -96,12 +96,19 @@ def _friendly_error(msg: str) -> tuple[str, str]:
             "지역 차단된 영상입니다",
             "현재 지역에서는 이 영상을 볼 수 없습니다.",
         )
+    if (
+        "looks truncated" in low
+        or "incomplete youtube id" in low
+        or "unsupported url" in low
+        or "not a valid url" in low
+    ):
+        return (
+            "주소가 올바르지 않습니다",
+            "주소가 잘렸거나 지원하지 않는 사이트입니다. 주소를 다시 복사해 추가해 보세요.",
+        )
     return (
         "다운로드하지 못했습니다",
-        (
-            "아래 '자세히' 를 눌러 원문 오류를 확인하세요. 일시적 문제라면 "
-            "수동 재시도 버튼으로 다시 시도할 수 있습니다."
-        ),
+        "일시적인 문제라면 재시도 버튼으로 다시 시도할 수 있습니다. 오류 원문은 아래에 있습니다.",
     )
 
 
@@ -676,6 +683,10 @@ class MainWindow(QMainWindow):
         dialog.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
+        # "자세히" 를 눌러 연 창이므로 원문을 펼친 채 보여 준다.
+        for button in dialog.buttons():
+            if dialog.buttonRole(button) == QMessageBox.ButtonRole.ActionRole:
+                button.click()
         dialog.exec()
 
     # ── 플레이리스트 플로우 콜백 ─────────────────────

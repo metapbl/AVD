@@ -4,6 +4,7 @@
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QLibraryInfo, QTranslator
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -37,6 +38,15 @@ def set_window_class_icon(window):
             user32.SetClassLongPtrW(hwnd, index, hicon)
 
 
+def install_korean_translator(app) -> QTranslator:
+    """Qt 기본 버튼(OK, Yes, 자세히 보기 등)을 한국어로 표시한다. 파일이 없으면 영어로 둔다."""
+    translator = QTranslator(app)
+    path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    if translator.load("qtbase_ko", path):
+        app.installTranslator(translator)
+    return translator
+
+
 def main():
     # 소스 실행 때 작업표시줄이 python.exe 아이콘으로 묶이지 않게 앱 ID 를 따로 준다 (D042)
     if sys.platform == "win32":
@@ -54,6 +64,7 @@ def main():
     # WORKLOG 3.2 "체크박스 디자인 일관화" 참조.
     app.setStyle("Fusion")
     apply_theme(app)
+    install_korean_translator(app)
 
     # 앱 기본 정보 설정
     app.setApplicationName("AV Downloader")
