@@ -76,6 +76,8 @@
 | T23 | 목록에 보인 화질이 다운로드 때 "Requested format is not available" | `js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜진다. Node 만 있는 PC 는 JS 챌린지를 못 풀어 일부 포맷을 잃고, 옵션이 있는 정보 추출과 목록이 달라진다 | 세 경로가 `JS_CHALLENGE_OPTS` 를 공유, 포맷 개수는 응답마다 달라지므로 해당 포맷 유무로 확인 | D055 |
 | T24 | 저장 폴더의 같은 이름 파일이 삭제되거나 태그가 바뀌고, 요청과 다른 화질인데 완료 처리 | 기본 `overwrites` 에서 yt-dlp 는 같은 이름 파일을 받은 것으로 보고 후처리한다. MP3 변환은 그 파일을 원본으로 쓰고 지운다 | 저장 폴더를 yt-dlp 에 넘기지 않고 항목별 임시 폴더에서 작업 | D056 |
 | T25 | 취소·앱 종료 뒤 항목은 취소됨인데 `.avd_*` 와 `.part` 가 남음 (HLS 등 조각 포맷만, 예: YouTube 312) | 조각 다운로더가 취소 예외 때 `dest_stream` 을 닫지 않고 참조 순환에 남겨 GC 전까지 이 프로세스가 파일을 잠금. `rmtree(ignore_errors=True)` 는 조용히 실패 | 지우기 전에 `gc.collect()`. 취소 시험은 조각 포맷으로도 한다 | D056 |
+| T26 | 화질 선택 창에서 Enter 를 누르면 다운로드 대신 취소되고 항목이 사라짐. 환경설정 입력창의 Enter 는 폴더 선택 창을 엶 | 기본 버튼을 정하지 않으면 QDialog 가 첫 autoDefault 버튼(먼저 추가한 "취소"·"찾아보기")을 기본으로 삼는다 | 입력 다이얼로그는 주 동작 버튼에 `setDefault(True)`. 삭제 확인처럼 위험한 창은 안전한 버튼을 기본으로 둔다 | D060, 50f6702 |
+| T27 | QMessageBox 의 안내가 좁게 줄바꿈돼 읽기 어렵고, "자세히 보기"를 한 번 더 눌러야 원문이 보임 | QMessageBox 는 폭을 직접 정할 수 없고 문구 길이에 맞춰 잡는다 | 긴 안내·오류 원문은 폭을 고정한 전용 QDialog 로 띄운다 (`ui/error_detail_dialog.py`) | c4e22b9 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
