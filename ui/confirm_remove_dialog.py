@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from ui import theme
+
 
 class ConfirmRemoveDialog(QDialog):
     """
@@ -111,36 +113,36 @@ class ConfirmRemoveDialog(QDialog):
 
     def _apply_style(self):
         """다이얼로그 스타일 — 메인 윈도우의 다크 테마와 결을 맞춤"""
-        self.setStyleSheet("""
+        self.setStyleSheet(theme.qss("""
             QDialog {
-                background: #272727;
+                background: @surface;
             }
             QLabel#confirmMessage {
-                color: #f3f3f3;
+                color: @text;
                 font-size: 13px;
             }
             QCheckBox#confirmCheck {
-                color: #cfcfcf;
+                color: @text2;
                 font-size: 12px;
                 spacing: 8px;
             }
             QPushButton#confirmClose {
-                background: #454545;
-                color: #cfcfcf;
+                background: @btn2;
+                color: @text2;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;
             }
-            QPushButton#confirmClose:hover { background: #454545; }
+            QPushButton#confirmClose:hover { background: @btn2; }
             QPushButton#confirmRemove {
-                background: #454545;
-                color: #cfcfcf;
+                background: @btn2;
+                color: @text2;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;
             }
-            QPushButton#confirmRemove:hover { background: #e5636b; }
-        """)
+            QPushButton#confirmRemove:hover { background: @danger; }
+        """))
 
     def _on_close(self):
         """닫기 — confirmed 는 False 로 유지"""

@@ -1,7 +1,7 @@
 <!-- metarche -->
 # AV_Downloader (AVD)
 
-yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크 테마 GUI). 본인과 GitHub 무료 공개 사용자용. 상세는 `docs/PRD.md`.
+yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크·라이트 테마 GUI). 본인과 GitHub 무료 공개 사용자용. 상세는 `docs/PRD.md`.
 
 ## 구조
 - `main.py` — 진입점 (QApplication, Fusion 스타일, 폰트)
@@ -25,6 +25,7 @@ yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크 테마 GUI). 본인
 - 워커→메인 시그널 연결은 `Qt.ConnectionType.QueuedConnection` 명시 (D013)
 - QThread 서브클래스에 `finished`/`started` 이름의 커스텀 Signal 금지 (R§4 T2)
 - 속성 타입 힌트는 값까지: `self.x: list = []` (힌트만 쓰면 속성이 안 생긴다)
+- 창 코드에 색을 직접 쓰지 않는다. `ui/theme.py` 색표의 이름(`@text` 등)으로 쓴다 (D065)
 - `gaindb/` 는 고치지 않는다. 본체는 `gaindb.api` 공개 함수만 호출 (D015, D017)
 - "썸네일"은 UI 미리보기와 파일 임베드 중 어느 쪽인지 밝힌다 (D004)
 - info dict 가공은 `pre_process` PostProcessor 로, NFC 정규화는 진입점에서 (D006, R§4 T5)

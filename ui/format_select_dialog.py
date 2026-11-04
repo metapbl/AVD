@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.info_fetcher import FormatInfo, VideoInfo
+from ui import theme
 from ui.download_item_widget import AUTO_FORMAT_ID, format_bitrate, humanize_codec
 from utils.config_manager import ConfigManager
 from utils.file_utils import format_duration, format_file_size
@@ -78,7 +79,7 @@ class FormatSelectDialog(QDialog):
         # 구분선
         line = QLabel()
         line.setFixedHeight(1)
-        line.setStyleSheet("background: #323232;")
+        line.setStyleSheet(theme.qss("background: @raised;"))
         root.addWidget(line)
 
         # ── 포맷 목록 ──
@@ -209,27 +210,27 @@ class FormatSelectDialog(QDialog):
 
     def _apply_style(self):
         """스타일 적용"""
-        self.setStyleSheet("""
+        self.setStyleSheet(theme.qss("""
             QDialog {
-                background: #272727;
+                background: @surface;
             }
             QLabel#videoTitle {
-                color: #f3f3f3;
+                color: @text;
                 font-size: 13px;
                 font-weight: bold;
             }
             QLabel#videoMeta {
-                color: #9a9a9a;
+                color: @muted;
                 font-size: 11px;
             }
             QLabel#sectionLabel {
-                color: #cfcfcf;
+                color: @text2;
                 font-size: 12px;
             }
             QTreeWidget {
-                background: #1c1c1c;
-                color: #f3f3f3;
-                border: 1px solid #383838;
+                background: @base;
+                color: @text;
+                border: 1px solid @line;
                 border-radius: 6px;
                 font-size: 12px;
                 outline: none;
@@ -239,32 +240,32 @@ class FormatSelectDialog(QDialog):
                 padding-left: 6px;
             }
             QTreeWidget::item:hover {
-                background: #323232;
+                background: @raised;
             }
             QTreeWidget::item:selected {
-                background: #4cc2ff;
-                color: #06222f;
+                background: @accent;
+                color: @on_accent;
             }
             QHeaderView::section {
-                background: #323232;
-                color: #cfcfcf;
+                background: @raised;
+                color: @text2;
                 border: none;
                 padding: 6px;
                 font-size: 12px;
             }
             QPushButton#btnCancel {
-                background: #363636;
-                color: #cfcfcf;
+                background: @btn;
+                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: #454545; }
+            QPushButton#btnCancel:hover { background: @btn2; }
             QPushButton#btnConfirm {
-                background: #4cc2ff;
-                color: #06222f;
+                background: @accent;
+                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: #7dd3ff; }
-        """)
+            QPushButton#btnConfirm:hover { background: @accent2; }
+        """))

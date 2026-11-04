@@ -1,8 +1,8 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열네 번째 계획 `docs/plans/2026-11-04-convenience.md` done. active 계획 없음
-- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: Qt 소스 안내(D064), 편의 기능(D063), 오류 처리 정리(D061, D062), 영상·음성 단계 문구, Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
+- 단계: 7 계획 대기 · 열다섯 번째 계획 `docs/plans/2026-11-04-light-theme.md` done. active 계획 없음
+- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: 다크·라이트 테마와 전환(D065), Qt 소스 안내(D064), 편의 기능(D063), 오류 처리 정리(D061, D062), 영상·음성 단계 문구, Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
 
 ## 다음 할 일
 1. (사람 확인) `venv\Scripts\python main.py` 로 Graphite 실제 창 확인 — 마우스 오버, 체크박스 클릭, 화질 선택 창 Enter, 완료 시 작업 표시줄 깜빡임
@@ -15,7 +15,7 @@
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
-- (정보) `theme`·`language` 설정 키는 기본값만 있고 쓰이지 않음 — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
+- (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로

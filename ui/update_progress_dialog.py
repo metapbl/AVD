@@ -32,6 +32,8 @@ from PySide6.QtWidgets import (
 # pip 다운로드 진행 라인의 "3.2/3.2 MB" 같은 받은/전체 용량 패턴.
 _SIZE_RE = re.compile(r"([\d.]+)\s*/\s*([\d.]+)\s*(k|K|M|G)?i?B", re.IGNORECASE)
 
+from ui import theme
+
 
 class UpdateProgressDialog(QDialog):
     """
@@ -88,7 +90,7 @@ class UpdateProgressDialog(QDialog):
 
         self.lbl_status = QLabel("준비 중…")
         self.lbl_status.setWordWrap(True)
-        self.lbl_status.setStyleSheet("color: #9a9a9a; font-size: 12px;")
+        self.lbl_status.setStyleSheet(theme.qss("color: @muted; font-size: 12px;"))
         layout.addWidget(self.lbl_status)
 
         # 다이얼로그가 뜨는 즉시 heartbeat 시작(막대가 살아 움직이도록).
@@ -157,7 +159,7 @@ class UpdateProgressDialog(QDialog):
         self._set_pct(100)
         self.lbl_status.setText(message)
         self.lbl_status.setStyleSheet(
-            "color: %s; font-size: 12px;" % ("#57b884" if success else "#e5636b")
+            theme.qss("color: %s; font-size: 12px;" % ("@success2" if success else "@danger"))
         )
         self.btn_close.setText("닫기")
         self.btn_close.setEnabled(True)

@@ -13,6 +13,8 @@ a = Analysis(
         ("assets/icons/avd.ico", "assets/icons"),
         ("assets/icons/check.svg", "assets/icons"),
         ("assets/icons/radio.svg", "assets/icons"),
+        ("assets/icons/check_light.svg", "assets/icons"),
+        ("assets/icons/radio_light.svg", "assets/icons"),
     ],
     module_collection_mode={"gaindb": "py", "yt_dlp": "py"},
 )

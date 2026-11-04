@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from ui import theme
+
 
 def extract_urls(text: str) -> list[str]:
     """글자에서 http(s) 주소를 차례대로 뽑는다. 같은 주소는 하나만 남긴다."""
@@ -116,42 +118,42 @@ class AddLinkDialog(QDialog):
 
     def _apply_style(self):
         """스타일 적용"""
-        self.setStyleSheet("""
+        self.setStyleSheet(theme.qss("""
             QDialog {
-                background: #272727;
+                background: @surface;
             }
             QLabel#dialogLabel {
-                color: #cfcfcf;
+                color: @text2;
                 font-size: 13px;
             }
             QLineEdit {
-                background: #1c1c1c;
-                color: #f3f3f3;
-                border: 1px solid #4a4a4a;
+                background: @base;
+                color: @text;
+                border: 1px solid @line2;
                 border-radius: 4px;
                 padding: 0 10px;
                 font-size: 13px;
             }
             QLineEdit:focus {
-                border: 1px solid #4cc2ff;
+                border: 1px solid @accent;
             }
             QPushButton#btnCancel {
-                background: #363636;
-                color: #cfcfcf;
+                background: @btn;
+                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
             }
             QPushButton#btnCancel:hover {
-                background: #454545;
+                background: @btn2;
             }
             QPushButton#btnConfirm {
-                background: #4cc2ff;
-                color: #06222f;
+                background: @accent;
+                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: bold;
             }
             QPushButton#btnConfirm:hover {
-                background: #7dd3ff;
+                background: @accent2;
             }
-        """)
+        """))

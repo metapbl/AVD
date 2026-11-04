@@ -24,6 +24,7 @@ from controllers.download_manager import DownloadManager
 from controllers.playlist_flow import PlaylistFlow
 from core.info_fetcher import FormatInfo, VideoInfo
 from models.download_item import DownloadItem, DownloadStatus
+from ui import theme
 from ui.add_link_dialog import AddLinkDialog, extract_urls
 from ui.confirm_remove_dialog import ConfirmRemoveDialog
 from ui.download_item_widget import DownloadItemWidget
@@ -229,6 +230,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence(QKeySequence.StandardKey.Paste), self, self._on_paste_links)
         self._build_ui()
         self._apply_style()
+        theme.notifier.changed.connect(self._on_theme_changed)
 
         if self.config.get("auto_update_ytdlp", True):
             self._check_ytdlp_update()
@@ -1131,6 +1133,13 @@ class MainWindow(QMainWindow):
         dialog = PreferencesDialog(self.config, self)
         dialog.exec()
         self._refresh_save_path()
+        theme.apply_theme(QApplication.instance(), self.config.get("theme_mode", "system"))
+
+    def _on_theme_changed(self):
+        """테마가 바뀌면 메인 창과 항목을 다시 칠한다 (D065)."""
+        self._apply_style()
+        for widget in self.widgets.values():
+            widget.refresh_theme()
 
     def _check_ytdlp_update(self):
         """앱 시작 3초 뒤 yt-dlp 새 버전을 확인한다 (D062).
@@ -1240,90 +1249,90 @@ class MainWindow(QMainWindow):
 
     def _apply_style(self):
         """전체 앱 스타일 적용"""
-        self.setStyleSheet("""
+        self.setStyleSheet(theme.qss("""
             QMainWindow {
-                background: #1c1c1c;
+                background: @base;
             }
             QWidget#toolbar {
-                background: #272727;
-                border-bottom: 1px solid #383838;
+                background: @surface;
+                border-bottom: 1px solid @line;
             }
             QLabel#appTitle {
-                color: #f3f3f3;
+                color: @text;
                 font-size: 16px;
                 font-weight: bold;
             }
             QWidget#playlistBanner {
-                background: #272727;
-                border-bottom: 1px solid #383838;
+                background: @surface;
+                border-bottom: 1px solid @line;
             }
             QLabel#playlistBannerLabel {
-                color: #f3f3f3;
+                color: @text;
                 font-size: 13px;
             }
             QProgressBar#playlistBannerBar {
-                background: #3a3a3a;
+                background: @track;
                 border: none;
                 border-radius: 3px;
             }
             QProgressBar#playlistBannerBar::chunk {
-                background: #4cc2ff;
+                background: @accent;
                 border-radius: 3px;
             }
             QPushButton#btnAdd {
-                background: #4cc2ff;
-                color: #06222f;
+                background: @accent;
+                color: @on_accent;
                 border-radius: 6px;
                 padding: 0 16px;
                 font-size: 13px;
                 font-weight: bold;
             }
-            QPushButton#btnAdd:hover { background: #7dd3ff; }
+            QPushButton#btnAdd:hover { background: @accent2; }
             QPushButton#btnClearList {
-                background: #454545;
-                color: #cfcfcf;
+                background: @btn2;
+                color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnClearList:hover { background: #e5636b; color: #ffffff; }
+            QPushButton#btnClearList:hover { background: @danger; color: @on_strong; }
             QPushButton#btnClearDone {
-                background: #363636;
-                color: #cfcfcf;
+                background: @btn;
+                color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnClearDone:hover { background: #454545; }
+            QPushButton#btnClearDone:hover { background: @btn2; }
             QPushButton#btnPrefs {
-                background: #363636;
-                color: #cfcfcf;
+                background: @btn;
+                color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnPrefs:hover { background: #454545; }
+            QPushButton#btnPrefs:hover { background: @btn2; }
             QScrollArea#listScroll {
-                background: #1c1c1c;
+                background: @base;
                 border: none;
             }
             QScrollArea#listScroll > QWidget > QWidget {
-                background: #1c1c1c;
+                background: @base;
             }
             QLabel#emptyLabel {
-                color: #6e6e6e;
+                color: @faint;
                 font-size: 14px;
                 line-height: 1.8;
             }
             QStatusBar#mainStatusBar::item { border: none; }
             QLabel#statusInfo {
-                color: #9a9a9a;
+                color: @muted;
                 font-size: 11px;
                 padding: 0 8px;
             }
             QStatusBar#mainStatusBar {
-                background: #272727;
-                color: #9a9a9a;
+                background: @surface;
+                color: @muted;
                 font-size: 11px;
             }
-        """)
+        """))
