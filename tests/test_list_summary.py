@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 from PySide6.QtWidgets import QApplication, QLabel
 
-from models.download_item import DownloadItem, DownloadStatus as S
+from models.download_item import DownloadItem
+from models.download_item import DownloadStatus as S
 from ui.download_item_widget import DownloadItemWidget
 from ui.main_window import MainWindow, _summary_text
 

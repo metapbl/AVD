@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QStatusBar,
@@ -220,6 +221,7 @@ class MainWindow(QMainWindow):
         self.playlist_flow.entry_ready.connect(self._on_playlist_entry)
         self.playlist_flow.status.connect(self._on_playlist_status)
         self.playlist_flow.finished.connect(self._on_playlist_finished)
+        self.playlist_flow.probe_finished.connect(lambda: self.playlist_banner.setVisible(False))
 
         self.setWindowTitle("AV Downloader")
         self.setMinimumSize(800, 600)
@@ -242,6 +244,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(0)
 
         root.addWidget(self._build_toolbar())
+        root.addWidget(self._build_playlist_banner())
         root.addWidget(self._build_list_area(), stretch=1)
 
         self.status_bar = QStatusBar()
@@ -256,6 +259,28 @@ class MainWindow(QMainWindow):
         self.lbl_save_path.setObjectName("statusInfo")
         self.status_bar.addPermanentWidget(self.lbl_save_path)
         self._refresh_save_path()
+
+    def _build_playlist_banner(self) -> QWidget:
+        """플레이리스트 확인 중 표시. 몇 초씩 걸려 상태 표시줄 글자만으로는 멈춘 것처럼 보인다."""
+        self.playlist_banner = QWidget()
+        self.playlist_banner.setObjectName("playlistBanner")
+        layout = QHBoxLayout(self.playlist_banner)
+        layout.setContentsMargins(16, 8, 16, 8)
+        layout.setSpacing(12)
+
+        label = QLabel("플레이리스트 정보를 가져오는 중입니다...")
+        label.setObjectName("playlistBannerLabel")
+        layout.addWidget(label)
+
+        bar = QProgressBar()
+        bar.setObjectName("playlistBannerBar")
+        bar.setRange(0, 0)  # 끝을 모르는 작업
+        bar.setFixedHeight(6)
+        bar.setTextVisible(False)
+        layout.addWidget(bar, stretch=1)
+
+        self.playlist_banner.setVisible(False)
+        return self.playlist_banner
 
     def _build_toolbar(self) -> QWidget:
         """상단 툴바 구성"""
@@ -367,6 +392,7 @@ class MainWindow(QMainWindow):
                 )
                 return
             self.playlist_flow.start(url)
+            self.playlist_banner.setVisible(True)
             return
 
         # 단일 영상 — 맨 위에 추가(기존 동작).
@@ -1226,6 +1252,23 @@ class MainWindow(QMainWindow):
                 color: #f3f3f3;
                 font-size: 16px;
                 font-weight: bold;
+            }
+            QWidget#playlistBanner {
+                background: #272727;
+                border-bottom: 1px solid #383838;
+            }
+            QLabel#playlistBannerLabel {
+                color: #f3f3f3;
+                font-size: 13px;
+            }
+            QProgressBar#playlistBannerBar {
+                background: #3a3a3a;
+                border: none;
+                border-radius: 3px;
+            }
+            QProgressBar#playlistBannerBar::chunk {
+                background: #4cc2ff;
+                border-radius: 3px;
             }
             QPushButton#btnAdd {
                 background: #4cc2ff;

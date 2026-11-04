@@ -15,7 +15,7 @@
   - 확인: `tests/test_add_links.py` 수정 전 실패, 수정 후 통과
 - [x] 3. 화질 목록 열 정렬 (17번)
   - 확인: `tests/test_format_columns.py` 수정 전 실패, 수정 후 통과 · `tests/test_dialog_enter.py` 통과
-- [ ] 4. 플레이리스트 확인 표시 (18번)
+- [x] 4. 플레이리스트 확인 표시 (18번)
   - 확인: `tests/test_playlist_banner.py` 수정 전 실패, 수정 후 통과
 - [ ] 5. 인수 확인
   - 확인: `venv\Scripts\python -m pytest` 통과 · `venv\Scripts\ruff.exe check` 통과 · 실제 클래스 캡처 확인 · 사용자 실기 확인 항목 전달

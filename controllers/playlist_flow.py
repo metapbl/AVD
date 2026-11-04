@@ -45,6 +45,7 @@ class PlaylistFlow(QObject):
     status      = Signal(str)
     entry_ready = Signal(str, str, str)  # (url, format_id, ext)
     finished    = Signal()
+    probe_finished = Signal()  # 확인 단계 끝 (성공·실패 모두)
 
     # 형태 → (format_id, ext) 매핑. core/info_fetcher.py 의 통합 포맷 /
     # MP3 행과 동일한 값을 쓴다 — 단일 출처. 여기 값이 바뀌면 info_fetcher
@@ -97,11 +98,13 @@ class PlaylistFlow(QObject):
     def _on_probe_done(self, result):
         """probe 성공 — 워커 정리가 끝난 뒤 다이얼로그를 한 박자 미뤄 띄운다."""
         self._worker = None
+        self.probe_finished.emit()
         # 원칙 3: 워커 스레드 정리가 이벤트 큐에서 끝난 뒤 모달을 띄운다.
         QTimer.singleShot(0, lambda r=result: self._show_dialog(r))
 
     def _on_probe_error(self, message: str):
         self._worker = None
+        self.probe_finished.emit()
         self.status.emit(f"플레이리스트를 가져오지 못했습니다: {message}")
         self._finish()
 

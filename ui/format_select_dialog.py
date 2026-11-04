@@ -5,8 +5,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
-    QLabel,
     QHeaderView,
+    QLabel,
     QPushButton,
     QTreeWidget,
     QTreeWidgetItem,
