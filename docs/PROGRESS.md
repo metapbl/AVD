@@ -1,13 +1,12 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열여섯 번째 계획 `docs/plans/2026-11-04-release-1.2.0.md` active (작업 2 빌드 전)
-- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: 다크·라이트 테마와 전환(D065), Qt 소스 안내(D064), 편의 기능(D063), 오류 처리 정리(D061, D062), 영상·음성 단계 문구, Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
+- 단계: 7 계획 대기 · 열여섯 번째 계획 `docs/plans/2026-11-04-release-1.2.0.md` done. active 계획 없음
+- 갱신: 2026-11-05 · v1.2.0 게시(태그 `c4e22b9`, Latest): 다크·라이트 테마와 전환(D059, D065), 오류를 항목에 남기는 처리(D061, D062), Enter 기본 버튼(D060), 링크 추가 확대(D063), Qt 소스 안내(D064). 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. (사람 확인) `venv\Scripts\python main.py` 로 Graphite 실제 창 확인 — 마우스 오버, 체크박스 클릭, 화질 선택 창 Enter, 완료 시 작업 표시줄 깜빡임
-2. (사람 확인) 없는 영상 URL 을 넣어 항목이 남는지, "자세히"·"재시도" 동작 확인
-3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. (후보) 정보 가져오는 중 "취소" 버튼이 반응하지 않는 것으로 보임 — 재현부터. 진입점 `ui/main_window.py > _on_cancel`
+2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
