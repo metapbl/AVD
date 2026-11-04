@@ -11,7 +11,7 @@
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
-- (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에도 소스 위치 넣을지 사용자 확인 대기
+- (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
