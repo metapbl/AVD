@@ -11,7 +11,7 @@
 ## 작업
 - [x] 1. 상태 요약·완료 지우기·저장 폴더 표시 (12, 14, 15번)
   - 확인: `tests/test_list_summary.py` 수정 전 실패, 수정 후 통과
-- [ ] 2. Ctrl+V·끌어다 놓기·여러 줄 붙여넣기, 화질 창 차례대로 (16번, D063)
+- [x] 2. Ctrl+V·끌어다 놓기·여러 줄 붙여넣기, 화질 창 차례대로 (16번, D063)
   - 확인: `tests/test_add_links.py` 수정 전 실패, 수정 후 통과
 - [ ] 3. 화질 목록 열 정렬 (17번)
   - 확인: `tests/test_format_columns.py` 수정 전 실패, 수정 후 통과 · `tests/test_dialog_enter.py` 통과

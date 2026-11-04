@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -22,7 +23,7 @@ from controllers.download_manager import DownloadManager
 from controllers.playlist_flow import PlaylistFlow
 from core.info_fetcher import FormatInfo, VideoInfo
 from models.download_item import DownloadItem, DownloadStatus
-from ui.add_link_dialog import AddLinkDialog
+from ui.add_link_dialog import AddLinkDialog, extract_urls
 from ui.confirm_remove_dialog import ConfirmRemoveDialog
 from ui.download_item_widget import DownloadItemWidget
 from ui.format_select_dialog import FormatSelectDialog
@@ -44,6 +45,13 @@ def _is_playlist_url(url: str) -> bool:
         return False
     low = url.lower()
     return ("list=" in low) or ("/playlist" in low)
+
+
+def _urls_from_mime(mime) -> list[str]:
+    """끌어다 놓은 데이터의 링크. 브라우저는 주소와 글자를 함께 주므로 주소를 먼저 본다."""
+    if mime.hasUrls():
+        return extract_urls(" ".join(url.toString() for url in mime.urls()))
+    return extract_urls(mime.text())
 
 
 def _summary_text(items: dict) -> str:
@@ -189,6 +197,10 @@ class MainWindow(QMainWindow):
         # 정보 가져오기에 실패한 플레이리스트 항목의 사양 — 재시도 때 되살린다 (D061).
         self._failed_specs  : dict[str, tuple[str, str]] = {}
 
+        # 정보 추출이 끝나 화질 선택을 기다리는 항목. 창은 하나씩 띄운다 (D063).
+        self._format_pending    : list[tuple[str, VideoInfo]] = []
+        self._format_dialog_open: bool = False
+
         # 버전 확인 워커. 창을 닫을 때 끝나기를 기다린다 (D062).
         self._update_check_worker: UpdateCheckWorker | None = None
 
@@ -211,6 +223,8 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("AV Downloader")
         self.setMinimumSize(800, 600)
+        self.setAcceptDrops(True)
+        QShortcut(QKeySequence(QKeySequence.StandardKey.Paste), self, self._on_paste_links)
         self._build_ui()
         self._apply_style()
 
@@ -302,7 +316,7 @@ class MainWindow(QMainWindow):
         self.lbl_empty = QLabel(
             "다운로드할 링크를 추가하세요\n\n"
             "+ 링크 추가 버튼을 클릭하거나\n"
-            "URL을 클립보드에 복사한 후 버튼을 누르세요"
+            "링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요"
         )
         self.lbl_empty.setObjectName("emptyLabel")
         self.lbl_empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -318,6 +332,26 @@ class MainWindow(QMainWindow):
         dialog = AddLinkDialog(self)
         dialog.link_submitted.connect(self._on_link_submitted)
         dialog.exec()
+
+    def _on_paste_links(self):
+        """Ctrl+V — 클립보드의 링크를 바로 추가한다."""
+        urls = extract_urls(QApplication.clipboard().text())
+        if not urls:
+            self.status_bar.showMessage("클립보드에 링크가 없습니다.")
+            return
+        for url in urls:
+            self._on_link_submitted(url)
+
+    def dragEnterEvent(self, event):
+        """링크를 끌어 왔을 때만 받는다."""
+        if _urls_from_mime(event.mimeData()):
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        """창에 놓은 링크를 추가한다."""
+        for url in _urls_from_mime(event.mimeData()):
+            self._on_link_submitted(url)
+        event.acceptProposedAction()
 
     def _on_link_submitted(self, url: str):
         """
@@ -481,20 +515,30 @@ class MainWindow(QMainWindow):
         widget.update_status(DownloadStatus.WAITING)
         self.status_bar.showMessage("화질을 선택해 주세요.")
 
-        from PySide6.QtWidgets import QApplication
-        QApplication.processEvents()
-
-        dialog = FormatSelectDialog(info, self.config, self)
-        dialog.format_selected.connect(
-            lambda fmt: self._on_format_selected(item_id, fmt)
-        )
-        dialog.rejected.connect(
-            lambda: self._on_remove(item_id, skip_confirm=True)
-        )
-        # 다이얼로그를 띄우기 전에 슬롯을 회수 — 사용자가 오래 열어둬도 다음
-        # 추출이 막히지 않게 한다. (정보 추출은 이미 끝났다.)
+        # 창을 띄우기 전에 슬롯을 회수 — 사용자가 오래 열어둬도 다음 추출이
+        # 막히지 않게 한다. (정보 추출은 이미 끝났다.)
         self._release_info_slot(item_id)
-        dialog.exec()
+        self._format_pending.append((item_id, info))
+        self._show_format_dialogs()
+
+    def _show_format_dialogs(self):
+        """기다리는 화질 선택 창을 하나씩 띄운다. 이미 열려 있으면 그 창의 반복문이 이어받는다."""
+        if self._format_dialog_open:
+            return
+        self._format_dialog_open = True
+        while self._format_pending:
+            item_id, info = self._format_pending.pop(0)
+            if item_id not in self.items:
+                continue
+            dialog = FormatSelectDialog(info, self.config, self)
+            dialog.format_selected.connect(
+                lambda fmt, iid=item_id: self._on_format_selected(iid, fmt)
+            )
+            dialog.rejected.connect(
+                lambda iid=item_id: self._on_remove(iid, skip_confirm=True)
+            )
+            dialog.exec()
+        self._format_dialog_open = False
 
     def _apply_format(
         self, item_id: str, format_id: str, ext: str, info: VideoInfo

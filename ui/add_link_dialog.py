@@ -13,6 +13,12 @@ from PySide6.QtWidgets import (
 )
 
 
+def extract_urls(text: str) -> list[str]:
+    """글자에서 http(s) 주소를 차례대로 뽑는다. 같은 주소는 하나만 남긴다."""
+    urls = [t for t in text.split() if t.lower().startswith(("http://", "https://"))]
+    return list(dict.fromkeys(urls))
+
+
 class AddLinkDialog(QDialog):
     """
     URL 입력 팝업 다이얼로그
@@ -95,7 +101,8 @@ class AddLinkDialog(QDialog):
             QMessageBox.warning(self, "입력 오류", "URL을 입력해 주세요.")
             return
 
-        if not url.startswith("http"):
+        urls = extract_urls(url)
+        if not urls:
             QMessageBox.warning(
                 self, "입력 오류",
                 "올바른 URL 형식이 아닙니다.\n"
@@ -103,7 +110,8 @@ class AddLinkDialog(QDialog):
             )
             return
 
-        self.link_submitted.emit(url)
+        for link in urls:
+            self.link_submitted.emit(link)
         self.accept()
 
     def _apply_style(self):
