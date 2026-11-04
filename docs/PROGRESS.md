@@ -2,12 +2,11 @@
 
 ## 상태
 - 단계: 7 계획 대기 · 열한 번째 계획 `docs/plans/2026-11-04-release.md` done. active 계획 없음
-- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스 코드 변경 없음. OPEN 미결 0
+- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스 코드 변경 없음(README 배포 방침 문구 정정 D058 만 미릴리스). OPEN 미결 0
 
 ## 다음 할 일
 1. (판단 필요) `utils/file_utils.py > get_unique_path` 는 테스트 외에 쓰이지 않음 — 지울지
-2. (판단 필요) README "비영리 무료 공개" 문단·PRD §2·D012 "비영리" 표현을 NOTICE 새 문구("license 에 제한을 더하지 않음")와 맞출지
-3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
