@@ -13,7 +13,7 @@
   - 확인: `tests/test_list_summary.py` 수정 전 실패, 수정 후 통과
 - [x] 2. Ctrl+V·끌어다 놓기·여러 줄 붙여넣기, 화질 창 차례대로 (16번, D063)
   - 확인: `tests/test_add_links.py` 수정 전 실패, 수정 후 통과
-- [ ] 3. 화질 목록 열 정렬 (17번)
+- [x] 3. 화질 목록 열 정렬 (17번)
   - 확인: `tests/test_format_columns.py` 수정 전 실패, 수정 후 통과 · `tests/test_dialog_enter.py` 통과
 - [ ] 4. 플레이리스트 확인 표시 (18번)
   - 확인: `tests/test_playlist_banner.py` 수정 전 실패, 수정 후 통과

@@ -6,9 +6,10 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
+    QHeaderView,
     QPushButton,
+    QTreeWidget,
+    QTreeWidgetItem,
     QVBoxLayout,
 )
 
@@ -39,7 +40,7 @@ class FormatSelectDialog(QDialog):
         self.selected_format: FormatInfo | None = None
 
         self.setWindowTitle("화질 선택")
-        self.setFixedSize(480, 520)
+        self.setFixedSize(600, 520)
         self.setModal(True)
         self._build_ui()
         self._apply_style()
@@ -85,30 +86,32 @@ class FormatSelectDialog(QDialog):
         lbl_fmt.setObjectName("sectionLabel")
         root.addWidget(lbl_fmt)
 
-        self.list_formats = QListWidget()
-        self.list_formats.setSpacing(2)
+        self.list_formats = QTreeWidget()
+        self.list_formats.setHeaderLabels(["형식", "해상도", "코덱", "크기"])
+        self.list_formats.setRootIsDecorated(False)
+        self.list_formats.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        header = self.list_formats.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.list_formats.itemDoubleClicked.connect(self._on_confirm)
         root.addWidget(self.list_formats)
 
-        # 포맷 목록 채우기
-        # 각 행은 4 컬럼:
-        #   "  라벨  |  해상도  |  코덱/비트레이트  |  크기"
-        # - 라벨이 해상도와 같으면 (예: "최고 화질 (자동 선택)" + "최고화질")
-        #   해상도 컬럼은 라벨과 다를 때만 출력 — 기존 동작 유지.
-        # - 코덱 컬럼: 통합 포맷(AUTO_FORMAT_ID) 은 "자동". 그 외에는
+        # 포맷 목록 채우기 — 형식 | 해상도 | 코덱/비트레이트 | 크기
+        # - 라벨이 해상도와 같으면 해상도 칸은 비운다.
+        # - 코덱 칸: 통합 포맷(AUTO_FORMAT_ID) 은 "자동". 그 외에는
         #   사람 친화 이름으로 정규화. 비트레이트는 abr→tbr.
         for fmt in self.video_info.formats:
-            item = QListWidgetItem()
-            item.setData(Qt.ItemDataRole.UserRole, fmt)
-
-            # 크기 컬럼
+            # 크기 칸
             size_str = (
                 format_file_size(fmt.filesize)
                 if fmt.filesize > 0
                 else "크기 미확인"
             )
 
-            # 코덱 컬럼 — 정규화 후 조립.
+            # 코덱 칸 — 정규화 후 조립.
             if fmt.format_id == AUTO_FORMAT_ID:
                 # 통합 포맷 — 선택 시점에 코덱 미확정.
                 codec_str = "자동"
@@ -137,24 +140,16 @@ class FormatSelectDialog(QDialog):
                         )
                     codec_str = " / ".join(parts) if parts else "자동"
 
-            res_col = (
-                f"  |  {fmt.resolution}"
-                if fmt.resolution != fmt.label
-                else ""
-            )
-            item.setText(
-                f"  {fmt.label}"
-                f"{res_col}"
-                f"  |  {codec_str}"
-                f"  |  {size_str}"
-            )
-            self.list_formats.addItem(item)
+            res_col = fmt.resolution if fmt.resolution != fmt.label else ""
+            item = QTreeWidgetItem([fmt.label, res_col, codec_str, size_str])
+            item.setData(0, Qt.ItemDataRole.UserRole, fmt)
+            self.list_formats.addTopLevelItem(item)
 
         # 기본 선택 행 결정 — last_chosen_ext 가 있으면 같은 ext 의 첫 행,
         # 없거나 매칭 실패 시 첫 행.
         default_row = self._find_default_row()
-        if self.list_formats.count() > 0:
-            self.list_formats.setCurrentRow(default_row)
+        if self.list_formats.topLevelItemCount() > 0:
+            self.list_formats.setCurrentItem(self.list_formats.topLevelItem(default_row))
 
         # ── 버튼 행 ──
         btn_row = QHBoxLayout()
@@ -186,9 +181,9 @@ class FormatSelectDialog(QDialog):
         if not last_ext:
             return 0
 
-        for row in range(self.list_formats.count()):
-            item = self.list_formats.item(row)
-            fmt: FormatInfo = item.data(Qt.ItemDataRole.UserRole)
+        for row in range(self.list_formats.topLevelItemCount()):
+            item = self.list_formats.topLevelItem(row)
+            fmt: FormatInfo = item.data(0, Qt.ItemDataRole.UserRole)
             if fmt is not None and (fmt.ext or "").lower() == last_ext:
                 return row
         return 0
@@ -199,7 +194,7 @@ class FormatSelectDialog(QDialog):
         if not current:
             return
 
-        fmt: FormatInfo = current.data(Qt.ItemDataRole.UserRole)
+        fmt: FormatInfo = current.data(0, Qt.ItemDataRole.UserRole)
 
         # 다음 호출 시 기본 선택을 위해 ext 를 기억
         if fmt is not None and fmt.ext:
@@ -231,7 +226,7 @@ class FormatSelectDialog(QDialog):
                 color: #cfcfcf;
                 font-size: 12px;
             }
-            QListWidget {
+            QTreeWidget {
                 background: #1c1c1c;
                 color: #f3f3f3;
                 border: 1px solid #383838;
@@ -239,16 +234,23 @@ class FormatSelectDialog(QDialog):
                 font-size: 12px;
                 outline: none;
             }
-            QListWidget::item {
+            QTreeWidget::item {
                 height: 36px;
-                border-radius: 4px;
+                padding-left: 6px;
             }
-            QListWidget::item:selected {
+            QTreeWidget::item:hover {
+                background: #323232;
+            }
+            QTreeWidget::item:selected {
                 background: #4cc2ff;
                 color: #06222f;
             }
-            QListWidget::item:hover {
+            QHeaderView::section {
                 background: #323232;
+                color: #cfcfcf;
+                border: none;
+                padding: 6px;
+                font-size: 12px;
             }
             QPushButton#btnCancel {
                 background: #363636;
