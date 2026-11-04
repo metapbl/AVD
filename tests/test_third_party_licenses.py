@@ -25,5 +25,20 @@ def test_every_requirement_has_a_section():
     assert names - section_titles() == set()
 
 
+def test_qt_source_links_match_pinned_version():
+    # PySide6 핀을 올리면 소스 안내도 함께 고치게 한다 (D064).
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    version = next(
+        line.split("==")[1].strip()
+        for line in requirements.splitlines()
+        if line.startswith("PySide6==")
+    )
+    major_minor = ".".join(version.split(".")[:2])
+    text = (ROOT / "THIRD_PARTY_LICENSES").read_text(encoding="utf-8")
+    assert f"/QtForPython/pyside6/PySide6-{version}-src/" in text
+    assert f"/official_releases/qt/{major_minor}/{version}/single/" in text
+    assert f"/archive/qt/{major_minor}/{version}/single/" in text
+
+
 def test_runtime_and_bootloader_have_sections():
     assert {"python", "pyinstaller"} <= section_titles()

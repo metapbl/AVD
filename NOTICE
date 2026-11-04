@@ -38,7 +38,8 @@ distribution are in THIRD_PARTY_LICENSES.
 - PySide6 (Qt for Python)
   Licensed under the GNU LGPL v3. It is linked dynamically so that users
   may replace the Qt libraries. When distributing pre-built binaries, the
-  LGPL v3 text and a usage notice are included.
+  LGPL v3 text and a usage notice are included. Where to get the
+  corresponding source is listed in THIRD_PARTY_LICENSES.
 
 - yt-dlp
   Public-domain / Unlicense. Used as a library for media extraction and

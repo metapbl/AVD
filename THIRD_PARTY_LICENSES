@@ -1366,8 +1366,14 @@ Homepage: https://pyside.org/
 
 Qt for Python and the Qt libraries are shipped as separate, unmodified
 DLL files under _internal\PySide6 and _internal\shiboken6 so that users
-may replace them. Source code: https://code.qt.io/cgit/pyside/pyside-setup.git/
-(tag v6.12.0) and https://download.qt.io/official_releases/qt/ .
+may replace them. Corresponding source code, on The Qt Project's servers:
+- PySide6 6.12.0, shiboken6 6.12.0:
+  https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-6.12.0-src/
+  https://code.qt.io/cgit/pyside/pyside-setup.git/ (tag v6.12.0)
+- Qt 6.12.0:
+  https://download.qt.io/official_releases/qt/6.12/6.12.0/single/
+  If that release has been moved, it is kept under
+  https://download.qt.io/archive/qt/6.12/6.12.0/single/
 Third-party components used inside Qt are listed at
 https://doc.qt.io/qt-6/licenses-used-in-qt.html .
 The LGPL-3.0 text is followed by the GPL-3.0 text it incorporates.

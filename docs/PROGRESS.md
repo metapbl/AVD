@@ -2,18 +2,16 @@
 
 ## 상태
 - 단계: 7 계획 대기 · 열네 번째 계획 `docs/plans/2026-11-04-convenience.md` done. active 계획 없음
-- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: 편의 기능(D063), 오류 처리 정리(D061, D062), 영상·음성 단계 문구, Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
+- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: Qt 소스 안내(D064), 편의 기능(D063), 오류 처리 정리(D061, D062), 영상·음성 단계 문구, Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
 
 ## 다음 할 일
 1. (사람 확인) `venv\Scripts\python main.py` 로 Graphite 실제 창 확인 — 마우스 오버, 체크박스 클릭, 화질 선택 창 Enter, 완료 시 작업 표시줄 깜빡임
 2. (사람 확인) 없는 영상 URL 을 넣어 항목이 남는지, "자세히"·"재시도" 동작 확인
-3. Qt 소스 안내 보강 — `THIRD_PARTY_LICENSES` 의 Qt 링크를 `official_releases/qt/6.12/6.12.0/single/` 로, 릴리스 노트에 소스 위치 추가 (UI 마무리 뒤, 사용자 요청 순서)
-4. (사람 확인) Ctrl+V·브라우저에서 끌어다 놓기·여러 줄 붙여넣기, 플레이리스트 확인 띠, 완료 지우기
-5. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+3. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
-- (판단 필요) Qt/PySide6 LGPL 소스 제공을 공식 서버 링크로 갈음 (`THIRD_PARTY_LICENSES`) — 직접 첨부가 필요한지 법률 검토 안 함
+- (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에도 소스 위치 넣을지 사용자 확인 대기
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능

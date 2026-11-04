@@ -36,4 +36,6 @@ exe zip 을 리포 밖 새 폴더에 풀어 `AVD\AVD.exe` 로 확인한다. 하�
 - 게시:
   `gh release create v{버전} release\AVD-v{버전}-win64.zip release\AVD-v{버전}-src.zip --repo metapbl/AVD --title "AVD v{버전}" --notes-file {노트 파일}`
 - 노트에 넣을 것: 이번 변경 요약(CHANGELOG), 번들 yt-dlp 버전, "ffmpeg/ffprobe·Node.js 는 별도 설치 — README 설치 절", `src.zip` 이 같은 커밋의 소스라는 한 줄
+- 노트에 Qt 소스 위치도 넣는다 (D064). PySide6 핀을 올렸으면 `THIRD_PARTY_LICENSES` 의 버전과 링크를 먼저 고친다. 게시 전에 링크가 열리는지 확인한다:
+  > 이 배포본의 PySide6·Qt 는 LGPL-3.0 으로 제공되며 수정하지 않았습니다. 소스: [PySide6 {버전}](https://download.qt.io/official_releases/QtForPython/pyside6/PySide6-{버전}-src/), [Qt {버전}](https://download.qt.io/official_releases/qt/{주.부}/{버전}/single/). 자세한 내용은 zip 안의 `THIRD_PARTY_LICENSES` 를 참고하세요.
 - 확인: `gh release view v{버전} --repo metapbl/AVD --json assets` → zip 2개
