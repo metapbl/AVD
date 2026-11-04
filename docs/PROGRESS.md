@@ -9,6 +9,7 @@
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
+- (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
 - (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
