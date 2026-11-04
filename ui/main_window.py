@@ -1042,6 +1042,25 @@ class MainWindow(QMainWindow):
         subprocess.Popen(restart_command())
         QApplication.quit()
 
+    def closeEvent(self, event):
+        """창 닫기 — 끝나지 않은 다운로드가 있으면 묻고, 취소·정리를 기다린 뒤 닫는다 (D057)."""
+        count = self.download_manager.unfinished_count()
+        if count:
+            reply = QMessageBox.question(
+                self,
+                "앱 종료",
+                f"끝나지 않은 다운로드 {count}개를 취소하고 종료하시겠습니까?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+            self.hide()
+
+        self.download_manager.shutdown()
+        event.accept()
+
     # ── 스타일 ───────────────────────────────────────
 
     def _apply_style(self):

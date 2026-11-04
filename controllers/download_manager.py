@@ -1,6 +1,8 @@
 # controllers/download_manager.py
 # 다운로드 워커 오케스트레이션 + 동시성 제어 큐 매니저
 
+import time
+
 from PySide6.QtCore import QObject, Qt, Signal
 
 from models.download_item import DownloadStatus
@@ -71,6 +73,10 @@ class DownloadManager(QObject):
         self.items   = items
         self.widgets = widgets
         self.dl_workers: dict[str, DownloadWorker] = {}
+        # 스레드가 끝날 때까지 쥔다. dl_workers 는 항목 제거·재시도 때 먼저 떼어내므로
+        # 종료 때 기다릴 대상으로 쓸 수 없다.
+        self._live_workers: set[DownloadWorker] = set()
+        self._closing = False
         sweep_stale_temp_dirs(self.config.get("save_path", ""))
 
     # ── 공개 조회 ────────────────────────────────────
@@ -100,6 +106,11 @@ class DownloadManager(QObject):
                 continue
             count += 1
         return count
+
+    def unfinished_count(self) -> int:
+        """아직 끝나지 않은 다운로드 수 (대기 항목 + 실행 중 워커)."""
+        waiting = sum(i.status == DownloadStatus.WAITING for i in self.items.values())
+        return waiting + sum(w.isRunning() for w in self._live_workers)
 
     # ── 공개 라이프사이클 진입점 ──────────────────────
 
@@ -132,6 +143,22 @@ class DownloadManager(QObject):
                 except Exception:
                     pass
 
+    def shutdown(self, timeout_ms: int = 35000):
+        """
+        앱 종료 — 모두 취소하고 워커가 임시 폴더를 정리할 때까지 기다린다 (D057).
+
+        워커가 도는 중 프로세스가 끝나면 비정상 종료하고 임시 폴더가 남는다.
+        기다리는 시간은 소켓 대기 30초에 여유를 더한 값이다.
+        """
+        self._closing = True
+        deadline = time.monotonic() + timeout_ms / 1000
+        for w in list(self._live_workers):
+            if w.isRunning():
+                w.cancel()
+        for w in list(self._live_workers):
+            if w.isRunning():
+                w.wait(max(int((deadline - time.monotonic()) * 1000), 0))
+
     def forget(self, item_id: str):
         """
         항목 제거 시 매니저가 보유한 워커 참조도 정리.
@@ -146,6 +173,8 @@ class DownloadManager(QObject):
 
     def _dispatch_next(self):
         """동시성 한도 안에서 가능한 만큼 WAITING 항목들을 출발시킨다."""
+        if self._closing:
+            return
         limit  = int(self.config.get("max_concurrent", 2))
         active = self.active_count()
 
@@ -255,6 +284,7 @@ class DownloadManager(QObject):
             Qt.ConnectionType.QueuedConnection,
         )
         self.dl_workers[item_id] = worker
+        self._live_workers.add(worker)
         worker.start()
 
     # ── 워커 시그널 수신 → 매니저 시그널 재발사 ────────
@@ -304,6 +334,7 @@ class DownloadManager(QObject):
         current = self.dl_workers.get(item_id)
         if current is worker:
             self.dl_workers.pop(item_id, None)
+        self._live_workers.discard(worker)
         try:
             worker.deleteLater()
         except Exception:
