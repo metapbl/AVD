@@ -1,11 +1,12 @@
 """완료된 임시 파일을 저장 폴더로 옮기기 (열 번째 계획 작업 2, D054·D056)."""
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
-from utils.file_utils import move_unique
+from utils.file_utils import move_unique, sweep_stale_temp_dirs
 
 
 def _src(tmp_path, text, name="T.mp4", sub="tmp"):
@@ -64,3 +65,44 @@ def test_failed_move_keeps_source_and_leaves_no_placeholder(tmp_path, save, monk
         move_unique(str(src), str(save))
     assert src.read_text(encoding="utf-8") == "new"
     assert list(save.iterdir()) == []
+
+
+def _aged_dir(save, name, days):
+    d = save / name
+    d.mkdir()
+    (d / "T.mp4").write_text("x", encoding="utf-8")
+    old = time.time() - days * 86400
+    os.utime(d, (old, old))
+    return d
+
+
+def test_sweep_removes_only_old_temp_dirs(save):
+    stale = _aged_dir(save, ".avd_old", 2)
+    fresh = _aged_dir(save, ".avd_new", 0)
+    other_dir = _aged_dir(save, "my_folder", 2)
+    other_file = save / ".avd_file"
+    other_file.write_text("x", encoding="utf-8")
+    os.utime(other_file, (0, 0))
+
+    sweep_stale_temp_dirs(str(save))
+
+    assert not stale.exists()
+    assert fresh.is_dir()
+    assert other_dir.is_dir()
+    assert other_file.is_file()
+
+
+@pytest.mark.parametrize("save_dir", ["", "missing"])
+def test_sweep_without_save_dir_is_noop(tmp_path, monkeypatch, save_dir):
+    monkeypatch.chdir(tmp_path)
+    keep = _aged_dir(tmp_path, ".avd_cwd", 2)
+    sweep_stale_temp_dirs(save_dir)
+    assert keep.is_dir()
+
+
+def test_manager_sweeps_on_start(save):
+    from controllers.download_manager import DownloadManager
+
+    stale = _aged_dir(save, ".avd_old", 2)
+    DownloadManager({"save_path": str(save)}, {}, {})
+    assert not stale.exists()

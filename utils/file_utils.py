@@ -4,6 +4,8 @@
 import logging
 import os
 import re
+import shutil
+import time
 import unicodedata
 from pathlib import Path
 
@@ -108,6 +110,22 @@ def move_unique(src: str, save_dir: str) -> str:
             target.unlink(missing_ok=True)
             raise
         return str(target)
+
+
+def sweep_stale_temp_dirs(save_dir: str) -> None:
+    """
+    강제 종료로 남은 항목별 임시 폴더(.avd_*)를 지운다 (D056).
+    실행 중인 다른 인스턴스의 작업을 지우지 않도록 수정한 지 1일이 지난 것만 대상이다.
+    """
+    if not save_dir:
+        return
+    cutoff = time.time() - 86400
+    for path in Path(save_dir).glob(".avd_*"):
+        try:
+            if path.is_dir() and path.stat().st_mtime < cutoff:
+                shutil.rmtree(path, ignore_errors=True)
+        except OSError:
+            pass
 
 
 def format_file_size(bytes_size: int) -> str:

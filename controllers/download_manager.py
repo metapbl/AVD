@@ -4,6 +4,7 @@
 from PySide6.QtCore import QObject, Qt, Signal
 
 from models.download_item import DownloadStatus
+from utils.file_utils import sweep_stale_temp_dirs
 from workers.download_worker import DownloadWorker
 
 
@@ -70,6 +71,7 @@ class DownloadManager(QObject):
         self.items   = items
         self.widgets = widgets
         self.dl_workers: dict[str, DownloadWorker] = {}
+        sweep_stale_temp_dirs(self.config.get("save_path", ""))
 
     # ── 공개 조회 ────────────────────────────────────
 

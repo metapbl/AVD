@@ -39,7 +39,7 @@
     - 이동 실패 → `error` 문구에 임시 경로, 임시 폴더와 파일 유지 (바꿔치기한 `move_unique`)
     - 음량 정규화가 이동 전 임시 파일에 적용됨 (바꿔치기한 gain 함수에 넘어온 경로)
   - 확인: 위 테스트·전체 pytest·ruff 통과
-- [ ] 4. 오래된 임시 폴더 청소 — `utils/file_utils.py > sweep_stale_temp_dirs`, `controllers/download_manager.py`
+- [x] 4. 오래된 임시 폴더 청소 — `utils/file_utils.py > sweep_stale_temp_dirs`, `controllers/download_manager.py`
   - 실패하는 테스트 먼저 (`tests/test_move_unique.py`에 추가): 수정 2일 전 `.avd_x` 삭제 / 방금 만든 `.avd_y` 유지 / `.avd_` 로 시작하지 않는 폴더·파일 유지 / 저장 폴더 없음 → 오류 없이 통과
   - 확인: 위 테스트·전체 pytest·ruff 통과
 - [ ] 5. 문서 — `docs/REFERENCE.md` R§2 JS 런타임 설명·구조, R§4 함정 T23(`js_runtimes` 를 빼면 자동 탐지가 아니라 Deno 만 켜짐)·T24(같은 이름 파일이 있으면 yt-dlp 가 그 파일을 원본으로 후처리하고 삭제할 수 있음), `README.md` 에 관련 안내가 있으면 수정
