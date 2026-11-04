@@ -13,7 +13,7 @@
 ## 작업
 - [x] 1. Graphite 테마 — `ui/theme.py`, `ui/*.py` QSS 색, `main.py`, `AVD.spec`
   - 확인: `tests/test_theme.py` 통과 | 실제 클래스 캡처를 시안과 대조
-- [ ] 2. Enter 기본 버튼 — 화질 선택 "다운로드", 환경설정 "저장", 플레이리스트 "추가"
+- [x] 2. Enter 기본 버튼 — 화질 선택 "다운로드", 환경설정 "저장", 플레이리스트 "추가"
   - 확인: `tests/test_dialog_enter.py` 수정 전 실패, 수정 후 통과
 - [ ] 3. 실패 안내 — 파일 삭제 실패, 옮겨진 파일 재생·열기
   - 확인: `tests/test_user_feedback.py` 수정 전 실패, 수정 후 통과

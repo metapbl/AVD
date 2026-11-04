@@ -171,6 +171,8 @@ class FormatSelectDialog(QDialog):
         btn_confirm.setObjectName("btnConfirm")
         btn_confirm.setFixedSize(100, 32)
         btn_confirm.clicked.connect(self._on_confirm)
+        # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
+        btn_confirm.setDefault(True)
         btn_row.addWidget(btn_confirm)
 
         root.addLayout(btn_row)

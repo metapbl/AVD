@@ -147,6 +147,8 @@ class PlaylistSelectDialog(QDialog):
         self.btn_confirm.setObjectName("btnConfirm")
         self.btn_confirm.setFixedSize(90, 32)
         self.btn_confirm.clicked.connect(self._on_confirm)
+        # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
+        self.btn_confirm.setDefault(True)
         btn_row.addWidget(self.btn_confirm)
         root.addLayout(btn_row)
 

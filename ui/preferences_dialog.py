@@ -310,6 +310,8 @@ class PreferencesDialog(QDialog):
         btn_save.setObjectName("btnConfirm")
         btn_save.setFixedSize(80, 32)
         btn_save.clicked.connect(self._on_save)
+        # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
+        btn_save.setDefault(True)
         btn_row.addWidget(btn_save)
 
         root.addLayout(btn_row)
