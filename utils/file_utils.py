@@ -84,6 +84,32 @@ def get_unique_path(save_dir: str, title: str, ext: str) -> str:
     return str(target)
 
 
+def move_unique(src: str, save_dir: str) -> str:
+    """
+    완료된 파일을 저장 폴더로 옮기고 최종 경로를 반환한다 (D054, D056).
+    같은 이름이 있으면 "제목 (1).ext" 처럼 번호를 붙이고 기존 파일은 건드리지 않는다.
+
+    "x" 모드로 이름을 먼저 차지하므로 동시에 옮기는 항목끼리 덮어쓰지 않는다.
+    실패하면 차지한 빈 파일을 지우고 예외를 그대로 던진다 (src 는 그대로 남음).
+    """
+    source = Path(src)
+    counter = 0
+    while True:
+        name = f"{source.stem} ({counter}){source.suffix}" if counter else source.name
+        target = Path(save_dir) / name
+        try:
+            open(target, "x").close()
+        except FileExistsError:
+            counter += 1
+            continue
+        try:
+            os.replace(source, target)
+        except OSError:
+            target.unlink(missing_ok=True)
+            raise
+        return str(target)
+
+
 def format_file_size(bytes_size: int) -> str:
     """
     바이트 수를 사람이 읽기 쉬운 문자열로 변환

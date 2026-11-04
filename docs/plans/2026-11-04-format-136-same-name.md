@@ -25,7 +25,7 @@
   - 실패하는 테스트 먼저 (`tests/test_js_runtime_opts.py`): `yt_dlp.YoutubeDL` 을 바꿔치기해 세 곳이 넘기는 옵션을 잡는다 → 세 곳의 `js_runtimes`·`remote_components` 가 같고, `node`·`deno`·`bun` 이 모두 있다
   - `_BASE_OPTS` 위의 "자동 탐지에 맡김" 주석을 실제 동작에 맞게 고친다
   - 확인: 위 테스트·전체 pytest·ruff 통과 | 실측: 두 영상을 다운로드 옵션으로 추출 → 포맷 136 있음, 720p 실제 다운로드 → "Requested format"·403 오류 없음, ffprobe 높이 720
-- [ ] 2. 겹치지 않는 이동 — `utils/file_utils.py > move_unique`
+- [x] 2. 겹치지 않는 이동 — `utils/file_utils.py > move_unique`
   - 실패하는 테스트 먼저 (`tests/test_move_unique.py`): 같은 이름 없음 → `T.mp4` / 있음 → `T (1).mp4` / 둘 있음 → `T (2).mp4` / 기존 파일 해시 그대로 / 스레드 2개 동시 이동 → 파일 2개, 내용 유지 / 이동 실패 → 차지한 빈 파일을 남기지 않고 원본 유지 / 제목에 점이 있어도 번호는 마지막 확장자 앞에 붙음 (`a.b.mp4` → `a.b (1).mp4`)
   - 확인: 위 테스트·전체 pytest·ruff 통과
 - [ ] 3. 항목별 임시 폴더 — `workers/download_worker.py > run`, `core/downloader.py > trim_file_name`
