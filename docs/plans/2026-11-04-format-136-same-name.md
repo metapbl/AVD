@@ -28,7 +28,7 @@
 - [x] 2. 겹치지 않는 이동 — `utils/file_utils.py > move_unique`
   - 실패하는 테스트 먼저 (`tests/test_move_unique.py`): 같은 이름 없음 → `T.mp4` / 있음 → `T (1).mp4` / 둘 있음 → `T (2).mp4` / 기존 파일 해시 그대로 / 스레드 2개 동시 이동 → 파일 2개, 내용 유지 / 이동 실패 → 차지한 빈 파일을 남기지 않고 원본 유지 / 제목에 점이 있어도 번호는 마지막 확장자 앞에 붙음 (`a.b.mp4` → `a.b (1).mp4`)
   - 확인: 위 테스트·전체 pytest·ruff 통과
-- [ ] 3. 항목별 임시 폴더 — `workers/download_worker.py > run`, `core/downloader.py > trim_file_name`
+- [x] 3. 항목별 임시 폴더 — `workers/download_worker.py > run`, `core/downloader.py > trim_file_name`
   - `_touched_files`·`_collect_paths_from_hook`·`_cleanup_residue`·`_safe_unlink` 를 임시 폴더 삭제로 대체한다. 취소·오류 때 추적한 경로를 지우던 코드가 기존 파일을 건드릴 여지도 함께 사라진다
   - 실패하는 테스트 먼저 (`tests/test_item_temp_dir.py`, 실제 yt-dlp·ffmpeg + 로컬 서버, 인터넷 없음):
     - 기존 `a.m4a` + MP3 요청 → `a.m4a` 해시 그대로, `a.mp3` 길이가 서버 파일과 같음

@@ -245,7 +245,7 @@ class Downloader:
             "format"             : format_id,
             "outtmpl"            : str(Path(save_dir) / "%(title)s.%(ext)s"),
             "windowsfilenames"   : True,    # yt-dlp 자체 sanitize
-            "trim_file_name"     : 200,
+            "trim_file_name"     : 180,    # 임시 폴더 이름만큼 경로 여유 (D056)
             "merge_output_format": ext if not is_audio else None,
             "writethumbnail"     : True,
             "embedthumbnail"     : True,

@@ -3,6 +3,8 @@
 # UI가 멈추지 않도록 QThread로 분리
 
 import math
+import shutil
+import tempfile
 import time
 from pathlib import Path
 
@@ -11,6 +13,8 @@ from PySide6.QtCore import QThread, Signal
 from core.downloader import Downloader
 from gaindb.api import DB_PER_STEP, apply_file_track_gain
 from utils.file_utils import (
+    ensure_dir,
+    move_unique,
     snapshot_child_pids,
     strip_ansi,
     terminate_pids,
@@ -331,6 +335,7 @@ class DownloadWorker(QThread):
         self.gain_db      = gain_db
         self._downloader = Downloader()
         self._output_path = ""  # 완료된 파일 경로 저장용
+        self._temp_dir = ""  # 이 항목의 작업 폴더 (D056)
 
         # ETA 폴백용 — 다운로드 시작 시각.
         # native HTTP 단일 progressive 다운로더는 yt-dlp 가 매 5초마다 ETA 를
@@ -363,9 +368,6 @@ class DownloadWorker(QThread):
         # 않기 위한 가드. (vcodec, acodec, ext, abr, tbr) 튜플.
         self._last_codec_info: tuple[str, str, str, float, float] | None = None
 
-        # 잔여물 추적
-        self._touched_files: set[str] = set()
-
         # 자식 PID 차분용 스냅샷
         self._pre_pids: set[int] = set()
 
@@ -382,6 +384,10 @@ class DownloadWorker(QThread):
         다운로드가 성공하면(취소·에러 아님), mp3 이고 음량 정규화가 켜진
         경우에 한해 _apply_gain_normalization() 을 호출한다. 게인 적용은
         "덤" 이라 실패해도 다운로드 자체는 성공으로 처리한다.
+
+        모든 작업은 시도마다 저장 폴더 안에 새로 만드는 임시 폴더에서 하고,
+        끝나면 저장 폴더로 옮긴다. 같은 이름의 기존 파일을 yt-dlp 가 원본으로
+        쓰거나 지우지 못하게 하기 위함이다 (D056).
         """
         try:
             from yt_dlp.utils import DownloadCancelled
@@ -397,17 +403,18 @@ class DownloadWorker(QThread):
         attempt = 0
         while True:
             try:
-                # 매 시도 새 세션. 재시도 경로에서는 직전 시도의 부분 파일도
-                # 정리하고 진행 상태를 리셋해 표시가 뒤엉키지 않게 한다.
+                # 매 시도 새 세션. 재시도 경로에서는 진행 상태를 리셋해
+                # 표시가 뒤엉키지 않게 한다.
                 if attempt > 0:
                     self._reset_for_retry()
 
+                self._temp_dir = tempfile.mkdtemp(prefix=".avd_", dir=ensure_dir(self.save_dir))
                 self._downloader = Downloader()
                 self._downloader.download(
                     url              = self.url,
                     format_id        = self.format_id,
                     ext              = self.ext,
-                    save_dir         = self.save_dir,
+                    save_dir         = self._temp_dir,
                     progress_hook    = self._on_progress,
                     postprocess_hook = self._on_postprocess,
                 )
@@ -433,7 +440,7 @@ class DownloadWorker(QThread):
                     # 직전 시도의 잔여물 정리 (새 세션이 깨끗이 시작하도록).
                     new_pids = snapshot_child_pids() - self._pre_pids
                     terminate_pids(new_pids)
-                    self._cleanup_residue()
+                    self._remove_temp_dir()
 
                     attempt += 1
                     self.retrying.emit(attempt, _MAX_AUTO_RETRY)
@@ -454,7 +461,7 @@ class DownloadWorker(QThread):
         if cancelled or errored:
             new_pids = snapshot_child_pids() - self._pre_pids
             terminate_pids(new_pids)
-            self._cleanup_residue()
+            self._remove_temp_dir()
 
         if cancelled:
             self.cancelled.emit()
@@ -463,7 +470,24 @@ class DownloadWorker(QThread):
         else:
             # 다운로드 성공 — mp3 이고 음량 정규화가 켜졌으면 게인 적용.
             self._apply_gain_normalization()
-            self.download_finished.emit(self._output_path)
+            self._move_to_save_dir()
+
+    def _move_to_save_dir(self):
+        """
+        완성된 파일을 저장 폴더로 옮기고 완료를 알린다.
+
+        옮기지 못하면 오류로 끝내되 받은 파일을 잃지 않도록 임시 폴더를 남기고
+        그 경로를 오류 문구로 알린다.
+        """
+        try:
+            if not Path(self._output_path).is_file():
+                raise FileNotFoundError("결과 파일을 찾지 못했습니다.")
+            self._output_path = move_unique(self._output_path, self.save_dir)
+        except OSError as e:
+            self.error.emit(f"저장 폴더로 옮기지 못했습니다: {e}\n작업 폴더: {self._temp_dir}")
+            return
+        self.download_finished.emit(self._output_path)
+        self._remove_temp_dir()
 
     def _apply_gain_normalization(self):
         """
@@ -586,8 +610,6 @@ class DownloadWorker(QThread):
         yt-dlp 진행률 콜백
         """
         status = d.get("status")
-
-        self._collect_paths_from_hook(d)
 
         if status == "downloading":
             if self._dl_start_ts == 0.0:
@@ -839,8 +861,6 @@ class DownloadWorker(QThread):
         status        = d.get("status")
         postprocessor = d.get("postprocessor", "")
 
-        self._collect_paths_from_hook(d)
-
         if postprocessor == "Merger" and status == "started":
             self.merging.emit()
             # 병합 대상 info 는 최종 컨테이너(merge_output_format)를 담고 있다 (D053)
@@ -862,48 +882,10 @@ class DownloadWorker(QThread):
                 )
                 self._maybe_emit_codec_info(info_dict)
 
-    # ── 잔여물 추적·정리 ──────────────────────────────────────
+    # ── 임시 폴더 정리 ────────────────────────────────────────
 
-    def _collect_paths_from_hook(self, d: dict):
-        """
-        yt-dlp 후크 dict 에서 파일 경로 후보를 모두 추출해 _touched_files 에 누적.
-        """
-        fn = d.get("filename")
-        if fn:
-            self._touched_files.add(fn)
-
-        info = d.get("info_dict") or {}
-        if not isinstance(info, dict):
-            return
-
-        for key in ("filepath", "filename", "_filename"):
-            v = info.get(key)
-            if isinstance(v, str) and v:
-                self._touched_files.add(v)
-
-        files_to_move = info.get("__files_to_move")
-        if isinstance(files_to_move, dict):
-            for src, dst in files_to_move.items():
-                if isinstance(src, str) and src:
-                    self._touched_files.add(src)
-                if isinstance(dst, str) and dst:
-                    self._touched_files.add(dst)
-
-    def _cleanup_residue(self):
-        """
-        취소·에러로 끝났을 때 누적된 파일들과 그 .part / .ytdl 형제를 삭제.
-        """
-        for path_str in list(self._touched_files):
-            base = Path(path_str)
-            self._safe_unlink(base)
-            for ext in (".part", ".ytdl", ".part.ytdl"):
-                self._safe_unlink(Path(str(base) + ext))
-
-    @staticmethod
-    def _safe_unlink(path: Path):
-        """파일이 있으면 지우고, 없거나 권한 실패면 조용히 통과."""
-        try:
-            if path.is_file():
-                path.unlink()
-        except OSError:
-            pass
+    def _remove_temp_dir(self):
+        """이 항목의 임시 폴더를 지운다. 자식 프로세스를 끝낸 뒤 불러야 한다 (파일 잠금)."""
+        if self._temp_dir:
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
+            self._temp_dir = ""
