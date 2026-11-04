@@ -314,6 +314,7 @@ class DownloadItemWidget(QWidget):
         # 폴더 열기 버튼 (완료 후 표시)
         self.btn_open = QPushButton("📂 열기")
         self.btn_open.setObjectName("btnOpen")
+        self.btn_open.setToolTip("저장 폴더에서 파일 보기")
         self.btn_open.setFixedWidth(60)
         self.btn_open.setVisible(False)
         self.btn_open.clicked.connect(
@@ -324,6 +325,7 @@ class DownloadItemWidget(QWidget):
         # 재생 버튼 — 받은 파일을 기본 앱으로 (완료 후 표시, D049)
         self.btn_play = QPushButton("▶ 재생")
         self.btn_play.setObjectName("btnPlay")
+        self.btn_play.setToolTip("기본 앱으로 재생")
         self.btn_play.setFixedWidth(60)
         self.btn_play.setVisible(False)
         self.btn_play.clicked.connect(
@@ -334,6 +336,7 @@ class DownloadItemWidget(QWidget):
         # 삭제 버튼
         self.btn_remove = QPushButton("✕")
         self.btn_remove.setObjectName("btnRemove")
+        self.btn_remove.setToolTip("목록에서 제거")
         self.btn_remove.setFixedWidth(60)
         self.btn_remove.clicked.connect(
             lambda: self.remove_requested.emit(self.item.item_id)
@@ -672,6 +675,7 @@ class DownloadItemWidget(QWidget):
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")
+            self.lbl_status.setStyleSheet("color: #9a9a9a;")
 
         elif status == DownloadStatus.DONE:
             # 완료 시 — 취소/재시도 자리 숨기고 "열기" 노출
@@ -686,6 +690,9 @@ class DownloadItemWidget(QWidget):
             #   적용됨   : "완료 · 음량 +4.5dB"  /  "…(클리핑)"
             #   변화없음 : 그냥 "완료" (0dB 는 표기 생략)
             self.lbl_status.setText(self._done_label_text())
+            self.lbl_status.setStyleSheet(
+                "color: #e0b050;" if self._gain_failed else "color: #57b884;"
+            )
 
         elif status == DownloadStatus.ERROR:
             # 에러 — 버튼을 "재시도" 라벨로 전환 (숨기지 않음)
@@ -703,6 +710,7 @@ class DownloadItemWidget(QWidget):
             self.btn_cancel.setText("재시도")
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
+            self.lbl_status.setStyleSheet("color: #9a9a9a;")
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")

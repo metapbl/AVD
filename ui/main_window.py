@@ -772,6 +772,8 @@ class MainWindow(QMainWindow):
 
         widget.update_status(DownloadStatus.DONE)
         self.status_bar.showMessage(f"완료: {item.title}")
+        # 다른 창을 보고 있어도 끝난 것을 알 수 있게 작업 표시줄을 깜빡인다.
+        QApplication.alert(self)
 
     def _on_download_error(self, item_id: str, err: str):
         """다운로드 오류 (매니저 시그널)"""
