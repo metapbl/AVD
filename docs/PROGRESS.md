@@ -1,11 +1,15 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열한 번째 계획 `docs/plans/2026-11-04-release.md` done. active 계획 없음
-- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제 (앱 동작 변경 없음). OPEN 미결 0
+- 단계: 7 계획 대기 · 열두 번째 계획 `docs/plans/2026-11-04-graphite-ux.md` done. active 계획 없음
+- 갱신: 2026-11-04 · v1.1.0 게시(태그 `e67600b`, Latest): 항목별 임시 폴더(D056), 같은 이름 번호 보관(D054), 일부 화질 오류 수정(D055), 닫기 확인·종료 정리(D057). 미릴리스: Graphite 테마(D059), Enter 기본 버튼(D060), 실패 안내, 상태 색·완료 알림·툴팁, README 배포 방침 문구 정정(D058), 미사용 `get_unique_path` 삭제. OPEN 미결 0
 
 ## 다음 할 일
-1. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. (사람 확인) `venv\Scripts\python main.py` 로 Graphite 실제 창 확인 — 마우스 오버, 체크박스 클릭, 화질 선택 창 Enter, 완료 시 작업 표시줄 깜빡임
+2. 2차 오류 처리 정리 — 오류 사유 보존, 건별 모달 제거, 단일 영상 정보 실패 항목 유지, 시작 시 버전 확인을 워커로. 진입점 `ui/main_window.py > _on_download_error`, `_on_info_error`, `_check_ytdlp_update`
+3. Qt 소스 안내 보강 — `THIRD_PARTY_LICENSES` 의 Qt 링크를 `official_releases/qt/6.12/6.12.0/single/` 로, 릴리스 노트에 소스 위치 추가 (UI 마무리 뒤, 사용자 요청 순서)
+4. (선택) 3차 편의 기능 — 상태 요약, 완료 항목만 지우기, 저장 폴더 표시, Ctrl+V·끌어다 놓기, 화질 목록 열 정렬, 플레이리스트 확인 표시
+5. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
