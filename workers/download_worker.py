@@ -2,6 +2,7 @@
 # 다운로드를 백그라운드 스레드에서 실행하는 파일
 # UI가 멈추지 않도록 QThread로 분리
 
+import gc
 import math
 import shutil
 import tempfile
@@ -887,5 +888,8 @@ class DownloadWorker(QThread):
     def _remove_temp_dir(self):
         """이 항목의 임시 폴더를 지운다. 자식 프로세스를 끝낸 뒤 불러야 한다 (파일 잠금)."""
         if self._temp_dir:
+            # yt-dlp 조각 다운로더는 취소 때 .part 를 닫지 않고 참조 순환에 남긴다.
+            # 먼저 수거해야 Windows 에서 지울 수 있다 (R§4 T25)
+            gc.collect()
             shutil.rmtree(self._temp_dir, ignore_errors=True)
             self._temp_dir = ""

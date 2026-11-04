@@ -49,6 +49,8 @@ def media(tmp_path_factory):
     _ffmpeg(*[a.format(d=1) for a in video], str(old / "av.mp4"))
     _ffmpeg("-f", "lavfi", "-i", "sine=d=4", "-c:a", "aac", str(srv / "a.m4a"))
     _ffmpeg("-f", "lavfi", "-i", "sine=d=1", "-c:a", "aac", str(old / "a.m4a"))
+    _ffmpeg("-f", "lavfi", "-i", "testsrc=d=20:s=160x90", "-c:v", "libx264", "-g", "25",
+            "-f", "hls", "-hls_time", "1", "-hls_playlist_type", "vod", str(srv / "hls.m3u8"))
 
     class Quiet(http.server.SimpleHTTPRequestHandler):
         def log_message(self, *a):
@@ -114,6 +116,18 @@ def test_same_name_gets_number_and_keeps_existing(media, tmp_path):
     assert Path(path) == tmp_path / "av (1).mp4"
     assert _duration(path) == pytest.approx(4, abs=0.2)
     assert _hash(tmp_path / "av.mp4") == before
+    _no_temp_left(tmp_path)
+
+
+@needs_ffmpeg
+def test_cancel_during_fragment_download_removes_temp(media, tmp_path):
+    # 조각 다운로더는 취소 때 .part 를 닫지 않아 GC 전까지 파일이 잠긴다 (R§4 T25)
+    base, _ = media
+    w = DownloadWorker(base + "hls.m3u8", "best", "mp4", str(tmp_path))
+    got = _signals(w)
+    w.progress.connect(lambda _pct: w.cancel())
+    w.run()
+    assert got["cancelled"]
     _no_temp_left(tmp_path)
 
 
