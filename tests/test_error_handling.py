@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 
 import pytest
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from models.download_item import DownloadItem, DownloadStatus
 from ui.download_item_widget import DownloadItemWidget
@@ -44,17 +44,6 @@ def test_download_error_keeps_reason_without_modal(no_modal):
     assert item.status == DownloadStatus.ERROR
     assert item.error_msg == PRIVATE
     assert w.lbl_status.text() == "오류 · 비공개 영상입니다"
-
-
-def test_error_detail_shows_original_message(monkeypatch):
-    shown = []
-    monkeypatch.setattr(QMessageBox, "exec", lambda self: shown.append((self.text(), self.detailedText())))
-    item = DownloadItem(url="u", title="t", error_msg=PRIVATE)
-    app = QApplication.instance() or QApplication([])  # noqa: F841 — 위젯에 필요
-    parent = QWidget()  # QMessageBox 의 부모는 진짜 위젯이어야 한다
-    parent.items = {item.item_id: item}
-    MainWindow._on_error_detail(parent, item.item_id)
-    assert shown == [("비공개 영상입니다", PRIVATE)]
 
 
 def test_detail_button_only_on_error():

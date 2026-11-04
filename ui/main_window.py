@@ -28,6 +28,7 @@ from ui import theme
 from ui.add_link_dialog import AddLinkDialog, extract_urls
 from ui.confirm_remove_dialog import ConfirmRemoveDialog
 from ui.download_item_widget import DownloadItemWidget
+from ui.error_detail_dialog import ErrorDetailDialog
 from ui.format_select_dialog import FormatSelectDialog
 from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
@@ -127,12 +128,12 @@ def _friendly_error(msg: str) -> tuple[str, str]:
         or "not a valid url" in low
     ):
         return (
-            "주소가 올바르지 않습니다",
-            "주소가 잘렸거나 지원하지 않는 사이트입니다. 주소를 다시 복사해 추가해 보세요.",
+            "주소를 확인해 주세요",
+            "주소 일부가 잘렸거나 지원하지 않는 사이트일 수 있습니다. 전체 주소를 다시 복사해 붙여넣어 보세요.",
         )
     return (
         "다운로드하지 못했습니다",
-        "일시적인 문제라면 재시도 버튼으로 다시 시도할 수 있습니다. 오류 원문은 아래에 있습니다.",
+        "일시적인 문제일 수 있습니다. 재시도 버튼으로 다시 시도해 보세요.",
     )
 
 
@@ -776,20 +777,7 @@ class MainWindow(QMainWindow):
         if item is None:
             return
         title, desc = _friendly_error(item.error_msg)
-        dialog = QMessageBox(self)
-        dialog.setWindowTitle(title)
-        dialog.setIcon(QMessageBox.Icon.Warning)
-        dialog.setText(title)
-        dialog.setInformativeText(desc)
-        dialog.setDetailedText(item.error_msg)
-        dialog.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        # "자세히" 를 눌러 연 창이므로 원문을 펼친 채 보여 준다.
-        for button in dialog.buttons():
-            if dialog.buttonRole(button) == QMessageBox.ButtonRole.ActionRole:
-                button.click()
-        dialog.exec()
+        ErrorDetailDialog(title, desc, item.error_msg, self).exec()
 
     # ── 플레이리스트 플로우 콜백 ─────────────────────
 

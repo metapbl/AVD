@@ -1,44 +1,78 @@
-# "자세히" 창 — 원문을 펼쳐 보여 주고, 버튼은 한국어다.
-from PySide6.QtWidgets import QApplication, QMessageBox, QTextEdit, QWidget
+# "자세히" 창 — 읽기 좋은 폭, 원문 표시, 잘린 주소 안내. 기본 버튼은 한국어다.
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QWidget
 
 import main
 from models.download_item import DownloadItem
+from ui import main_window as mw
+from ui.error_detail_dialog import ErrorDetailDialog
 from ui.main_window import MainWindow, _friendly_error
 
 TRUNCATED = "ERROR: [youtube:truncated_id] 1: Incomplete YouTube ID 1. URL looks truncated."
 
 
-def _open_detail(monkeypatch, err):
-    seen = {}
+def _app():
+    return QApplication.instance() or QApplication([])
 
-    def capture(self):
-        seen["informative"] = self.informativeText()
-        (edit,) = self.findChildren(QTextEdit)
-        seen["expanded"] = not edit.parentWidget().isHidden()  # 펼침은 부모 틀이 맡는다
 
-    monkeypatch.setattr(QMessageBox, "exec", capture)
-    app = QApplication.instance() or QApplication([])  # noqa: F841 — 위젯에 필요
-    item = DownloadItem(url="u", error_msg=err)
+def test_detail_shows_summary_and_original(monkeypatch):
+    app = _app()  # noqa: F841 — 위젯에 필요
+    seen = []
+
+    class Dialog(ErrorDetailDialog):
+        def exec(self):
+            seen.append((self.lbl_title.text(), self.lbl_description.text(), self.txt_original.toPlainText()))
+
+    monkeypatch.setattr(mw, "ErrorDetailDialog", Dialog)
+    item = DownloadItem(url="u", error_msg=TRUNCATED)
     parent = QWidget()
     parent.items = {item.item_id: item}
     MainWindow._on_error_detail(parent, item.item_id)
-    return seen
+    title, desc = _friendly_error(TRUNCATED)
+    assert seen == [(title, desc, TRUNCATED)]
 
 
-def test_detail_opens_expanded(monkeypatch):
-    assert _open_detail(monkeypatch, TRUNCATED)["expanded"]
+def test_dialog_is_wide_enough_to_read():
+    app = _app()  # noqa: F841 — 위젯에 필요
+    assert ErrorDetailDialog("제목", "설명", "원문").width() >= 500
 
 
-def test_guidance_does_not_tell_user_to_press_detail_again(monkeypatch):
-    assert "눌러" not in _open_detail(monkeypatch, "ERROR: 알 수 없음")["informative"]
+def test_original_is_plain_and_read_only():
+    app = _app()  # noqa: F841 — 위젯에 필요
+    html = "<b>굵게</b>"
+    dlg = ErrorDetailDialog("제목", "설명", html)
+    assert dlg.txt_original.isReadOnly()
+    assert dlg.txt_original.toPlainText() == html
 
 
-def test_truncated_url_has_own_title():
-    assert _friendly_error(TRUNCATED)[0] == "주소가 올바르지 않습니다"
+def test_site_text_is_not_used_for_summary_labels():
+    # 요약·설명은 앱이 정한 문구만 쓴다. 사이트 문자열은 원문 칸에만 들어간다.
+    assert "<b>" not in _friendly_error("<b>Incomplete YouTube ID</b> looks truncated")[1]
+
+
+def test_enter_closes_dialog():
+    app = _app()  # noqa: F841 — 위젯에 필요
+    dlg = ErrorDetailDialog("제목", "설명", "원문")
+    dlg.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
+    dlg.show()
+    QTest.keyClick(dlg, Qt.Key.Key_Return)
+    assert dlg.result() == QDialog.DialogCode.Accepted
+    assert not dlg.isVisible()
+
+
+def test_truncated_url_guidance_reads_naturally():
+    title, desc = _friendly_error(TRUNCATED)
+    assert title == "주소를 확인해 주세요"
+    assert "전체 주소" in desc
+
+
+def test_guidance_does_not_tell_user_to_press_detail_again():
+    assert "눌러" not in _friendly_error("ERROR: 알 수 없음")[1]
 
 
 def test_standard_buttons_are_korean():
-    app = QApplication.instance() or QApplication([])
+    app = _app()
     translator = main.install_korean_translator(app)
     try:
         box = QMessageBox()
