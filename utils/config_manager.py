@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QStandardPaths
+
 # 설정 파일 저장 위치 (앱 폴더 안에 config.json). exe 배포본은 exe 옆 (D039)
 CONFIG_PATH = (
     Path(sys.executable).parent if getattr(sys, "frozen", False)
@@ -13,7 +15,8 @@ CONFIG_PATH = (
 
 # 기본 설정값
 DEFAULT_CONFIG = {
-    "save_path"         : str(Path.home() / "Downloads"),  # 기본 저장 경로
+    # 기본 저장 경로: Windows 가 정한 다운로드 폴더 (사용자가 옮겼으면 옮긴 위치)
+    "save_path"         : str(Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation))),
     "max_concurrent"    : 2,       # 동시 다운로드 최대 개수
     "default_format"    : "bestvideo+bestaudio/best",  # 기본 화질
     "default_ext"       : "mp4",   # 기본 확장자 (UI 노출 안 함, 잔존 키)
