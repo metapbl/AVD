@@ -1,7 +1,7 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열여섯 번째 계획 `docs/plans/2026-11-04-release-1.2.0.md` done. active 계획 없음
+- 단계: 7 계획 대기 · 열일곱 번째 계획 `docs/plans/2026-11-09-release-1.2.1.md` active
 - 갱신: 2026-11-05 · v1.2.0 게시(태그 `c4e22b9`, Latest): 다크·라이트 테마와 전환(D059, D065), 오류를 항목에 남기는 처리(D061, D062), Enter 기본 버튼(D060), 링크 추가 확대(D063), Qt 소스 안내(D064). 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
