@@ -8,5 +8,5 @@ version bump only needs to change __version__ here (pyproject.toml is build
 metadata and is updated separately).
 """
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 PROGNAME = "Gain dB"

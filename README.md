@@ -130,7 +130,7 @@ AV_Downloader/
 이 프로젝트는 **폴더 경계 이중 라이선스**입니다.
 
 - **AVD 본체** — MIT License. 전문은 [LICENSE](LICENSE), 저작권·서드파티 고지는 [NOTICE](NOTICE) 를 참조하세요.
-- **번들 서브패키지 `gaindb/`** — **GNU LGPL v2.1 or later**. mp3gain(LGPL-2.1-or-later) C 소스에서 개작·파생된 부분을 포함하므로 원본과 같은 조건으로 배포합니다. 전문은 [`gaindb/LICENSE`](gaindb/LICENSE), mp3gain 원저작자 고지와 변경 내역은 [`gaindb/NOTICE`](gaindb/NOTICE), 의존성 고지는 [`gaindb/THIRD_PARTY_LICENSES`](gaindb/THIRD_PARTY_LICENSES) 에 있습니다. 상류 저장소는 <https://github.com/metapbl/GainDB> (번들 버전 0.5.1).
+- **번들 서브패키지 `gaindb/`** — **GNU LGPL v2.1 or later**. mp3gain(LGPL-2.1-or-later) C 소스에서 개작·파생된 부분을 포함하므로 원본과 같은 조건으로 배포합니다. 전문은 [`gaindb/LICENSE`](gaindb/LICENSE), mp3gain 원저작자 고지와 변경 내역은 [`gaindb/NOTICE`](gaindb/NOTICE), 의존성 고지는 [`gaindb/THIRD_PARTY_LICENSES`](gaindb/THIRD_PARTY_LICENSES) 에 있습니다. 상류 저장소는 <https://github.com/metapbl/GainDB> (번들 버전 0.6.0).
 
 AVD 본체는 `gaindb.api` 의 공개 함수만 호출하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"에 해당하며, 본체의 MIT 라이선싱은 영향을 받지 않습니다. 이는 PySide6(LGPLv3)를 동적 링크로 사용하는 구조와 동일합니다. PySide6·Qt 의 소스 위치는 [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) 의 PySide6 절에 있습니다.
 

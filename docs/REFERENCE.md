@@ -26,7 +26,7 @@
 - ffmpeg/ffprobe: 번들하지 않음, PATH 필수. 병합·변환·메타·썸네일 임베드
 - PySide6 6.12.0 (LGPLv3, 동적 링크), `requires_python <3.16,>=3.10` (PyPI, Q030)
 - numpy 2.5.x·scipy 1.18.x: `requires_python >=3.12` → AVD 하한 3.12 (D028)
-- gaindb 0.5.1 (LGPL-2.1-or-later, 상류 https://github.com/metapbl/GainDB): 배포 시 평문 `.py`·소스 첨부 의무 (D011)
+- gaindb 0.6.0 (LGPL-2.1-or-later, 상류 https://github.com/metapbl/GainDB): 배포 시 평문 `.py`·소스 첨부 의무 (D011)
 
 ## R§3 설계 근거
 <!-- 내용은 docs/discovery/DECISIONS.md에 있다. 여기는 색인만. -->

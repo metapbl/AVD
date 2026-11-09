@@ -42,7 +42,10 @@ ffmpeg 의 -ac 2 up-mix 는 모노를 스테레오로 펼치며 각 채널을 1/
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Callable
 
@@ -52,6 +55,19 @@ import numpy as np
 # (--windowed 로 우리 앱엔 콘솔이 없지만, 자식 프로세스는 자기 콘솔을 띄운다.)
 # 다른 OS(macOS/Linux)에서는 해당 플래그가 없으므로 0(영향 없음).
 _NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+# PATH 에 없을 때 볼 OS별 ffmpeg 설치 위치(순서대로). Finder 로 띄운 macOS 앱은
+# 셸 PATH 를 물려받지 않아 Homebrew 경로가 빠지므로 필요하다. Linux 는 PATH 만.
+if sys.platform == "win32":
+    _CANDIDATE_DIRS: tuple[str, ...] = (
+        os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\WinGet\Links"),
+        r"C:\ffmpeg\bin",
+        os.path.expandvars(r"%ProgramFiles%\ffmpeg\bin"),
+    )
+elif sys.platform == "darwin":
+    _CANDIDATE_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")
+else:
+    _CANDIDATE_DIRS = ()
 
 # ReplayGain 사양에서 지원하는 샘플레이트(Hz). 이 목록 밖이면 분석 불가.
 SUPPORTED_SAMPLE_RATES = frozenset(
@@ -81,6 +97,25 @@ class DecodeCancelled(DecodeError):
     """
 
 
+def find_ffmpeg() -> tuple[str, str]:
+    """ffmpeg·ffprobe 경로 (ffmpeg, ffprobe) 를 찾는다. 못 찾으면 DecodeError.
+
+    PATH 를 먼저 보고, 없으면 _CANDIDATE_DIRS 를 순서대로 본다. 두 프로그램을
+    같은 출처(PATH, 또는 같은 폴더)에서 모두 찾았을 때만 쓴다(섞지 않음).
+    """
+    for source in (os.environ.get("PATH", ""), *_CANDIDATE_DIRS):
+        if not source:  # 빈 문자열은 현재 폴더로 해석되므로 건너뛴다.
+            continue
+        ffmpeg = shutil.which("ffmpeg", path=source)
+        ffprobe = shutil.which("ffprobe", path=source)
+        if ffmpeg and ffprobe:
+            return ffmpeg, ffprobe
+    raise DecodeError(
+        "ffmpeg/ffprobe not found. Install ffmpeg (including ffprobe). "
+        "Searched: " + ", ".join(("PATH", *_CANDIDATE_DIRS))
+    )
+
+
 def _probe_stream_info(path: Path) -> tuple[int, int, float]:
     """ffprobe 로 첫 오디오 스트림의 (샘플레이트 Hz, 채널 수, duration 초)를 조회.
 
@@ -88,7 +123,7 @@ def _probe_stream_info(path: Path) -> tuple[int, int, float]:
     구하지 못하면 0.0 을 돌려준다(진행률은 무한 진행처럼 처리됨).
     """
     cmd = [
-        "ffprobe",
+        find_ffmpeg()[1],
         "-v", "error",
         "-select_streams", "a:0",
         "-show_entries", "stream=sample_rate,channels,duration:format=duration",
@@ -98,6 +133,7 @@ def _probe_stream_info(path: Path) -> tuple[int, int, float]:
     try:
         proc = subprocess.run(
             cmd, capture_output=True, check=True,
+            stdin=subprocess.DEVNULL,  # 사용자 stdin(클리핑 y/n 응답)을 가로채지 않게
             creationflags=_NO_WINDOW,
         )
     except FileNotFoundError as exc:
@@ -140,7 +176,7 @@ def _spawn_ffmpeg(path: Path, out_channels: int) -> subprocess.Popen:
     ffmpeg 부재 시 DecodeError 로 변환한다.
     """
     cmd = [
-        "ffmpeg",
+        find_ffmpeg()[0],
         "-v", "error",
         "-i", str(path),
         "-f", "f32le",
@@ -149,8 +185,10 @@ def _spawn_ffmpeg(path: Path, out_channels: int) -> subprocess.Popen:
         "-",
     ]
     try:
+        # Linux 등의 ffmpeg 는 키 입력용으로 stdin 을 읽어 클리핑 y/n 응답을 삼킨다.
         return subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            cmd, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             creationflags=_NO_WINDOW,
         )
     except FileNotFoundError as exc:
