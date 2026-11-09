@@ -84,8 +84,8 @@ class UpdateProgressDialog(QDialog):
         self.bar = QProgressBar(self)
         self.bar.setRange(0, 100)
         self.bar.setValue(0)
-        self.bar.setTextVisible(True)
-        self.bar.setFormat("%p%")
+        # 테마가 진행률 막대 글자를 숨긴다(막대 두께 6px). 진행 내용은 아래 상태 라벨이 보여 준다.
+        self.bar.setTextVisible(False)
         layout.addWidget(self.bar)
 
         self.lbl_status = QLabel("준비 중…")

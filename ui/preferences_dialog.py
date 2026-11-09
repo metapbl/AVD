@@ -541,6 +541,8 @@ class PreferencesDialog(QDialog):
                 height: 6px;
                 border-radius: 3px;
             }
+            /* 공통 스타일의 강조색 채움을 끈다 — 위험 구간은 핸들 색과 위 띠가 알려 준다 */
+            QSlider#concurrentSlider::sub-page:horizontal { background: transparent; }
             QSlider#concurrentSlider::handle:horizontal {
                 background: @success2;
                 width: 16px;

@@ -25,14 +25,14 @@ def app():
 
 
 def test_palettes_have_same_names():
-    assert theme.DARK.keys() == theme.LIGHT.keys()
+    assert theme.TOKENS["dark"].keys() == theme.TOKENS["light"].keys()
 
 
 @pytest.mark.parametrize("icon", _ICONS, ids=lambda p: p.name)
 def test_indicator_icons_load_and_are_bundled(icon):
     assert not QImage(str(icon)).isNull()
     spec = (_REPO / "AVD.spec").read_text(encoding="utf-8")
-    assert f'("assets/icons/{icon.name}", "assets/icons")' in spec
+    assert '("assets/icons", "assets/icons")' in spec
 
 
 @pytest.mark.parametrize("mode, scheme, name", [
@@ -71,8 +71,8 @@ def test_switch_changes_palette_and_notifies(app):
     got = []
     theme.notifier.changed.connect(lambda: got.append(True))
     theme.apply_theme(app, "light")
-    assert theme.color("accent") == theme.LIGHT["accent"]
-    assert app.palette().color(app.palette().ColorRole.Window).name() == theme.LIGHT["surface"]
+    assert theme.color("accent") == theme.TOKENS["light"]["accent"]
+    assert app.palette().color(app.palette().ColorRole.Window).name() == theme.TOKENS["light"]["surface"]
     assert "check_light.svg" in app.styleSheet()
     assert got == [True]
     theme.apply_theme(app, "light")  # 같은 테마면 다시 칠하지 않는다
@@ -83,11 +83,11 @@ def test_item_recolors_status_on_switch(app):
     theme.apply_theme(app, "dark")
     w = DownloadItemWidget(DownloadItem(url="u", title="t"))
     w.update_status(DownloadStatus.DONE)
-    assert theme.DARK["success2"] in w.lbl_status.styleSheet()
+    assert theme.TOKENS["dark"]["success2"] in w.lbl_status.styleSheet()
     theme.apply_theme(app, "light")
     w.refresh_theme()
-    assert theme.LIGHT["success2"] in w.lbl_status.styleSheet()
-    assert theme.LIGHT["surface"] in w.styleSheet()
+    assert theme.TOKENS["light"]["success2"] in w.lbl_status.styleSheet()
+    assert theme.TOKENS["light"]["surface"] in w.styleSheet()
 
 
 class _Config:
