@@ -1,7 +1,7 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열일곱 번째 계획 `docs/plans/2026-11-09-release-1.2.1.md` done
+- 단계: 7 계획 대기 · 열여덟 번째 계획 `docs/plans/2026-11-10-release-1.2.2.md` active
 - 갱신: 2026-11-10 · v1.2.1 게시(태그 `72c7499`, Latest): 테마 템플릿 1.2.0(D065), GaindB 0.6.0. 미릴리스 변경: 기본 저장 경로를 Windows 다운로드 폴더로(`c63cab2`), 벤더링 GaindB 1.0.0(코어 무변경). OPEN 미결 0
 
 ## 다음 할 일
