@@ -24,7 +24,7 @@ distribution are in THIRD_PARTY_LICENSES.
   or later; gaindb/ is therefore distributed under the same LGPL terms.
   Copyright 2026 META PUBLIC. Vendored without modification from the
   upstream project at https://github.com/metapbl/GainDB (bundled version
-  0.6.0). AVD itself only calls the public functions of gaindb.api and is
+  1.0.0). AVD itself only calls the public functions of gaindb.api and is
   a "work that uses the Library" in the sense of LGPL-2.1 section 5, so
   AVD's own MIT licensing is unaffected. The full LGPL-2.1 text is
   in gaindb/LICENSE; see gaindb/NOTICE for the mp3gain attribution and the
