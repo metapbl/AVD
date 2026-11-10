@@ -25,6 +25,7 @@
 
 ## 2026-11-10
 
+- **`chore(release)`**: v1.2.2 — 기본 저장 경로를 Windows 다운로드 폴더로, GaindB 1.0.0 동기화.
 - **`chore(gaindb)`**: 벤더링본을 GaindB 1.0.0 으로 갱신 — 코어 코드는 0.6.0 과 같고 버전 번호와 `THIRD_PARTY_LICENSES`(상류 GUI 테마 고지 추가)만 바뀐다.
 
 ## 2026-11-09
