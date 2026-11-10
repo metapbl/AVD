@@ -1,6 +1,6 @@
 # 보안 정책 — AV_Downloader (AVD)
 
-상태: approved (2026-10-29) | 수준: 기본 | 갱신: 2026-10-29
+상태: approved (2026-10-29) | 수준: 기본 | 갱신: 2026-11-11
 <!-- PRD와 함께 승인한다. 바꾸려면 PRD 변경 절차(discover.md §7)를 따른다. -->
 <!-- 작성 기준은 metarche references/security.md. 해당 없는 칸은 지운다. 항목 끝에 출처 [U]·[X]·[AI]와 근거 D###. -->
 
@@ -20,6 +20,7 @@
 | 썸네일 받기 (`workers/thumbnail_worker.py`) | 사용자 PC | 바깥 연결 | 사이트가 준 이미지 URL·bytes | 시간 제한 요청, bytes 만 넘기고 GUI 스레드에서 Qt 가 해석 (D013) [X] |
 | ffmpeg/ffprobe·Node.js | 사용자 PC (PATH, 별도 설치) | - | yt-dlp 가 넘기는 인자 | 인자 배열로 실행 (yt-dlp) [X]. Node.js 는 YouTube 의 JS 챌린지를 yt-dlp EJS 로 실행 [X] R§2 |
 | yt-dlp 업데이트 | PyPI (`pypi.org`), GitHub API(버전 확인) | 바깥 연결 | wheel 파일, 버전 JSON | TLS + PyPI JSON 의 sha256 대조 뒤 교체, 실패하면 옛 폴더 복원 (D038, D047) [X][U]. 소스 실행은 `pip install -U yt-dlp` [X] |
+| curl_cffi (번들, TLS 위장) | 사용자 PC | 바깥 연결 | 사이트 응답 (yt-dlp 경유) | yt-dlp 가 Vimeo 등 요청에 브라우저 TLS 지문으로 접속. 인증서 검증은 끄지 않는다. 런타임 의존성 `==` 고정 (D069, D070) [U] |
 | GitHub Release (배포) | github.com/metapbl/AVD | 공개 | - | 태그와 같은 커밋의 소스 zip 첨부 (D040) [X] |
 
 ## 3. 데이터 분류

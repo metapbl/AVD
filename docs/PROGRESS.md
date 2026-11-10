@@ -5,13 +5,16 @@
 - 갱신: 2026-11-11 · v1.2.4 게시(태그 `904914e`, Latest): 버튼 모양 통일(보조 윤곽형·확인 `role="primary"`), 직접 쓴 색 0건, 테마 1.4.3(클릭 포커스 고리 없음·포커스 버튼 Enter), 목록 Tab 순서 위→아래. 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. (후보) Vimeo `curl_cffi` — 검토 끝(2026-11-11, 아래 미해결). 들일지 `/metarche discover` 로 PRD 반영 결정. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
-- (다음 계획 후보) Vimeo: 후보 4개가 DRM·로그인·TLS 지문 차단 — 위장 의존성 `curl_cffi` 추가 검토
+- (다음 계획 후보) Vimeo `curl_cffi` 검토 결과 (2026-11-11, yt-dlp 2026.10.26 · curl_cffi 0.17.0, 표본 `vimeo.com/1084537`)
+  - `vimeo.com/ID` 는 curl_cffi 가 있어도 "로그인 필요" — 추출기의 비로그인 클라이언트가 없음(`web` 은 로그인 필수, `android` 는 캐시 토큰 전용)
+  - `player.vimeo.com/video/ID` 는 curl_cffi 있으면 성공(형식 13개, 미디어 바이트 수신), 없으면 401 → 쓸모를 내려면 의존성 + 주소 바꿔 쓰기 둘 다 필요
+  - 라이선스 MIT, 크기 약 5.5 MB(`curl_cffi.libs` dll 4 MB), PyInstaller 6.22.3 onedir 은 yt-dlp 훅이 자동 수집해 빌드·실행 성공. yt-dlp 허용 범위 `>=0.10,<0.18`(벗어나면 위장만 꺼짐). macOS 미확인
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
 - (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
