@@ -50,7 +50,7 @@ _UNKNOWN_TOKENS = frozenset({
 # (=Downloader 를 새로 만들어 extract_info 재실행) 으로 다시 시작하면 새
 # 토큰을 받아 성공한다 — "재시도 버튼을 누르면 바로 성공" 의 정체.
 # 따라서 우리의 재시도는 yt-dlp retries 아래가 아니라 그 위, 세션 전체를
-# 다시 도는 계층이다. (LESSONS: YouTube 토큰 만료 403 — ADR-004 배경)
+# 다시 도는 계층이다. (REFERENCE T3: YouTube 토큰 만료 403)
 _MAX_AUTO_RETRY  = 3               # 최초 시도 제외, 최대 자동 재시도 횟수
 _BACKOFF_SCHEDULE = [2, 5, 10]     # 각 재시도 전 대기 (초). 지수 백오프.
 _CANCEL_POLL_SEC = 0.1             # 백오프 대기 중 취소 폴링 간격
@@ -308,7 +308,7 @@ class DownloadWorker(QThread):
                                신호) 와 이름이 겹치지 않도록 download_finished
                                로 둔다. 내장 finished 는 매니저가 스레드 수명
                                관리(객체 소멸·dict 정리) 에 쓰므로 가리면 안 된다.
-                               (LESSONS: QThread 상속 워커는 started/finished
+                               (REFERENCE T2: QThread 상속 워커는 started/finished
                                이름을 자체 시그널로 쓰지 말 것.)
         error                : 오류 발생 - 에러 메시지 전달
         cancelled            : 사용자 취소 알림
@@ -520,7 +520,7 @@ class DownloadWorker(QThread):
         목표→89 기준 오프셋 변환은 api 내부가 처리하므로 워커는 target_db(=
         사용자 목표 음량)만 넘긴다.
 
-        방침(ADR-008): 클리핑이 예상돼도 목표 dB 를 그대로 강제 적용하고,
+        방침(D009): 클리핑이 예상돼도 목표 dB 를 그대로 강제 적용하고,
         클리핑 여부만 완료 라벨에 표시한다(자동 클립 방지 -k 안 함).
 
         완료 알림: normalize_done(적용 dB, 클리핑 여부) 를 emit 한다. 적용 dB 는

@@ -4,7 +4,7 @@
 
 각 항목 헤더 끝의 7자리 해시는 GitHub 저장소 `metapbl/AVD` 의 해당 커밋을 가리킵니다. 검증 절차·코드 진단 같은 상세는 git 커밋 메시지에 위임합니다.
 
-로드맵·결정·함정은 [`docs/PROGRESS.md`](./docs/PROGRESS.md)·[`docs/discovery/DECISIONS.md`](./docs/discovery/DECISIONS.md)·[`docs/REFERENCE.md`](./docs/REFERENCE.md) 참고 (2026-10 이전은 `docs/legacy/`).
+로드맵·결정·함정은 [`docs/PROGRESS.md`](./docs/PROGRESS.md)·[`docs/discovery/DECISIONS.md`](./docs/discovery/DECISIONS.md)·[`docs/REFERENCE.md`](./docs/REFERENCE.md) 참고 (2026-10 이전 문서는 git 이력의 `docs/legacy/` — 삭제 직전 커밋 `75e69ca`).
 
 ---
 
@@ -25,6 +25,7 @@
 
 ## 2026-11-10
 
+- **`docs`**: `docs/legacy/` 삭제 — 코드 주석·REFERENCE 의 옛 ADR·LESSONS 참조를 D·T 번호로 바꾸고, 보류 중이던 ADR-002·005 내용은 OPEN H01·H02 로 옮김. 원문은 `75e69ca` 이전 이력에. **(D066)**
 - **`fix(ui)`**: 정보 가져오는 중 "취소" 버튼이 반응하지 않던 문제 — 확인 뒤 항목을 취소됨으로 두고 늦게 온 정보는 버린다. 재시도는 정보 추출부터 다시.
 - **`chore(release)`**: v1.2.2 — 기본 저장 경로를 Windows 다운로드 폴더로, GaindB 1.0.0 동기화.
 - **`chore(gaindb)`**: 벤더링본을 GaindB 1.0.0 으로 갱신 — 코어 코드는 0.6.0 과 같고 버전 번호와 `THIRD_PARTY_LICENSES`(상류 GUI 테마 고지 추가)만 바뀐다.

@@ -1,6 +1,6 @@
 # controllers/playlist_flow.py
 # 플레이리스트 라이프사이클(probe → 선택 다이얼로그 → 항목 펼침)을
-# 단일 객체가 소유하는 상태머신. ADR-003 의 매니저 분리 철학과 같은 결로,
+# 단일 객체가 소유하는 상태머신. D005 의 매니저 분리 철학과 같은 결로,
 # MainWindow 가 플레이리스트 흐름의 시그널 라우팅을 직접 떠안지 않게 한다.
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
@@ -38,7 +38,7 @@ class PlaylistFlow(QObject):
         "음원만" 선택 시 별도 비트레이트·컨테이너를 만들지 않고, 단일 항목
         경로가 쓰는 것과 동일한 format_id="bestaudio/best" + ext="mp3" 만
         박는다. 실제 음질은 core/downloader.py 의 후처리(MP3_BITRATE_KBPS)
-        단일 출처가 결정한다. ADR-005 가 음원 정책을 바꾸면 플레이리스트는
+        단일 출처가 결정한다. OPEN H02 가 음원 정책을 바꾸면 플레이리스트는
         코드 변경 없이 자동으로 따라온다.
     """
 

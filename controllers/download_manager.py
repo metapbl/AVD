@@ -241,7 +241,7 @@ class DownloadManager(QObject):
             widget.update_download_stage, Qt.ConnectionType.QueuedConnection
         )
         # 병합·정규화 시작: 위젯 상태 전이(직결) + 매니저 슬롯 회수(별도 슬롯).
-        # ADR-003 정합 — 위젯 직결은 유지하고 매니저는 라이프사이클(_dispatch_next)만.
+        # D005 정합 — 위젯 직결은 유지하고 매니저는 라이프사이클(_dispatch_next)만.
         worker.merging.connect(
             lambda: widget.update_status(DownloadStatus.MERGING)
         )

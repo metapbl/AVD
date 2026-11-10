@@ -105,7 +105,7 @@ AV_Downloader/
 └── docs/                         # PRD·진행 상황·참고 문서·계획
 ```
 
-다운로드 큐와 동시 실행 디스패치는 `controllers/download_manager.py`(`DownloadManager`, `QObject` 상속)가 담당하며, `MainWindow`는 UI 이벤트와 표시만 책임집니다. 자세한 배경은 [`docs/legacy/ADR.md`의 ADR-003](docs/legacy/ADR.md) 참조.
+다운로드 큐와 동시 실행 디스패치는 `controllers/download_manager.py`(`DownloadManager`, `QObject` 상속)가 담당하며, `MainWindow`는 UI 이벤트와 표시만 책임집니다. 결정은 [`docs/discovery/DECISIONS.md`의 D005](docs/discovery/DECISIONS.md) 참조.
 
 ## 사용된 주요 라이브러리
 
@@ -123,7 +123,6 @@ AV_Downloader/
 - [`docs/discovery/DECISIONS.md`](docs/discovery/DECISIONS.md) — 결정 기록 (버린 안 포함)
 - [`docs/RELEASE.md`](docs/RELEASE.md) — 릴리스(배포본 빌드·게시) 절차
 - [`CHANGELOG.md`](CHANGELOG.md) — 날짜별 변경 이력
-- [`docs/legacy/`](docs/legacy/) — 2026-10 이전 문서 (WORKLOG·ADR·LESSONS, 참고용)
 
 ## 라이선스
 

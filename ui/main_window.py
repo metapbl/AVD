@@ -682,7 +682,7 @@ class MainWindow(QMainWindow):
             # 슬롯 회수 + 객체 소멸을 QThread 내장 finished 한 곳에서 처리.
             # 썸네일 워커는 결과 emit 직후 run() 이 끝나므로, InfoWorker
             # 게이트처럼 슬롯 회수 시점과 객체 소멸 시점을 나눌 필요가 없다
-            # (LESSONS 의 GC 크래시 회피 원칙은 내장 finished 를 쓰는 것으로
+            # (REFERENCE T2 의 GC 크래시 회피 원칙은 내장 finished 를 쓰는 것으로
             # 이미 충족).
             worker.finished.connect(
                 lambda w=worker, iid=item_id: self._on_thumb_thread_finished(iid, w),
@@ -706,7 +706,7 @@ class MainWindow(QMainWindow):
         """
         썸네일 다운로드 실패 — 최대 THUMB_MAX_RETRY 회에 한해 지연 후 재큐잉.
         재시도 소진 시에는 라벨의 기본 이모지를 유지한 채 조용히 포기한다
-        (미리보기일 뿐이라 사용자에게 오류를 알리지 않는다 — ADR-001).
+        (미리보기일 뿐이라 사용자에게 오류를 알리지 않는다 — D004).
         """
         tried = self._thumb_retry.get(item_id, 0)
         if tried >= self.THUMB_MAX_RETRY:

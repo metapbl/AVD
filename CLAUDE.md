@@ -11,7 +11,6 @@ yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크·라이트 테마 G
 - `ui/` — 메인 창·위젯·다이얼로그 / `models/` — `DownloadItem`, `DownloadStatus`
 - `utils/` — 설정(`config.json`, 앱 폴더)·파일명·업데이터
 - `gaindb/` — 벤더링 서브패키지, **LGPL-2.1-or-later, 상류 무수정**
-- `docs/legacy/` — 이관 전 문서 (참고용, 고치지 않는다)
 
 ## 명령
 - 실행: `venv\Scripts\python main.py`

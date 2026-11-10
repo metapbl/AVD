@@ -141,7 +141,6 @@ class PreferencesDialog(QDialog):
         # 동시 다운로드 수 — 슬라이더 + 큰 숫자 + 그라데이션 컬러 바 + 라벨
         # 본 단계의 슬라이더는 placebo: 값은 config 에 저장되지만 실제 동시성
         # 제어는 후속 항목 "동시성 제어 구현 (큐 매니저)" 에서 처리한다.
-        # WORKLOG 단기 섹션 참조.
 
         # 상단 행: 라벨 + 현재 값 큰 숫자 (우측)
         top_row = QHBoxLayout()
@@ -257,7 +256,7 @@ class PreferencesDialog(QDialog):
         self.slider_gain.valueChanged.connect(self._on_gain_slider_changed)
         detail_layout.addWidget(self.slider_gain)
 
-        # 범위 안내 — 최소/기본/최대 텍스트(WORKLOG 방침: 값 텍스트 표기).
+        # 범위 안내 — 최소/기본/최대 텍스트(값 텍스트 표기).
         hint_row = QHBoxLayout()
         hint_row.setContentsMargins(0, 0, 0, 0)
         lbl_min = QLabel(f"{_GAIN_DB_MIN:.0f} 조용")
@@ -448,7 +447,7 @@ class PreferencesDialog(QDialog):
 
         주의: max_concurrent 는 본 단계에선 placebo — 값은 저장되지만
         실제 동시 다운로드 제어는 후속 "동시성 제어 구현 (큐 매니저)"
-        항목에서 도입된다. WORKLOG 단기 섹션 참조.
+        항목에서 도입된다.
         """
         new_settings = {
             "save_path"         : self.input_path.text(),

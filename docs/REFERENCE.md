@@ -51,21 +51,21 @@
 ## R§4 함정 대장
 | ID | 증상 | 원인 | 대처 | 근거 |
 |---|---|---|---|---|
-| T1 | 썸네일 QLabel 이 빈 화면, `isNull()` 은 False | 워커 스레드에서 QPixmap 생성 | 워커는 bytes 만 emit, GUI 스레드에서 변환 | ADR-001 |
-| T2 | "QThread: Destroyed while thread is still running" 크래시 | 커스텀 Signal `finished` 가 내장 시그널을 가려 run() 종료 전 GC | 결과 시그널은 `download_finished` 등으로 명명, 정리는 내장 `finished` 에 연결 | ADR-006 |
-| T3 | 같은 세션 재시도가 계속 403 | YouTube 토큰 만료는 `retries`(HTTP 재시도)로 안 풀림 | 새 `YoutubeDL` 세션으로 전체 재시작 | ADR-007 |
-| T4 | 404 영상을 헛재시도 | `Unable to download webpage: HTTP Error 404` 가 일시 패턴에 걸림 | 영구 4xx(400/401/404/410)를 일시 패턴보다 먼저 검사. 403·429 는 일시 | ADR-007 |
-| T5 | 사전 가공한 info dict 가 무시되거나 403 회귀 | `ydl.download` 가 `extract_info` 재실행 / `process_ie_result` 우회는 토큰 만료 | `pre_process` PostProcessor 로 가공 | ADR-004 |
+| T1 | 썸네일 QLabel 이 빈 화면, `isNull()` 은 False | 워커 스레드에서 QPixmap 생성 | 워커는 bytes 만 emit, GUI 스레드에서 변환 | D004 |
+| T2 | "QThread: Destroyed while thread is still running" 크래시 | 커스텀 Signal `finished` 가 내장 시그널을 가려 run() 종료 전 GC | 결과 시그널은 `download_finished` 등으로 명명, 정리는 내장 `finished` 에 연결 | D007 |
+| T3 | 같은 세션 재시도가 계속 403 | YouTube 토큰 만료는 `retries`(HTTP 재시도)로 안 풀림 | 새 `YoutubeDL` 세션으로 전체 재시작 | D008 |
+| T4 | 404 영상을 헛재시도 | `Unable to download webpage: HTTP Error 404` 가 일시 패턴에 걸림 | 영구 4xx(400/401/404/410)를 일시 패턴보다 먼저 검사. 403·429 는 일시 | D008 |
+| T5 | 사전 가공한 info dict 가 무시되거나 403 회귀 | `ydl.download` 가 `extract_info` 재실행 / `process_ie_result` 우회는 토큰 만료 | `pre_process` PostProcessor 로 가공 | D006 |
 | T6 | 미리보기 썸네일이 영영 빔 | `maxresdefault.jpg` 가 없는 영상에서 404 | 후보 리스트 순차 폴백, 최후 `hqdefault` | 2026-07-09 |
 | T7 | MP3 한글 태그가 `?뱀떊…` 로 깨짐 | `-write_id3v1 1` — ID3v1 은 인코딩 필드 없음, 한글 Windows 가 CP949 로 읽음 | ID3v1 기록 안 함 (v2.3 UTF-16 만). 단 yt-dlp 자체가 mp3 에 `-write_id3v1 1` 을 붙여 v1 은 남는다 — 탐색기는 v2 를 읽어 정상 (2026-10-28 확인) | 37855ee |
 | T8 | MP3 '주석'만 깨짐 | ffmpeg 가 comment 를 비표준 `TXXX:comment` 로 씀 | `meta_comment` 를 빈 문자열로 → 프레임 미생성 | 21ccde9 |
-| T9 | 한글이 자모로 분리됨 | 소스 사이트·OS 경계에서 NFD 유입 | info dict 진입점 NFC 통일. 판정은 파일 원본 바이트로 (콘솔·VS Code 는 결합해 보여 속는다) | ADR-004 |
-| T10 | m4a→mp3 에 엉뚱한 TXXX(major_brand 등) | ExtractAudio 의 기본 `-map_metadata 0` | `-map_metadata -1` 은 TIT2 까지 지움 → `meta_<key>` 주입으로 선별 | LESSONS |
+| T9 | 한글이 자모로 분리됨 | 소스 사이트·OS 경계에서 NFD 유입 | info dict 진입점 NFC 통일. 판정은 파일 원본 바이트로 (콘솔·VS Code 는 결합해 보여 속는다) | D006 |
+| T10 | m4a→mp3 에 엉뚱한 TXXX(major_brand 등) | ExtractAudio 의 기본 `-map_metadata 0` | `-map_metadata -1` 은 TIT2 까지 지움 → `meta_<key>` 주입으로 선별 | 2026-10 이전 |
 | T11 | 커밋 작성자가 도구 내장 주소로 바뀜 (25개 누적) | 전역 `user.email` 없음 → 도구가 자기 주소 사용 | 리포 로컬 작성자 고정 + push 전 `git log -1 --format="%an <%ae>"`. 리포 로컬 `user.name` 이 비면 전역 `METAPBL` 로 커밋된다 → 로컬 `user.name`·`user.email` 둘 다 고정 (2026-11-02 재고정) | fbbccbf |
-| T12 | git 이 requirements.txt 를 바이너리로 봄 | PowerShell `>` 가 UTF-16 LE BOM 으로 씀 | `Out-File -Encoding utf8` | LESSONS |
+| T12 | git 이 requirements.txt 를 바이너리로 봄 | PowerShell `>` 가 UTF-16 LE BOM 으로 씀 | `Out-File -Encoding utf8` | 2026-10 이전 |
 | T13 | 백업 브랜치까지 재작성됨, origin 사라짐 | `git filter-repo` 동작 | `git bundle create ..\repo.bundle --all` 로 리포 밖 백업 | fbbccbf |
 | T14 | 문서 속 커밋 해시가 유령 참조 | 히스토리 재작성 | `commit-map` 으로 일괄 치환 후 `git cat-file -t` 전수 확인 | fbbccbf |
-| T15 | HLS 에서 ETA 안 나옴 | `total_bytes`·`total_bytes_estimate` 모두 없음 | placeholder 감지 + 진행률×경과시간 추정 `~M:SS` | LESSONS |
+| T15 | HLS 에서 ETA 안 나옴 | `total_bytes`·`total_bytes_estimate` 모두 없음 | placeholder 감지 + 진행률×경과시간 추정 `~M:SS` | 2026-10 이전 |
 | T16 | 체크박스 ✓ 가 안 그려짐 | `QCheckBox::indicator` 직접 스타일링 | `setStyle("Fusion")` 먼저, indicator 스타일링 피함 | 2026-05-29 |
 | T17 | exe 에서 yt-dlp 업데이트하면 AVD.exe 가 하나 더 뜸 | 동결 빌드의 `sys.executable` 은 AVD.exe → `[sys.executable, "-m", "pip", …]` 가 앱 실행 | `sys.frozen` 이면 pip 대신 `install_ytdlp_wheel` (D038). `sys.executable` 로 하위 파이썬을 띄우는 코드는 frozen 분기 필수 | 2026-10-29 |
 | T18 | 안내한 exe 실행 명령이 경로 문자열만 출력하고 앱이 안 뜸 | PowerShell 은 따옴표로 감싼 경로를 문자열 식으로 본다 | 사용자 안내는 `& "경로\AVD.exe"` (호출 연산자) 또는 `Start-Process` | 2026-10-29 |
@@ -87,7 +87,7 @@
 - 동시 다운로드는 단일 프로세스 yt-dlp 특성상 1~3개가 안정 (기본 2)
 
 ## R§6 UI·작업 원칙 (D019)
-- 같은 낱말이 두 대상을 가리키면 대상부터 확정한다 ("썸네일" — ADR-001)
+- 같은 낱말이 두 대상을 가리키면 대상부터 확정한다 ("썸네일" — D004)
 - 진단 코드(print·임시 파일)는 가설 검증 후 즉시 제거, 커밋에 섞지 않는다
 - 가설은 한 번에 하나씩 검증한다
 - 확인 다이얼로그는 질문 하나 + 부가 옵션(체크박스). 두 결정을 Yes/No 하나로 묶지 않는다

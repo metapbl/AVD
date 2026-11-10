@@ -731,7 +731,7 @@ class DownloadItemWidget(QWidget):
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")
-            # 음량 정규화 결과를 완료 라벨에 병기한다(ADR-008).
+            # 음량 정규화 결과를 완료 라벨에 병기한다(D009).
             #   실패     : "완료 (음량 조정 실패)"
             #   적용됨   : "완료 · 음량 +4.5dB"  /  "…(클리핑)"
             #   변화없음 : 그냥 "완료" (0dB 는 표기 생략)
@@ -830,7 +830,7 @@ class DownloadItemWidget(QWidget):
         self.lbl_status.setToolTip(reason or "")
 
     def _done_label_text(self) -> str:
-        """완료 라벨 문자열. 음량 정규화 결과를 반영한다(ADR-008)."""
+        """완료 라벨 문자열. 음량 정규화 결과를 반영한다(D009)."""
         base = DownloadStatus.DONE.value
         if self._gain_failed:
             return f"{base} (음량 조정 실패)"

@@ -17,7 +17,7 @@ class InfoWorker(QThread):
                      ⚠ QThread 내장 finished(스레드 종료 신호) 와 겹치지
                      않도록 info_ready 로 둔다. 내장 finished 는 MainWindow 가
                      스레드 수명 관리(객체 소멸·dict 정리) 에 쓰므로 가리면
-                     안 된다. (LESSONS: QThread 상속 워커는 started/finished
+                     안 된다. (REFERENCE T2: QThread 상속 워커는 started/finished
                      이름을 자체 시그널로 쓰지 말 것.)
         error      : 실패 시 에러 메시지 문자열 전달
     """

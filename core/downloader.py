@@ -39,7 +39,7 @@ class _NFCNormalizePP(PostProcessor):
     comment 프레임 자체를 만들지 않아(실측 확인) URL 도, 깨질 텍스트도 남지
     않는다. URL 보관은 별도로 박히는 purl 태그가 담당하므로 정보 손실 없음.
 
-    ⚠ 과거엔 여기 description 을 넣었으나(ADR-004), FFmpeg 가 comment 를
+    ⚠ 과거엔 여기 description 을 넣었으나(REFERENCE T8), FFmpeg 가 comment 를
       비표준 TXXX:comment 프레임에 UTF-16 으로 쓰는 탓에 한글 Windows 의
       일부 플레이어·탐색기 '주석' 열에서 "?뱀떊怨쇱쓽…" mojibake 로 보였다.
       제목/아티스트(표준 TIT2/TPE1)는 멀쩡한데 주석만 깨진 원인이 이것.
