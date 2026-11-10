@@ -5,7 +5,7 @@
 - 갱신: 2026-11-10 · v1.2.2 게시(태그 `add9048`, Latest): 기본 저장 경로를 Windows 다운로드 폴더로, GaindB 1.0.0. 미릴리스 변경: 정보 가져오는 중 취소 수정(테스트 `tests/test_info_cancel.py`, 실기 미확인). OPEN 미결 0
 
 ## 다음 할 일
-1. (실기 확인) 긴 플레이리스트·느린 URL 로 정보 가져오는 중 "취소" → 취소됨·재시도 동작 눈 확인. 진입점 `ui/main_window.py > _cancel_info`
+1. (실기 확인) 느린 URL 로 정보 가져오는 중 항목 "취소" → 취소됨·재시도, 플레이리스트 확인 띠 "취소" → 띠가 닫히고 선택 창이 뜨지 않음. 진입점 `ui/main_window.py > _cancel_info`·`_on_playlist_cancel`
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결

@@ -284,6 +284,11 @@ class MainWindow(QMainWindow):
         bar.setTextVisible(False)
         layout.addWidget(bar, stretch=1)
 
+        btn_cancel = QPushButton("취소")
+        btn_cancel.setFixedSize(60, 26)
+        btn_cancel.clicked.connect(self._on_playlist_cancel)
+        layout.addWidget(btn_cancel)
+
         self.playlist_banner.setVisible(False)
         return self.playlist_banner
 
@@ -799,6 +804,12 @@ class MainWindow(QMainWindow):
     def _on_playlist_status(self, message: str):
         """PlaylistFlow 상태 메시지 → 상태바."""
         self.status_bar.showMessage(message)
+
+    def _on_playlist_cancel(self):
+        """플레이리스트 확인 띠의 '취소'. 잃을 작업이 없어 확인을 묻지 않는다."""
+        self.playlist_flow.cancel()
+        self.playlist_banner.setVisible(False)
+        self.status_bar.showMessage("플레이리스트 가져오기를 취소했습니다.")
 
     def _on_playlist_finished(self):
         """PlaylistFlow 종료 — 항목들은 이미 게이트에 올라갔다."""

@@ -60,6 +60,8 @@ class PlaylistFlow(QObject):
         self._thread: QThread | None = None
         self._worker: PlaylistProbeWorker | None = None
         self._busy: bool = False
+        # 취소한 probe 워커. run() 이 끝날 때까지 붙잡아 GC 크래시를 막는다 (R§4 T2).
+        self._cancelled: set = set()
 
     @property
     def is_busy(self) -> bool:
@@ -75,17 +77,26 @@ class PlaylistFlow(QObject):
         self.status.emit("플레이리스트 정보를 가져오는 중...")
 
         worker = PlaylistProbeWorker(url)
-        worker.probe_ready.connect(self._on_probe_done, Qt.ConnectionType.QueuedConnection)
-        worker.error.connect(self._on_probe_error, Qt.ConnectionType.QueuedConnection)
+        # 취소로 현재 워커가 아니게 된 워커의 늦은 결과는 버린다.
+        worker.probe_ready.connect(
+            lambda r, w=worker: self._worker is w and self._on_probe_done(r),
+            Qt.ConnectionType.QueuedConnection,
+        )
+        worker.error.connect(
+            lambda m, w=worker: self._worker is w and self._on_probe_error(m),
+            Qt.ConnectionType.QueuedConnection,
+        )
         # 정리는 run() 이 끝난 뒤 오는 내장 finished 에만 건다(원칙 2, R§4 T2).
+        worker.finished.connect(lambda w=worker: self._cancelled.discard(w))
         worker.finished.connect(worker.deleteLater)
         self._worker = worker
         worker.start()
 
     def cancel(self):
-        """진행 중 probe 워커를 종료 시도하고 플로우를 닫는다."""
+        """진행 중 probe 워커를 종료 시도하고 플로우를 닫는다. 늦게 온 결과는 버려진다."""
         w = self._worker
         if w is not None:
+            self._cancelled.add(w)
             try:
                 w.requestInterruption()
                 w.quit()
