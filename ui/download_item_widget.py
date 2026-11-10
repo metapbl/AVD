@@ -419,22 +419,12 @@ class DownloadItemWidget(QWidget):
                 font-size: 11px;
             }
             QPushButton#btnCancel:hover { background: @danger; }
-            QPushButton#btnOpen {
-                background: @accent;
-                color: @on_accent;
+            /* 열기·재생은 공통 윤곽형 — 항목마다 채운 색 버튼이 둘씩 붙으면 목록이 색으로 덮인다 */
+            QPushButton#btnOpen, QPushButton#btnPlay {
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnOpen:hover { background: @accent2; }
-            QPushButton#btnPlay {
-                background: @success;
-                color: @on_strong;
-                border-radius: 4px;
-                padding: 4px;
-                font-size: 11px;
-            }
-            QPushButton#btnPlay:hover { background: @success2; }
             QPushButton#btnDetail {
                 background: @btn;
                 color: @text2;
