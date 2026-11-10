@@ -1,12 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 열아홉 번째 계획 `docs/plans/2026-11-10-release-1.2.3.md` done
-- 갱신: 2026-11-10 · v1.2.3 게시(태그 `0ed6271`, Latest): 정보 가져오는 중 취소(항목·플레이리스트), 테마 1.4.0. `docs/legacy/` 삭제(D066). 미릴리스 변경 없음. OPEN 미결 0
+- 단계: 7 · 스무 번째 계획 `docs/plans/2026-11-10-release-1.2.4.md` active
+- 갱신: 2026-11-10 · v1.2.4 준비: 버튼 모양 통일(보조 윤곽형·확인 `role="primary"`), 직접 쓴 색 0건, 테마 1.4.2. OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) 툴바 "목록 비우기"·"설정" 버튼이 창 QSS 의 회색 채움 그대로라 테마 1.4.0 에서 꺼진 버튼처럼 보일 수 있음 — 공통 윤곽형으로 맞출지 결정. 진입점 `ui/main_window.py > QPushButton#btnClearList`·`#btnPrefs`
-2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. (후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
