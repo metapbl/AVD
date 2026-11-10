@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 스무 번째 계획 `docs/plans/2026-11-10-release-1.2.4.md` done
-- 갱신: 2026-11-11 · v1.2.4 게시(태그 `904914e`, Latest): 버튼 모양 통일(보조 윤곽형·확인 `role="primary"`), 직접 쓴 색 0건, 테마 1.4.3(클릭 포커스 고리 없음·포커스 버튼 Enter), 목록 Tab 순서 위→아래. 미릴리스 변경 없음. OPEN 미결 0
+- 단계: 8 구현 · 스물한 번째 계획 `docs/plans/2026-11-11-vimeo-public.md` active (F12 Vimeo 공개 영상)
+- 갱신: 2026-11-11 · 미릴리스: GaindB 1.1.0 동기화(`d6bc06c`), PRD 변경 승인 F12 (D067~D070). OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) Vimeo `curl_cffi` — 검토 끝(2026-11-11, 아래 미해결). 들일지 `/metarche discover` 로 PRD 반영 결정. 진입점 `core/info_fetcher.py > InfoFetcher`
+1. 계획 작업 1 — `requirements.txt` 에 curl-cffi·cffi·pycparser, `THIRD_PARTY_LICENSES` 절, venv 설치(실행 전 확인)
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
