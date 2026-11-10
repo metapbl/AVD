@@ -180,6 +180,8 @@ class MainWindow(QMainWindow):
         # max_concurrent 를 한도로 정보 추출을 흘려보낸다.
         self._info_pending : list[str] = []
         self._info_running : set[str]  = set()
+        # 사용자가 취소한 InfoWorker. run() 이 끝날 때까지 붙잡아 GC 크래시를 막는다.
+        self._info_cancelled : set[InfoWorker] = set()
 
         # ── ThumbnailWorker 동시성 게이트 ──
         # 플레이리스트 일괄 추가 시 InfoWorker 가 (max_concurrent 개씩)
@@ -466,11 +468,16 @@ class MainWindow(QMainWindow):
 
             worker = InfoWorker(item.url)
             # "작업 결과" 는 info_ready 로 받는다 (내장 finished 와 다른 이름).
+            # 취소·재시도로 현재 워커가 아니게 된 워커의 늦은 결과는 버린다.
             worker.info_ready.connect(
-                lambda info, iid=item_id: self._on_info_fetched(iid, info)
+                lambda info, w=worker, iid=item_id:
+                    self.info_workers.get(iid) is w and self._on_info_fetched(iid, info),
+                Qt.ConnectionType.QueuedConnection,
             )
             worker.error.connect(
-                lambda err, iid=item_id: self._on_info_error(iid, err)
+                lambda err, w=worker, iid=item_id:
+                    self.info_workers.get(iid) is w and self._on_info_error(iid, err),
+                Qt.ConnectionType.QueuedConnection,
             )
             # "객체 소멸·dict 정리" 는 QThread 내장 finished 에 건다 — run() 이
             # 진짜로 끝난 시점. 결과 핸들러 안에서 일찍 정리하면 run() 종료 전
@@ -504,6 +511,7 @@ class MainWindow(QMainWindow):
         current = self.info_workers.get(item_id)
         if current is worker:
             self.info_workers.pop(item_id, None)
+        self._info_cancelled.discard(worker)
         try:
             worker.deleteLater()
         except Exception:
@@ -856,8 +864,9 @@ class MainWindow(QMainWindow):
         self.download_manager.retry(item_id)
 
     def _on_cancel(self, item_id: str):
-        """항목 '취소' 버튼 클릭."""
-        if not self.download_manager.is_active(item_id):
+        """항목 '취소' 버튼 클릭. 정보 가져오는 중이면 정보 추출을 그만둔다."""
+        fetching = item_id in self._info_running or item_id in self._info_pending
+        if not fetching and not self.download_manager.is_active(item_id):
             return
 
         reply = QMessageBox.question(
@@ -870,7 +879,32 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        self.download_manager.cancel(item_id)
+        if fetching:
+            self._cancel_info(item_id)
+        else:
+            self.download_manager.cancel(item_id)
+
+    def _cancel_info(self, item_id: str):
+        """
+        정보 추출 취소. yt-dlp 추출은 중간에 끊을 수 없어 워커는 끝까지 돌게
+        두고, 현재 워커 자리에서 빼 결과를 버린다. 재시도는 정보 추출부터
+        하므로 플레이리스트 출신의 사양은 _on_info_error 처럼 보관한다.
+        """
+        if item_id in self._info_pending:
+            self._info_pending.remove(item_id)
+        worker = self.info_workers.pop(item_id, None)
+        if worker is not None:
+            self._info_cancelled.add(worker)
+
+        spec = self._predetermined.pop(item_id, None)
+        if spec is not None:
+            self._failed_specs[item_id] = spec
+
+        widget = self.widgets.get(item_id)
+        if widget:
+            widget.update_status(DownloadStatus.CANCELLED)
+        self._release_info_slot(item_id)
+        self.status_bar.showMessage("취소됨")
 
     # ── 매니저 시그널 핸들러 ─────────────────────────
 

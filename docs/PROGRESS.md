@@ -2,10 +2,10 @@
 
 ## 상태
 - 단계: 7 계획 대기 · 열여덟 번째 계획 `docs/plans/2026-11-10-release-1.2.2.md` done
-- 갱신: 2026-11-10 · v1.2.2 게시(태그 `add9048`, Latest): 기본 저장 경로를 Windows 다운로드 폴더로, GaindB 1.0.0. 미릴리스 변경 없음. OPEN 미결 0
+- 갱신: 2026-11-10 · v1.2.2 게시(태그 `add9048`, Latest): 기본 저장 경로를 Windows 다운로드 폴더로, GaindB 1.0.0. 미릴리스 변경: 정보 가져오는 중 취소 수정(테스트 `tests/test_info_cancel.py`, 실기 미확인). OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) 정보 가져오는 중 "취소" 버튼이 반응하지 않는 것으로 보임 — 재현부터. 진입점 `ui/main_window.py > _on_cancel`
+1. (실기 확인) 긴 플레이리스트·느린 URL 로 정보 가져오는 중 "취소" → 취소됨·재시도 동작 눈 확인. 진입점 `ui/main_window.py > _cancel_info`
 2. (그 뒤 후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
 
 ## 미해결
