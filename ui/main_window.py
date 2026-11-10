@@ -2,6 +2,7 @@
 # 메인 윈도우 - 앱의 핵심 화면
 
 import subprocess
+from itertools import pairwise
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer
@@ -443,6 +444,7 @@ class MainWindow(QMainWindow):
             self.list_layout.insertWidget(self.list_layout.count() - 1, widget)
         else:
             self.list_layout.insertWidget(0, widget)
+        self._refresh_tab_order()
 
         widget.update_status(DownloadStatus.FETCHING)
 
@@ -450,6 +452,17 @@ class MainWindow(QMainWindow):
             self._predetermined[item.item_id] = predetermined
 
         self._enqueue_info(item.item_id)
+
+    def _refresh_tab_order(self):
+        """Tab 순서를 목록의 화면 순서(위→아래)로 맞춘다. Qt 는 만든 순서를 따라 맨 위에 넣은 새 항목이 마지막이 된다."""
+        buttons = [
+            button
+            for i in range(self.list_layout.count())
+            if isinstance(w := self.list_layout.itemAt(i).widget(), DownloadItemWidget)
+            for button in w.findChildren(QPushButton)  # 만든 순서 = 항목 안 배치 순서
+        ]
+        for a, b in pairwise(buttons):
+            QWidget.setTabOrder(a, b)
 
     # ── InfoWorker 동시성 게이트 ─────────────────────
 
