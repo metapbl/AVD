@@ -1321,8 +1321,8 @@ class MainWindow(QMainWindow):
                 font-weight: bold;
             }
             QPushButton#btnAdd:hover { background: @accent2; }
+            /* 툴바 보조 버튼 바탕·hover 는 공통 윤곽형 (테마 1.4.0 — 회색 채움은 꺼진 버튼으로 읽힌다) */
             QPushButton#btnClearList {
-                background: @btn2;
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
@@ -1330,21 +1330,17 @@ class MainWindow(QMainWindow):
             }
             QPushButton#btnClearList:hover { background: @danger; color: @on_strong; }
             QPushButton#btnClearDone {
-                background: @btn;
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnClearDone:hover { background: @btn2; }
             QPushButton#btnPrefs {
-                background: @btn;
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnPrefs:hover { background: @btn2; }
             QScrollArea#listScroll {
                 background: @base;
                 border: none;
