@@ -1,8 +1,8 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 · 스무 번째 계획 `docs/plans/2026-11-10-release-1.2.4.md` active
-- 갱신: 2026-11-10 · v1.2.4 준비: 버튼 모양 통일(보조 윤곽형·확인 `role="primary"`), 직접 쓴 색 0건, 테마 1.4.2. OPEN 미결 0
+- 단계: 7 계획 대기 · 스무 번째 계획 `docs/plans/2026-11-10-release-1.2.4.md` done
+- 갱신: 2026-11-11 · v1.2.4 게시(태그 `904914e`, Latest): 버튼 모양 통일(보조 윤곽형·확인 `role="primary"`), 직접 쓴 색 0건, 테마 1.4.3(클릭 포커스 고리 없음·포커스 버튼 Enter), 목록 Tab 순서 위→아래. 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
 1. (후보) Vimeo `curl_cffi` 검토 — 새 의존성 → PRD §2.6 제약·범위 확인부터. 진입점 `core/info_fetcher.py > InfoFetcher`
