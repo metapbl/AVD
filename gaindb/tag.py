@@ -762,7 +762,8 @@ def change_gain_and_tag(
     # 실제 프레임 게인 적용. 예외 없이 반환되면 성공.
     # 취소 시 apply_gain 이 GainCancelled 를 던지고, 파일·태그 모두 미변경이다.
     apply_gain(filename, left_change, right_change, wrap,
-               should_cancel=should_cancel, on_progress=on_progress)
+               should_cancel=should_cancel, on_progress=on_progress,
+               save_timestamp=save_timestamp)
 
     # --- undo 누적 (항상) ---
     if not info.have_undo:

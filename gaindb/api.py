@@ -238,9 +238,14 @@ def apply_file_track_gain(path: str, target_db: float = DEFAULT_TARGET_DB,
                           skip_tag: bool = False, use_id3: bool = False,
                           seed: dict | None = None,
                           should_cancel: Callable[[], bool] | None = None,
-                          on_progress: Callable[[float], None] | None = None
+                          on_progress: Callable[[float], None] | None = None,
+                          save_timestamp: bool = False,
+                          track_no_clip: bool = False,
                           ) -> dict:
-    """목표 dB 를 반영해 Track ReplayGain 을 실제 적용한다(파괴적)."""
+    """목표 dB 를 반영해 Track ReplayGain 을 실제 적용한다(파괴적).
+
+    track_no_clip: 원본 GUI "Don't clip when doing Track Gain"(apply_gain.track_no_clip_steps).
+    """
     db_gain_mod = target_db - DEFAULT_TARGET_DB
 
     seed_db_gain = seed_peak = seed_min_gain = seed_max_gain = None
@@ -255,6 +260,8 @@ def apply_file_track_gain(path: str, target_db: float = DEFAULT_TARGET_DB,
                             seed_db_gain=seed_db_gain, seed_peak=seed_peak,
                             seed_min_gain=seed_min_gain,
                             seed_max_gain=seed_max_gain,
+                            save_timestamp=save_timestamp,
+                            track_no_clip=track_no_clip,
                             should_cancel=should_cancel,
                             on_progress=on_progress)
 
@@ -418,6 +425,7 @@ def apply_file_album_gain(
     use_id3: bool = False,
     should_cancel: Callable[[], bool] | None = None,
     on_progress: Callable[[float], None] | None = None,
+    save_timestamp: bool = False,
 ) -> dict:
     """한 곡에 앨범 게인을 적용한다(파괴적). track+album 태그를 둘 다 기록.
 
@@ -438,6 +446,7 @@ def apply_file_album_gain(
         path, steps, album_db, album_db, track_db, peak, min_gain, max_gain,
         album_peak, album_min, album_max,
         wrap=False, skip_tag=skip_tag, use_id3=use_id3,
+        save_timestamp=save_timestamp,
         should_cancel=should_cancel, on_progress=on_progress,
     )
 

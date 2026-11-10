@@ -42,6 +42,8 @@ gaindb.writer - MP3 global_gain 무손실 조정 (쓰기)
   파일은 원본 그대로 남는다(부분 기록 없음).
 """
 
+import os
+
 from gaindb.frame import (
     _BitReader,
     _is_valid_header,
@@ -139,7 +141,8 @@ def _change_frame_gain(data: bytearray, frame, left: int, right: int, wrap: bool
 
 
 def apply_gain(path: str, left_change: int, right_change: int = None,
-               wrap: bool = False, should_cancel=None, on_progress=None) -> int:
+               wrap: bool = False, should_cancel=None, on_progress=None,
+               save_timestamp: bool = False) -> int:
     """
     MP3 파일의 모든 프레임 global_gain 을 무손실 조정한다.
     right_change 가 None 이면 좌우 동일 게인으로 적용한다.
@@ -151,12 +154,15 @@ def apply_gain(path: str, left_change: int, right_change: int = None,
       True 면 GainCancelled 를 던진다(파일 write 전이라 파일은 원본 그대로).
     on_progress: fraction(0~1) 을 받는 콜백. 순회 진행률(바이트 오프셋/전체
       길이)을 같은 간격으로 방출한다.
+    save_timestamp: True 면 쓰기 전 날짜를 저장했다가 쓴 뒤 되돌린다(mp3gain -p).
     """
     if right_change is None:
         right_change = left_change
 
     if left_change == 0 and right_change == 0:
         return 0
+
+    saved = os.stat(path) if save_timestamp else None
 
     with open(path, "rb") as f:
         data = bytearray(f.read())
@@ -215,6 +221,8 @@ def apply_gain(path: str, left_change: int, right_change: int = None,
 
     with open(path, "wb") as f:
         f.write(data)
+    if saved is not None:
+        os.utime(path, (saved.st_atime, saved.st_mtime))
 
     if on_progress is not None:
         on_progress(1.0)
