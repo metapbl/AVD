@@ -308,6 +308,7 @@ class MainWindow(QMainWindow):
 
         self.btn_add = QPushButton("+ 링크 추가")
         self.btn_add.setObjectName("btnAdd")
+        self.btn_add.setProperty("role", "primary")
         self.btn_add.setFixedHeight(36)
         self.btn_add.clicked.connect(self._on_add_link)
         layout.addWidget(self.btn_add)
@@ -1313,14 +1314,10 @@ class MainWindow(QMainWindow):
                 border-radius: 3px;
             }
             QPushButton#btnAdd {
-                background: @accent;
-                color: @on_accent;
                 border-radius: 6px;
                 padding: 0 16px;
                 font-size: 13px;
-                font-weight: bold;
             }
-            QPushButton#btnAdd:hover { background: @accent2; }
             /* 툴바 보조 버튼 바탕·hover 는 공통 윤곽형 (테마 1.4.0 — 회색 채움은 꺼진 버튼으로 읽힌다) */
             QPushButton#btnClearList {
                 color: @text2;

@@ -55,6 +55,7 @@ class ErrorDetailDialog(QDialog):
         btn_row.addStretch()
         btn_close = QPushButton("닫기")
         btn_close.setObjectName("btnClose")
+        btn_close.setProperty("role", "primary")
         btn_close.setFixedSize(80, 32)
         btn_close.setDefault(True)
         btn_close.clicked.connect(self.accept)
@@ -87,13 +88,7 @@ class ErrorDetailDialog(QDialog):
                 font-size: 12px;
             }
             QPushButton#btnClose {
-                background: @accent;
-                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton#btnClose:hover {
-                background: @accent2;
             }
         """))

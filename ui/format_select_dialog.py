@@ -165,6 +165,7 @@ class FormatSelectDialog(QDialog):
 
         btn_confirm = QPushButton("다운로드")
         btn_confirm.setObjectName("btnConfirm")
+        btn_confirm.setProperty("role", "primary")
         btn_confirm.setFixedSize(100, 32)
         btn_confirm.clicked.connect(self._on_confirm)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
@@ -254,18 +255,11 @@ class FormatSelectDialog(QDialog):
                 font-size: 12px;
             }
             QPushButton#btnCancel {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: @btn2; }
             QPushButton#btnConfirm {
-                background: @accent;
-                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
-                font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: @accent2; }
         """))

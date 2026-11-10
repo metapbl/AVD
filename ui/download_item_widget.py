@@ -412,8 +412,6 @@ class DownloadItemWidget(QWidget):
                 border-radius: 3px;
             }
             QPushButton#btnCancel {
-                background: @btn2;
-                color: @text2;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
@@ -426,16 +424,11 @@ class DownloadItemWidget(QWidget):
                 font-size: 11px;
             }
             QPushButton#btnDetail {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;
             }
-            QPushButton#btnDetail:hover { background: @btn2; }
             QPushButton#btnRemove {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 padding: 4px;
                 font-size: 11px;

@@ -127,16 +127,11 @@ class ConfirmRemoveDialog(QDialog):
                 spacing: 8px;
             }
             QPushButton#confirmClose {
-                background: @btn2;
-                color: @text2;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;
             }
-            QPushButton#confirmClose:hover { background: @btn2; }
             QPushButton#confirmRemove {
-                background: @btn2;
-                color: @text2;
                 border-radius: 4px;
                 padding: 6px;
                 font-size: 12px;

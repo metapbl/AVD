@@ -323,6 +323,7 @@ class PreferencesDialog(QDialog):
 
         btn_save = QPushButton("저장")
         btn_save.setObjectName("btnConfirm")
+        btn_save.setProperty("role", "primary")
         btn_save.setFixedSize(80, 32)
         btn_save.clicked.connect(self._on_save)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
@@ -515,10 +516,10 @@ class PreferencesDialog(QDialog):
                     x1:0, y1:0, x2:1, y2:0,
                     stop:0.000 @success,
                     stop:0.222 @success,
-                    stop:0.333 #c9a227,
-                    stop:0.556 #c9a227,
-                    stop:0.667 #b03030,
-                    stop:1.000 #b03030
+                    stop:0.333 @warn,
+                    stop:0.556 @warn,
+                    stop:0.667 @danger,
+                    stop:1.000 @danger
                 );
                 border-radius: 3px;
             }
@@ -551,7 +552,7 @@ class PreferencesDialog(QDialog):
                 border: 2px solid @base;
             }
             QSlider#concurrentSlider[zone="green"]::handle:horizontal  { background: @success2; }
-            QSlider#concurrentSlider[zone="yellow"]::handle:horizontal { background: #e6b800; }
+            QSlider#concurrentSlider[zone="yellow"]::handle:horizontal { background: @warn; }
             QSlider#concurrentSlider[zone="red"]::handle:horizontal    { background: @danger; }
 
             QCheckBox, QRadioButton {
@@ -598,25 +599,15 @@ class PreferencesDialog(QDialog):
             }
 
             QPushButton#btnBrowse {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnBrowse:hover { background: @btn2; }
             QPushButton#btnCancel {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: @btn2; }
             QPushButton#btnConfirm {
-                background: @accent;
-                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
-                font-weight: bold;
             }
-            QPushButton#btnConfirm:hover { background: @accent2; }
         """))

@@ -146,6 +146,7 @@ class PlaylistSelectDialog(QDialog):
         btn_row.addWidget(btn_cancel)
         self.btn_confirm = QPushButton("추가")
         self.btn_confirm.setObjectName("btnConfirm")
+        self.btn_confirm.setProperty("role", "primary")
         self.btn_confirm.setFixedSize(90, 32)
         self.btn_confirm.clicked.connect(self._on_confirm)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
@@ -208,19 +209,12 @@ class PlaylistSelectDialog(QDialog):
             QTableWidget::item:selected { background: @sel; }
             QRadioButton { color: @text2; font-size: 13px; }
             QPushButton#btnGhost {
-                background: @btn; color: @text2;
                 border-radius: 4px; padding: 4px 12px; font-size: 12px;
             }
-            QPushButton#btnGhost:hover { background: @btn2; }
             QPushButton#btnCancel {
-                background: @btn; color: @text2;
                 border-radius: 4px; font-size: 12px;
             }
-            QPushButton#btnCancel:hover { background: @btn2; }
             QPushButton#btnConfirm {
-                background: @accent; color: @on_accent;
-                border-radius: 4px; font-size: 12px; font-weight: bold;
+                border-radius: 4px; font-size: 12px;
             }
-            QPushButton#btnConfirm:hover { background: @accent2; }
-            QPushButton#btnConfirm:disabled { background: @line2; color: @muted; }
         """))

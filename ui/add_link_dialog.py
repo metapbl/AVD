@@ -75,6 +75,7 @@ class AddLinkDialog(QDialog):
         # 확인 버튼
         btn_confirm = QPushButton("확인")
         btn_confirm.setObjectName("btnConfirm")
+        btn_confirm.setProperty("role", "primary")
         btn_confirm.setFixedSize(80, 32)
         btn_confirm.clicked.connect(self._on_confirm)
         btn_row.addWidget(btn_confirm)
@@ -138,22 +139,11 @@ class AddLinkDialog(QDialog):
                 border: 1px solid @accent;
             }
             QPushButton#btnCancel {
-                background: @btn;
-                color: @text2;
                 border-radius: 4px;
                 font-size: 12px;
-            }
-            QPushButton#btnCancel:hover {
-                background: @btn2;
             }
             QPushButton#btnConfirm {
-                background: @accent;
-                color: @on_accent;
                 border-radius: 4px;
                 font-size: 12px;
-                font-weight: bold;
-            }
-            QPushButton#btnConfirm:hover {
-                background: @accent2;
             }
         """))
