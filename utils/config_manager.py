@@ -21,6 +21,7 @@ DEFAULT_CONFIG = {
     "default_format"    : "bestvideo+bestaudio/best",  # 기본 화질
     "default_ext"       : "mp4",   # 기본 확장자 (UI 노출 안 함, 잔존 키)
     "last_chosen_ext"   : "",      # FormatSelectDialog 가 기억하는 직전 선택 확장자
+    "last_chosen_format_id": "",   # 직전에 고른 고정 행(최고 화질·최고 호환·MP3·M4A), 아니면 ""
     "auto_update_ytdlp" : True,    # yt-dlp 자동 업데이트 여부
     "theme_mode"        : "system",  # 화면 테마 (system=Windows 따라가기 / dark / light)
     "language"          : "ko",    # 언어 설정

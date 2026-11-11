@@ -123,15 +123,20 @@ class PlaylistSelectDialog(QDialog):
         mode_row.setSpacing(16)
         mode_label = QLabel("형태:")
         mode_label.setObjectName("dialogLabel")
-        self.rb_video = QRadioButton("영상 (최고 화질)")
-        self.rb_audio = QRadioButton("음원만 (MP3)")
-        self.rb_video.setChecked(True)
         self._mode_group = QButtonGroup(self)
-        self._mode_group.addButton(self.rb_video)
-        self._mode_group.addButton(self.rb_audio)
         mode_row.addWidget(mode_label)
-        mode_row.addWidget(self.rb_video)
-        mode_row.addWidget(self.rb_audio)
+        # (mode, 라벨) — mode 는 PlaylistFlow._MODES 의 키
+        for mode, text in (
+            ("video", "영상 (최고 화질)"),
+            ("video_compat", "영상 (최고 호환)"),
+            ("audio", "MP3"),
+            ("audio_m4a", "M4A"),
+        ):
+            rb = QRadioButton(text)
+            rb.setProperty("mode", mode)
+            rb.setChecked(mode == "video")
+            self._mode_group.addButton(rb)
+            mode_row.addWidget(rb)
         mode_row.addStretch()
         root.addLayout(mode_row)
 
@@ -183,7 +188,7 @@ class PlaylistSelectDialog(QDialog):
         if not rows:
             return
         chosen = [self._entries[r] for r in rows]
-        mode = "video" if self.rb_video.isChecked() else "audio"
+        mode = self._mode_group.checkedButton().property("mode")
         self.confirmed.emit(chosen, mode)
         self.accept()
 

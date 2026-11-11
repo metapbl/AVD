@@ -15,15 +15,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.info_fetcher import AUTO_FORMAT_ID, COMPAT_FORMAT_ID
 from models.download_item import DownloadItem, DownloadStatus
 from ui import theme
 from utils.file_utils import format_duration
 
-# ── 자동 선택 포맷 식별자 ────────────────────────────
-# core/info_fetcher.py 의 _parse_formats 가 통합 포맷에 박는 format_id.
-# 메타 라벨·다이얼로그가 이 값을 보면 코덱/비트레이트 대신 "자동" 으로 표시.
-# 단일 출처 — 여기 값이 바뀌면 info_fetcher 의 통합 포맷 진입 부분도 같이 바꿀 것.
-AUTO_FORMAT_ID = "bestvideo+bestaudio/best"
+# 메타 라벨·다이얼로그가 AUTO_FORMAT_ID 를 보면 코덱/비트레이트 대신 "자동" 으로 표시.
 
 
 # ── 코덱 정규화 매핑 ─────────────────────────────────
@@ -928,7 +925,7 @@ class DownloadItemWidget(QWidget):
 
         # 통합 포맷의 ext("mp4")는 병합 컨테이너 지정일 뿐 결과가 아니다
         # (오디오 전용 소스면 m4a 등). 확정 값이 올 때까지 숨긴다 (D051).
-        if self._fmt_format_id == AUTO_FORMAT_ID:
+        if self._fmt_format_id in (AUTO_FORMAT_ID, COMPAT_FORMAT_ID):
             self._ext_known = False
             self._apply_title_elide()
 

@@ -6,8 +6,22 @@
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import QWidget
 
+from core.info_fetcher import (
+    AUTO_FORMAT_ID,
+    COMPAT_FORMAT_ID,
+    M4A_FORMAT_ID,
+    MP3_FORMAT_ID,
+)
 from ui.playlist_select_dialog import PlaylistSelectDialog
 from workers.playlist_probe_worker import PlaylistProbeWorker
+
+# 형태 → (format_id, ext). 화질 선택 창의 고정 행과 같은 상수를 쓴다 (D074).
+_MODES = {
+    "video"       : (AUTO_FORMAT_ID, "mp4"),
+    "video_compat": (COMPAT_FORMAT_ID, "mp4"),
+    "audio"       : (MP3_FORMAT_ID, "mp3"),
+    "audio_m4a"   : (M4A_FORMAT_ID, "m4a"),
+}
 
 
 class PlaylistFlow(QObject):
@@ -34,26 +48,15 @@ class PlaylistFlow(QObject):
         4. 종료·실패·취소를 모두 _finish() 단일 경로로 수렴 → MainWindow 는
            finished 시그널만 본다.
 
-    음원 단일 출처 (ADR 합의):
-        "음원만" 선택 시 별도 비트레이트·컨테이너를 만들지 않고, 단일 항목
-        경로가 쓰는 것과 동일한 format_id="bestaudio/best" + ext="mp3" 만
-        박는다. 실제 음질은 core/downloader.py 의 후처리(MP3_BITRATE_KBPS)
-        단일 출처가 결정한다. OPEN H02 가 음원 정책을 바꾸면 플레이리스트는
-        코드 변경 없이 자동으로 따라온다.
+    형태 단일 출처 (D074):
+        단일 항목 경로의 고정 행과 같은 (format_id, ext) 만 박는다. 실제
+        음질·코덱은 core/downloader.py 의 후처리가 결정한다.
     """
 
     status      = Signal(str)
     entry_ready = Signal(str, str, str)  # (url, format_id, ext)
     finished    = Signal()
     probe_finished = Signal()  # 확인 단계 끝 (성공·실패 모두)
-
-    # 형태 → (format_id, ext) 매핑. core/info_fetcher.py 의 통합 포맷 /
-    # MP3 행과 동일한 값을 쓴다 — 단일 출처. 여기 값이 바뀌면 info_fetcher
-    # 의 해당 행과 ui/download_item_widget.py 의 AUTO_FORMAT_ID 도 함께.
-    _VIDEO_FORMAT_ID = "bestvideo+bestaudio/best"
-    _VIDEO_EXT       = "mp4"
-    _AUDIO_FORMAT_ID = "bestaudio/best"
-    _AUDIO_EXT       = "mp3"
 
     def __init__(self, parent: QObject):
         super().__init__(parent)
@@ -141,11 +144,10 @@ class PlaylistFlow(QObject):
             self.entry_ready.emit(entry.url, format_id, ext)
         self.status.emit(f"{len(entries)}개 항목을 추가했습니다.")
 
-    def _mode_to_format(self, mode: str) -> tuple[str, str]:
-        """형태 문자열을 (format_id, ext) 로. 단일 출처 매핑."""
-        if mode == "audio":
-            return (self._AUDIO_FORMAT_ID, self._AUDIO_EXT)
-        return (self._VIDEO_FORMAT_ID, self._VIDEO_EXT)
+    @staticmethod
+    def _mode_to_format(mode: str) -> tuple[str, str]:
+        """형태 문자열을 (format_id, ext) 로. 모르는 값은 영상."""
+        return _MODES.get(mode, _MODES["video"])
 
     # ── 종료 수렴 ─────────────────────────────────────
 

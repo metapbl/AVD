@@ -636,7 +636,7 @@ class MainWindow(QMainWindow):
                 ext       = ext,
                 abr       = 0.0,
                 tbr       = 0.0,
-                is_audio  = (format_id == "bestaudio/best"),
+                is_audio  = ext in ("mp3", "m4a"),
             )
 
         widget.update_status(DownloadStatus.WAITING)

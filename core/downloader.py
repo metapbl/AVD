@@ -237,7 +237,13 @@ class Downloader:
                 # FFmpegExtractAudio 의 preferredquality 는 문자열을 요구.
                 "preferredquality": str(MP3_BITRATE_KBPS),
             })
-        postprocessors.append({"key": "FFmpegMetadata", "add_metadata": True})
+        postprocessors.append({
+            "key": "FFmpegMetadata",
+            "add_metadata": True,
+            # m4a 에 챕터를 넣으면 텍스트 트랙이 생겨 ffmpeg 썸네일 임베드가 실패한다
+            # ("Tag text incompatible", 2026-11-11 실측). m4a 는 챕터를 넣지 않는다.
+            "add_chapters": ext != "m4a",
+        })
         postprocessors.append({"key": "EmbedThumbnail", "already_have_thumbnail": False})
 
         ydl_opts = {

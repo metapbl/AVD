@@ -13,11 +13,21 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from core.info_fetcher import FormatInfo, VideoInfo
+from core.info_fetcher import (
+    AUTO_FORMAT_ID,
+    COMPAT_FORMAT_ID,
+    M4A_FORMAT_ID,
+    MP3_FORMAT_ID,
+    FormatInfo,
+    VideoInfo,
+)
 from ui import theme
-from ui.download_item_widget import AUTO_FORMAT_ID, format_bitrate, humanize_codec
+from ui.download_item_widget import format_bitrate, humanize_codec
 from utils.config_manager import ConfigManager
 from utils.file_utils import format_duration, format_file_size
+
+# 모든 영상에 같은 포맷 문자열로 나오는 행 — 고른 행을 포맷으로 기억할 수 있다.
+_FIXED_FORMAT_IDS = (AUTO_FORMAT_ID, COMPAT_FORMAT_ID, MP3_FORMAT_ID, M4A_FORMAT_ID)
 
 
 class FormatSelectDialog(QDialog):
@@ -28,8 +38,8 @@ class FormatSelectDialog(QDialog):
         format_selected : 확인 버튼 클릭 시 FormatInfo 전달
 
     config 의존:
-        - 읽기: last_chosen_ext (직전 선택 확장자 → 기본 선택 행 결정)
-        - 쓰기: last_chosen_ext (사용자가 확정한 포맷의 ext 기억)
+        - 읽기·쓰기: last_chosen_format_id (고정 행을 골랐을 때만 그 포맷, 아니면 "")
+        - 읽기·쓰기: last_chosen_ext (해상도 행은 영상마다 포맷이 달라 ext 로 찾는다)
     """
 
     format_selected = Signal(object)  # FormatInfo 전달
@@ -176,9 +186,15 @@ class FormatSelectDialog(QDialog):
 
     def _find_default_row(self) -> int:
         """
-        config.last_chosen_ext 와 일치하는 첫 포맷의 행 번호를 반환.
-        키가 비어 있거나 매칭되는 항목이 없으면 0 (첫 행).
+        직전에 고른 고정 행(last_chosen_format_id), 없으면 last_chosen_ext 와
+        일치하는 첫 포맷의 행 번호를 반환. 둘 다 못 찾으면 0 (첫 행).
         """
+        last_id = self.config.get("last_chosen_format_id", "") or ""
+        for row in range(self.list_formats.topLevelItemCount()):
+            fmt = self.list_formats.topLevelItem(row).data(0, Qt.ItemDataRole.UserRole)
+            if last_id and fmt is not None and fmt.format_id == last_id:
+                return row
+
         last_ext = (self.config.get("last_chosen_ext", "") or "").strip().lower()
         if not last_ext:
             return 0
@@ -202,6 +218,10 @@ class FormatSelectDialog(QDialog):
         if fmt is not None and fmt.ext:
             try:
                 self.config.set("last_chosen_ext", fmt.ext)
+                self.config.set(
+                    "last_chosen_format_id",
+                    fmt.format_id if fmt.format_id in _FIXED_FORMAT_IDS else "",
+                )
             except Exception:
                 # config 저장 실패는 본 흐름을 막지 않는다 (UX 우선)
                 pass

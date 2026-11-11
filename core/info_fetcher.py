@@ -8,6 +8,14 @@ import yt_dlp
 from core.downloader import JS_CHALLENGE_OPTS, MP3_BITRATE_KBPS
 from utils.file_utils import normalize_info_dict
 
+# 화질 선택 창·플레이리스트 창이 함께 쓰는 고정 행의 포맷 문자열 (D074).
+AUTO_FORMAT_ID   = "bestvideo+bestaudio/best"
+# H.264 + AAC 우선. 없는 사이트는 뒤 후보로 내려가 받기는 한다 (D072).
+COMPAT_FORMAT_ID = "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*[vcodec^=avc1]+ba/bv*+ba/b"
+MP3_FORMAT_ID    = "bestaudio/best"
+# 원본이 AAC(m4a) 면 재인코딩 없이 담긴다. 아니면 yt-dlp 가 AAC 로 변환 (D073).
+M4A_FORMAT_ID    = "bestaudio[ext=m4a]/bestaudio/best"
+
 
 @dataclass
 class FormatInfo:
@@ -207,7 +215,7 @@ class InfoFetcher:
         # format_id 가 표시 단계의 "자동" 폴백 트리거. 여기 값이 바뀌면 위젯과
         # 다이얼로그의 식별 분기도 같이 바꿔야 함.
         result.append(FormatInfo(
-            format_id   = "bestvideo+bestaudio/best",
+            format_id   = AUTO_FORMAT_ID,
             label       = "최고 화질 (자동 선택)",
             ext         = "mp4",
             resolution  = "최고화질",
@@ -217,6 +225,18 @@ class InfoFetcher:
             acodec      = "",
             abr         = 0.0,
             tbr         = 0.0,
+        ))
+
+        # 최고 호환 — 코덱 칸은 목표 코덱. 실제 값은 받는 동안 덮어쓴다.
+        result.append(FormatInfo(
+            format_id   = COMPAT_FORMAT_ID,
+            label       = "최고 호환 (H.264 + AAC)",
+            ext         = "mp4",
+            resolution  = "",
+            filesize    = 0,
+            is_audio    = False,
+            vcodec      = "avc1",
+            acodec      = "mp4a",
         ))
 
         # 비디오 행에 박을 best audio 정보 — 한 번만 스캔.
@@ -266,7 +286,7 @@ class InfoFetcher:
         # abr 은 downloader.py 의 MP3_BITRATE_KBPS 와 단일 출처를 공유.
         # 한쪽만 바꾸면 다른 쪽이 거짓이 되므로 반드시 함께 갱신.
         result.append(FormatInfo(
-            format_id   = "bestaudio/best",
+            format_id   = MP3_FORMAT_ID,
             label       = "MP3 오디오만",
             ext         = "mp3",
             resolution  = "오디오 전용",
@@ -276,6 +296,19 @@ class InfoFetcher:
             acodec      = "mp3",
             abr         = float(MP3_BITRATE_KBPS),
             tbr         = 0.0,
+        ))
+
+        # M4A — 원본 AAC 를 그대로 담는다. 비트레이트는 m4a 원본이 있을 때만 안다.
+        _, m4a_abr = self._pick_best_audio([f for f in formats if f.get("ext") == "m4a"])
+        result.append(FormatInfo(
+            format_id   = M4A_FORMAT_ID,
+            label       = "M4A 오디오 (원본 그대로)",
+            ext         = "m4a",
+            resolution  = "오디오 전용",
+            filesize    = 0,
+            is_audio    = True,
+            acodec      = "mp4a",
+            abr         = m4a_abr,
         ))
 
         return result
