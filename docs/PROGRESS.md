@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 스물두 번째 계획 `docs/plans/2026-11-11-release-1.3.0.md` active (v1.3.0 릴리스)
-- 갱신: 2026-11-11 · 미릴리스: F12 Vimeo 공개 영상(curl_cffi·임베드 주소, DRM 영상은 받지 않음 T30), certifi 2026.10.23, GaindB 1.1.2 동기화. OPEN 미결 0
+- 단계: 7 계획 대기 · 스물두 번째 계획 `docs/plans/2026-11-11-release-1.3.0.md` done
+- 갱신: 2026-11-11 · v1.3.0 게시(태그 `8b02987`, Latest): Vimeo 공개 영상(F12, DRM 영상은 받지 않음 T30), curl_cffi, certifi 2026.10.23, GaindB 1.1.2. 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. 릴리스 v1.3.0 작업 1 — 버전·CHANGELOG·pip-audit·빌드 (`docs/RELEASE.md` §1~§3)
+1. (정리) PRD §2.2 의 "[다음 계획] Vimeo 공개 영상 지원 (F12)" 에 완료 표시 — PRD 변경 절차로
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
