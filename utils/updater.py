@@ -14,7 +14,7 @@ import requests
 import yt_dlp
 
 # 앱 현재 버전 (배포 시 이 값을 변경)
-APP_VERSION = "1.2.4"
+APP_VERSION = "1.3.0"
 
 # yt-dlp GitHub API 주소
 YTDLP_API_URL = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"

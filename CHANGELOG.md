@@ -25,6 +25,7 @@
 
 ## 2026-11-11
 
+- **`chore(release)`**: v1.3.0 — Vimeo 공개 영상 지원(`vimeo.com/숫자` 를 임베드 주소로, TLS 위장 `curl_cffi`, DRM 영상은 받지 않음), certifi 2026.10.23, GaindB 1.1.2 동기화.
 - **`chore(gaindb)`**: 벤더링본을 GaindB 1.1.2 로 갱신 — 코어 코드는 1.1.1 과 같고 버전 번호만 바뀐다.
 - **`chore(gaindb)`**: 벤더링본을 GaindB 1.1.1 로 갱신 — 코어 코드는 1.1.0 과 같고 버전 번호만 바뀐다.
 - **`docs`**: REFERENCE 에 Vimeo 경로(임베드 주소 + TLS 위장, yt-dlp 버전별 curl_cffi 허용 범위)와 함정 T28(Vimeo 로그인 필요·401)·T29(`pip install -r` 뒤 위장 대상 unavailable) 추가.
