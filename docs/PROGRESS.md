@@ -1,20 +1,17 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 스물한 번째 계획 `docs/plans/2026-11-11-vimeo-public.md` active (F12 Vimeo 공개 영상)
-- 갱신: 2026-11-11 · 미릴리스: GaindB 1.1.0 동기화(`d6bc06c`), PRD 변경 승인 F12 (D067~D070). OPEN 미결 0
+- 단계: 7 계획 대기 · 스물한 번째 계획 `docs/plans/2026-11-11-vimeo-public.md` done (F12 Vimeo 공개 영상)
+- 갱신: 2026-11-11 · 미릴리스: F12 Vimeo 공개 영상(curl_cffi·임베드 주소, DRM 영상은 받지 않음 T30), certifi 2026.10.23, GaindB 1.1.2 동기화. OPEN 미결 0
 
 ## 다음 할 일
-1. 계획 작업 5 — 실기 1번만 다시(소스·exe): `https://vimeo.com/22439234` 받기·재생. 2·3 은 1차 통과 (76979871 은 DRM, T30)
+1. (후보) 릴리스 v1.3.0 — F12·GaindB 1.1.2. 절차 `docs/RELEASE.md` (빌드 전 venv yt-dlp 최신 확인, T29)
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
-- (다음 계획 후보) Vimeo `curl_cffi` 검토 결과 (2026-11-11, yt-dlp 2026.10.26 · curl_cffi 0.17.0, 표본 `vimeo.com/1084537`)
-  - `vimeo.com/ID` 는 curl_cffi 가 있어도 "로그인 필요" — 추출기의 비로그인 클라이언트가 없음(`web` 은 로그인 필수, `android` 는 캐시 토큰 전용)
-  - `player.vimeo.com/video/ID` 는 curl_cffi 있으면 성공(형식 13개, 미디어 바이트 수신), 없으면 401 → 쓸모를 내려면 의존성 + 주소 바꿔 쓰기 둘 다 필요
-  - 라이선스 MIT, 크기 약 5.5 MB(`curl_cffi.libs` dll 4 MB), PyInstaller 6.22.3 onedir 은 yt-dlp 훅이 자동 수집해 빌드·실행 성공. yt-dlp 허용 범위 `>=0.10,<0.18`(벗어나면 위장만 꺼짐). macOS 미확인
+- (기록) Vimeo: F12 로 공개·비DRM 영상 지원. 영상마다 DRM 형식만 주기도 함(76979871) — 받지 않음 (T30)
 - (기록, AVD 밖) Naver TV: 후보 5개 모두 yt-dlp 2026.10.26 추출기 `KeyError('result')` — 상류 수정 대기
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
 - (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`

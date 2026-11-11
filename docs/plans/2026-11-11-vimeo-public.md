@@ -1,5 +1,5 @@
 # 스물한 번째 계획 — Vimeo 공개 영상 지원
-상태: active | 시작: 2026-11-11 | 근거: PRD F12 (D067~D070, Q076~Q080)
+상태: done (2026-11-11) | 시작: 2026-11-11 | 근거: PRD F12 (D067~D070, Q076~Q080)
 
 목표: Vimeo 공개 영상 링크를 붙여 넣으면 다른 사이트처럼 화질 선택 → 다운로드가 된다. 비공개·로그인·도메인 제한 영상은 지금처럼 오류로 끝나고 앱은 정상이다.
 구조:
@@ -38,7 +38,7 @@
 - [x] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
   - 확인: PyInstaller 빌드 성공, `dist\AVD\_internal\curl_cffi\`·`_internal\curl_cffi.libs\*.dll` 존재, 배포 폴더 크기 증가 약 5~6 MB | 실기기(기계): `dist\AVD\AVD.exe` 기동 → 창 제목 "AV Downloader"
   - 결과: 2026-11-11 — `pyinstaller AVD.spec` 성공(spec 무수정), `_internal\curl_cffi\`·`curl_cffi-0.17.0.dist-info`·`curl_cffi.libs\libcurl-impersonate-*.dll`(4,113,920 B) 있음, 배포 폴더 244.5 MB(이전 243 MB 안팎), 번들 yt-dlp 2026.10.26, `dist\AVD\THIRD_PARTY_LICENSES` 에 curl-cffi 절. `AVD.exe` 7초 만에 창 제목 "AV Downloader"
-- [ ] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행
+- [x] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff b2f4dce -- requirements.txt`(계획 시작 전 커밋 기준) 추가 3줄 + certifi 한 줄
   - 실기기 (소스 실행과 exe 각각):
     - `https://vimeo.com/22439234` 붙여넣기 → 화질 선택 창이 뜸 → 받은 파일 ▶ 재생됨
@@ -46,6 +46,7 @@
     - YouTube 단일 링크 하나 → 지금처럼 완료 (회귀)
   - 결과: 2026-11-11 실기기 1차(소스·exe 같음) — 2·3 통과, 1 실패: 76979871 은 정보·화질 창까지 되고 다운로드 "다운로드하지 못했습니다"
   - 1차 원인: 76979871 은 형식 12개 모두 DRM 목록(`/playlist/drm/cbcs`) → yt-dlp 가 "This format is DRM protected" 로 거부. 반목표(D012·D070)대로 받지 않는 것이 맞다. DRM 이 아닌 22439234 는 같은 AVD 경로(`extract_urls`→`InfoFetcher`→`Downloader`)로 1080p H.264+AAC·썸네일 임베드, 3:05 완료 → 표본을 22439234 로 바꿔 1번만 다시 확인
+  - 결과: 2026-11-11 실기기 2차 — 사용자: 22439234 소스·exe 둘 다 통과 (2·3 은 1차 통과). pytest 283 통과
 
 ## 자가 검토
 - PRD 기능 누락: 없음 (F12. F1 의 링크 추가 경로가 바뀌므로 작업 5 에 YouTube 회귀 확인)
