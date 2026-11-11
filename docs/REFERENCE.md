@@ -23,6 +23,7 @@
 - yt-dlp 후처리 체인 (2026.3.17 기준): `ThumbnailsConvertor → Merger → Metadata → EmbedThumbnail → MoveFiles`. `postprocessor_hook` 은 started/finished 만, 퍼센트 없음
 - yt-dlp `retries` 는 세션 내 HTTP 재시도일 뿐 — 토큰 만료 403 은 새 `YoutubeDL` 세션으로만 회복 (D008)
 - yt-dlp 지원 사이트: https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md — sendvid 는 전용 추출기 없음, 범용 추출기 (Q026, 2026-10-28)
+- Vimeo (yt-dlp 2026.10.26 · curl_cffi 0.17.0 기준): 비로그인으로 읽히는 경로는 임베드 `player.vimeo.com/video/ID` 뿐이고 TLS 위장(curl_cffi)이 필요하다. `vimeo.com/ID` 는 링크 입력 때 임베드 주소로 바꾼다(`ui/add_link_dialog.py > extract_urls`). yt-dlp 가 받아들이는 curl_cffi 범위는 버전마다 다르다 — 2026.10.26 은 `>=0.10,<0.18`, 핀 2026.3.17 은 `<0.15`. 범위 밖이면 오류 없이 위장만 꺼진다 (D067~D069, Q076)
 - ffmpeg/ffprobe: 번들하지 않음, PATH 필수. 병합·변환·메타·썸네일 임베드
 - PySide6 6.12.0 (LGPLv3, 동적 링크), `requires_python <3.16,>=3.10` (PyPI, Q030)
 - numpy 2.5.x·scipy 1.18.x: `requires_python >=3.12` → AVD 하한 3.12 (D028)
@@ -78,6 +79,8 @@
 | T25 | 취소·앱 종료 뒤 항목은 취소됨인데 `.avd_*` 와 `.part` 가 남음 (HLS 등 조각 포맷만, 예: YouTube 312) | 조각 다운로더가 취소 예외 때 `dest_stream` 을 닫지 않고 참조 순환에 남겨 GC 전까지 이 프로세스가 파일을 잠금. `rmtree(ignore_errors=True)` 는 조용히 실패 | 지우기 전에 `gc.collect()`. 취소 시험은 조각 포맷으로도 한다 | D056 |
 | T26 | 화질 선택 창에서 Enter 를 누르면 다운로드 대신 취소되고 항목이 사라짐. 환경설정 입력창의 Enter 는 폴더 선택 창을 엶 | 기본 버튼을 정하지 않으면 QDialog 가 첫 autoDefault 버튼(먼저 추가한 "취소"·"찾아보기")을 기본으로 삼는다 | 입력 다이얼로그는 주 동작 버튼에 `setDefault(True)`. 삭제 확인처럼 위험한 창은 안전한 버튼을 기본으로 둔다 | D060, 50f6702 |
 | T27 | QMessageBox 의 안내가 좁게 줄바꿈돼 읽기 어렵고, "자세히 보기"를 한 번 더 눌러야 원문이 보임 | QMessageBox 는 폭을 직접 정할 수 없고 문구 길이에 맞춰 잡는다 | 긴 안내·오류 원문은 폭을 고정한 전용 QDialog 로 띄운다 (`ui/error_detail_dialog.py`) | c4e22b9 |
+| T28 | Vimeo 링크가 "로그인 필요" 또는 401 | `vimeo.com/ID` 는 추출기의 비로그인 클라이언트가 없어 위장해도 로그인 필요. 임베드 주소도 위장(curl_cffi)이 없으면 401. 특정 영상이 나중에 임베드 401 이 되기도 한다(1084537, 2026-11-11) | 임베드 주소로 바꿔 넣고 curl_cffi 를 런타임 의존성으로 둔다. 영상 하나가 401 이면 다른 공개 영상으로 위장 동작부터 가린다 | D067, D068, Q076 |
+| T29 | curl_cffi 를 깔았는데 `--list-impersonate-targets` 가 모두 unavailable | `pip install -r requirements.txt` 가 venv 의 yt-dlp 를 일부러 낮은 핀(2026.3.17)으로 내리고, 그 버전은 curl_cffi `<0.15` 만 받는다 | 앱을 한 번 기동해 yt-dlp 를 최신화하거나 `pip install yt-dlp==<최신>`. 빌드 전 venv yt-dlp 버전을 확인 (D002) | D071 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

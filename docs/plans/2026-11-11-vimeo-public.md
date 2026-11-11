@@ -32,8 +32,9 @@
     - `https://vimeo.com/1084537` 와 `https://player.vimeo.com/video/1084537` 를 함께 붙여 넣음 → 하나만
   - 확인: 위 테스트·전체 pytest·ruff 통과
   - 결과: 2026-11-11 — 매개변수 9개 추가(표본 번호 76979871), 구현 전 4건 실패 → `_embed_url` 추가 후 pytest 283 통과, ruff 통과
-- [ ] 3. 문서 — `docs/REFERENCE.md` R§2 외부 사양(Vimeo 는 임베드 주소 + TLS 위장, curl_cffi 허용 범위 `>=0.10,<0.18`), R§4 함정 T 번호 하나(`vimeo.com/ID` 는 위장해도 로그인 필요, 위장 없으면 임베드 401), `README.md` 에 사이트·설치 안내가 있으면 한 줄
+- [x] 3. 문서 — `docs/REFERENCE.md` R§2 외부 사양(Vimeo 는 임베드 주소 + TLS 위장, curl_cffi 허용 범위 `>=0.10,<0.18`), R§4 함정 T 번호 하나(`vimeo.com/ID` 는 위장해도 로그인 필요, 위장 없으면 임베드 401), `README.md` 에 사이트·설치 안내가 있으면 한 줄
   - 확인: `grep -n "player.vimeo.com" docs/REFERENCE.md` → R§2·R§4 에 있음, README 설치 절차가 `requirements.txt` 하나로 그대로 맞음
+  - 결과: 2026-11-11 — R§2 Vimeo 한 줄(`player.vimeo.com`), R§4 T28(Vimeo 로그인·401)·T29(`pip install -r` 이 yt-dlp 를 핀으로 내려 위장 꺼짐). README 설치 절은 `pip install -r requirements.txt` 하나라 그대로
 - [ ] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
   - 확인: PyInstaller 빌드 성공, `dist\AVD\_internal\curl_cffi\`·`_internal\curl_cffi.libs\*.dll` 존재, 배포 폴더 크기 증가 약 5~6 MB | 실기기(기계): `dist\AVD\AVD.exe` 기동 → 창 제목 "AV Downloader"
 - [ ] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행

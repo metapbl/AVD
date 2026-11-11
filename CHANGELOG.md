@@ -25,6 +25,7 @@
 
 ## 2026-11-11
 
+- **`docs`**: REFERENCE 에 Vimeo 경로(임베드 주소 + TLS 위장, yt-dlp 버전별 curl_cffi 허용 범위)와 함정 T28(Vimeo 로그인 필요·401)·T29(`pip install -r` 뒤 위장 대상 unavailable) 추가.
 - **`feat(links)`**: Vimeo 공개 영상 링크 `vimeo.com/숫자` 를 임베드 주소 `player.vimeo.com/video/숫자` 로 바꿔 넣는다 — 로그인 없이 받을 수 있는 경로. 해시가 붙은 링크·showcase·다른 사이트는 그대로. **(D067, D068)**
 - **`build(deps)`**: 런타임 의존성에 `curl-cffi` 0.17.0·`cffi` 2.1.1·`pycparser` 3.11 추가(TLS 위장, Vimeo 용), `certifi` 2026.10.18 → 2026.10.23(curl-cffi 요구 조건). `THIRD_PARTY_LICENSES` 에 세 패키지와 curl_cffi dll 에 들어간 curl·BoringSSL·zlib·brotli·zstd·c-ares·nghttp2·ngtcp2·nghttp3 고지. **(D069, D071)**
 - **`docs`**: PRD 변경 승인 — Vimeo 공개 영상 지원(F12)을 다음 계획으로. `curl_cffi` 를 들이고 `vimeo.com/숫자` 링크는 임베드 주소로 바꿔 쓴다. 비공개·로그인 영상은 계속 받지 않는다. **(D067~D070)**
