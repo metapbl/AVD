@@ -16,11 +16,13 @@
 - 커밋 작성자 `metapbl` 확인, 의미 단위 커밋마다 `CHANGELOG.md` 맨 위 항목 (D014, D020)
 
 ## 작업
-- [ ] 1. 의존성 추가와 라이선스 고지 — `requirements.txt`, `THIRD_PARTY_LICENSES`
+- [x] 1. 의존성 추가와 라이선스 고지 — `requirements.txt`, `THIRD_PARTY_LICENSES`
   - 실패하는 테스트 먼저: `requirements.txt` 에 3줄 추가 → `tests/test_third_party_licenses.py::test_every_requirement_has_a_section` 실패 (curl-cffi·cffi·pycparser 절 없음)
-  - 절 추가: curl_cffi(MIT), cffi(MIT), pycparser(BSD-3-Clause) 전문. `curl_cffi.libs\libcurl-impersonate-*.dll` 에 함께 들어간 구성요소(curl, BoringSSL, nghttp2 등)는 curl_cffi·curl-impersonate 저장소의 라이선스 목록으로 확인해 같은 절 아래 고지
+  - 절 추가: curl_cffi(MIT), cffi(MIT-0), pycparser(BSD-3-Clause) 전문. `curl_cffi.libs\libcurl-impersonate-*.dll` 에 함께 들어간 구성요소(curl, BoringSSL, nghttp2 등)는 curl_cffi·curl-impersonate 저장소의 라이선스 목록으로 확인해 같은 절 아래 고지
   - venv 설치 (실행 전 확인): `venv\Scripts\python -m pip install -r requirements.txt`
-  - 확인: 위 테스트·전체 pytest 통과, `venv\Scripts\python -m pip check` → 문제 없음, `venv\Scripts\python -m yt_dlp --list-impersonate-targets` → Chrome 등 `curl_cffi` (unavailable 없음), `venv\Scripts\pip-audit -r requirements.txt` → 종료 코드 0, `git diff requirements.txt` → 추가 3줄만
+  - 확인: 위 테스트·전체 pytest 통과, `venv\Scripts\python -m pip check` → 문제 없음, `venv\Scripts\python -m yt_dlp --list-impersonate-targets` → Chrome 등 `curl_cffi` (unavailable 없음), `venv\Scripts\pip-audit -r requirements.txt` → 보고가 yt-dlp 핀만(D002), `git diff requirements.txt` → 추가 3줄 + certifi 한 줄 (D071)
+  - 결과: 2026-11-11 — certifi 충돌(curl-cffi 0.17.0 은 `certifi>=2026.10.19`) → certifi 2026.10.23 (D071). 절 3개 + dll 구성요소 10개 원문(curl 8.23.0·curl-impersonate 2.3.1·BoringSSL main·zlib 1.3.1·brotli 1.2.1·zstd 1.5.7·c-ares 1.34.9·nghttp2 1.63.0·ngtcp2 1.20.0·nghttp3 1.15.0). pytest 274 통과, pip check 통과, pip-audit 은 yt-dlp 2026.3.17 핀 2건뿐. `pip install -r` 이 venv yt-dlp 를 핀으로 내려 위장이 꺼짐(2026.3.17 은 curl_cffi `<0.15`) → venv 를 2026.10.26 으로 되돌려 위장 대상 unavailable 0
+  - 관찰: 표본 1084537 이 같은 날 오후부터 임베드도 401(위장 사용 확인, 다른 공개 영상 76979871·22439234 는 성공) → 작업 5 표본을 76979871 로
 - [ ] 2. Vimeo 주소 바꾸기 — `ui/add_link_dialog.py > extract_urls` (+ 같은 모듈의 작은 함수)
   - 실패하는 테스트 먼저 (`tests/test_add_links.py::test_extract_urls` 매개변수 추가):
     - `https://vimeo.com/1084537` → `https://player.vimeo.com/video/1084537`
@@ -34,9 +36,9 @@
 - [ ] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
   - 확인: PyInstaller 빌드 성공, `dist\AVD\_internal\curl_cffi\`·`_internal\curl_cffi.libs\*.dll` 존재, 배포 폴더 크기 증가 약 5~6 MB | 실기기(기계): `dist\AVD\AVD.exe` 기동 → 창 제목 "AV Downloader"
 - [ ] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행
-  - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff b2f4dce -- requirements.txt`(계획 시작 전 커밋 기준) 추가 3줄만
+  - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff b2f4dce -- requirements.txt`(계획 시작 전 커밋 기준) 추가 3줄 + certifi 한 줄
   - 실기기 (소스 실행과 exe 각각):
-    - `https://vimeo.com/1084537` 붙여넣기 → 화질 선택 창이 뜸 → 받은 파일 ▶ 재생됨
+    - `https://vimeo.com/76979871` 붙여넣기 → 화질 선택 창이 뜸 → 받은 파일 ▶ 재생됨
     - 받을 수 없는 Vimeo 링크(해시가 틀린 `https://vimeo.com/1084537/0000000000`, 없는 번호 `https://vimeo.com/1`) → 오류 표시, 다른 항목 추가·다운로드 계속 정상
     - YouTube 단일 링크 하나 → 지금처럼 완료 (회귀)
 

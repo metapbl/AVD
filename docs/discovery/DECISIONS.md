@@ -74,8 +74,9 @@
 | D066 | 2026-11-10 | 구현 | `docs/legacy/`(이관 전 CLAUDE·WORKLOG·ADR·LESSONS)를 지운다. 코드 주석·REFERENCE 의 ADR-NNN 은 D 번호로, LESSONS 는 REFERENCE T 번호로 바꾸고, 보류 중이던 ADR-002·005 의 내용은 OPEN H01·H02 에 옮긴다. 원문은 git 이력(삭제 직전 커밋 `75e69ca`)에 남는다. CHANGELOG·QA_LOG·DECISIONS·PRD 의 옛 ADR·WORKLOG 표기는 이력이라 그대로 둔다 | [U] | - | `ADR.md` 만 남기기 (주석이 가리키는 본문 유지) | 확정 |
 | D067 | 2026-11-11 | 8 PRD 변경 | Vimeo 는 임베드가 허용된 공개 영상만 지원한다. 비공개·로그인·도메인 제한 영상은 지금처럼 오류 표시. 근거: `vimeo.com/ID` 는 curl_cffi 가 있어도 로그인 필요, `player.vimeo.com/video/ID` 는 curl_cffi 가 있으면 받아짐 (2026-11-11 실측) | [U] | Q076, Q077 | 미등록 링크(`vimeo.com/ID/해시`)까지 (실측 안 함, 바꿔 쓰기 규칙 추가) | 확정 |
 | D068 | 2026-11-11 | 8 PRD 변경 | `vimeo.com/숫자` 꼴 링크만 링크를 받는 곳에서 한 번 `player.vimeo.com/video/숫자` 로 바꿔 쓴다. 다른 꼴·다른 사이트는 그대로 | [U] | Q078 | 원래 주소로 먼저 시도하고 로그인 오류 때만 재시도 (요청 두 번, 오류 문구에 의존) | 확정 |
-| D069 | 2026-11-11 | 8 PRD 변경 | 런타임 의존성에 yt-dlp 고정 조합 `curl-cffi==0.17.0`·`cffi==2.1.1`·`pycparser==3.11` 추가. yt-dlp·certifi 핀은 그대로. 배포본 THIRD_PARTY_LICENSES 에 curl_cffi 절, 보안 정책 구성요소 표에 한 줄 | [U] | Q079 | curl-cffi 만 고정 (보안 정책 §8 의 전부 `==` 고정과 어긋남) | 확정 |
+| D069 | 2026-11-11 | 8 PRD 변경 | 런타임 의존성에 yt-dlp 고정 조합 `curl-cffi==0.17.0`·`cffi==2.1.1`·`pycparser==3.11` 추가. yt-dlp·certifi 핀은 그대로 (certifi 부분 ← D071로 대체). 배포본 THIRD_PARTY_LICENSES 에 curl_cffi 절, 보안 정책 구성요소 표에 한 줄 | [U] | Q079 | curl-cffi 만 고정 (보안 정책 §8 의 전부 `==` 고정과 어긋남) | 확정 |
 | D070 | 2026-11-11 | 8 PRD 변경 | curl_cffi 의 TLS 위장은 반목표(DRM 우회·인증 전용 콘텐츠 무단 접근, D012)에 해당하지 않는다 — 로그인 없이 공개된 영상만 받고, 로그인·DRM 영상은 계속 받지 않는다 | [U] | Q080 | 도입 보류 | 확정 |
+| D071 | 2026-11-11 | 구현 | certifi 핀을 2026.10.18 → 2026.10.23 으로 올린다. curl-cffi 0.17.0 이 `certifi>=2026.10.19` 를 요구해 함께 설치할 수 없음(설치 때 발견). 2026.10.23 은 yt-dlp 의 curl_cffi 고정 조합 값 | [U] | Q081 | 요구 조건이 낮은 curl-cffi 를 찾기 (yt-dlp 고정 조합 이탈, 재실측 필요) | 확정 |
 
 ## 재논의 금지 규칙
 상태가 '확정'이고 버린 안이 적힌 결정은, 새로운 사실이 없으면 다시 제안하지 않는다.

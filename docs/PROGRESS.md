@@ -5,7 +5,7 @@
 - 갱신: 2026-11-11 · 미릴리스: GaindB 1.1.0 동기화(`d6bc06c`), PRD 변경 승인 F12 (D067~D070). OPEN 미결 0
 
 ## 다음 할 일
-1. 계획 작업 1 — `requirements.txt` 에 curl-cffi·cffi·pycparser, `THIRD_PARTY_LICENSES` 절, venv 설치(실행 전 확인)
+1. 계획 작업 2 — `ui/add_link_dialog.py > extract_urls` 에 Vimeo 주소 바꾸기 (테스트 먼저)
 
 ## 미해결
 - (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다

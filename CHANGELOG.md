@@ -25,6 +25,7 @@
 
 ## 2026-11-11
 
+- **`build(deps)`**: 런타임 의존성에 `curl-cffi` 0.17.0·`cffi` 2.1.1·`pycparser` 3.11 추가(TLS 위장, Vimeo 용), `certifi` 2026.10.18 → 2026.10.23(curl-cffi 요구 조건). `THIRD_PARTY_LICENSES` 에 세 패키지와 curl_cffi dll 에 들어간 curl·BoringSSL·zlib·brotli·zstd·c-ares·nghttp2·ngtcp2·nghttp3 고지. **(D069, D071)**
 - **`docs`**: PRD 변경 승인 — Vimeo 공개 영상 지원(F12)을 다음 계획으로. `curl_cffi` 를 들이고 `vimeo.com/숫자` 링크는 임베드 주소로 바꿔 쓴다. 비공개·로그인 영상은 계속 받지 않는다. **(D067~D070)**
 - **`chore(gaindb)`**: 벤더링본을 GaindB 1.1.0 으로 갱신 — 적용 함수에 선택 인자 `save_timestamp`(파일 날짜 유지)·`track_no_clip`(Track Gain 클리핑 방지)이 추가됐다. 기본값은 꺼짐이라 AVD 의 호출과 동작은 그대로다. 라이선스 3파일은 변경 없음.
 

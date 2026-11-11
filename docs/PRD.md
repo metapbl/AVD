@@ -93,11 +93,11 @@
 
 ### F12 [다음 계획] Vimeo 공개 영상 (D067~D070)
 - 인수 기준:
-  - Given 링크 `https://vimeo.com/1084537` / When 붙여 넣는다 / Then 화질 선택 창이 뜨고 받은 파일이 재생된다
+  - Given 링크 `https://vimeo.com/76979871` / When 붙여 넣는다 / Then 화질 선택 창이 뜨고 받은 파일이 재생된다
   - Given `vimeo.com/1084537` 꼴 링크 / When 주소 바꾸기 함수 / Then `player.vimeo.com/video/1084537`. 해시가 붙은 링크·다른 사이트 링크는 그대로
   - Given 로그인 필요·비공개 Vimeo 링크 / When 붙여 넣는다 / Then 지금처럼 오류 표시, 앱은 계속 정상
   - Given exe 빌드 / When 기동해 같은 표본을 받는다 / Then 성공, `_internal\curl_cffi.libs` 와 THIRD_PARTY_LICENSES 의 curl_cffi 절이 있다
-  - Given `requirements.txt` diff / When 본다 / Then `curl-cffi==0.17.0`·`cffi==2.1.1`·`pycparser==3.11` 세 줄만 늘었다 (yt-dlp 핀 불변)
+  - Given `requirements.txt` diff / When 본다 / Then `curl-cffi==0.17.0`·`cffi==2.1.1`·`pycparser==3.11` 세 줄 추가와 `certifi` 2026.10.18→2026.10.23 한 줄 변경뿐 (yt-dlp 핀 불변, D071)
 - 확인 방법: 자동(주소 바꾸기·diff) + 실기(Windows 표본·exe). macOS 는 확인 안 함
 
 ## 4. 기술 결정
@@ -147,3 +147,5 @@
 | 2026-11-04 | F1 링크 추가 방법 확대, 파일 없음 경고 (현행 반영) | D063, Q073 |
 | 2026-11-04 | F6 화면 테마 추가, §2.2 테마 전환을 이번 범위로 | D065, Q075 |
 | 2026-11-11 | §2.2·F12 Vimeo 공개 영상 지원(curl_cffi·임베드 주소), §2.4 TLS 위장 해당 없음, §4 TLS 위장 | D067~D070, Q076~Q080 |
+| 2026-11-11 | F12 인수 기준: certifi 2026.10.23 상향 포함 (curl-cffi 요구 조건) | D071, Q081 |
+| 2026-11-11 | F12 표본을 76979871 로 (1084537 은 임베드도 401 이 됨) | Q081 결과 |
