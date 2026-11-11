@@ -35,8 +35,9 @@
 - [x] 3. 문서 — `docs/REFERENCE.md` R§2 외부 사양(Vimeo 는 임베드 주소 + TLS 위장, curl_cffi 허용 범위 `>=0.10,<0.18`), R§4 함정 T 번호 하나(`vimeo.com/ID` 는 위장해도 로그인 필요, 위장 없으면 임베드 401), `README.md` 에 사이트·설치 안내가 있으면 한 줄
   - 확인: `grep -n "player.vimeo.com" docs/REFERENCE.md` → R§2·R§4 에 있음, README 설치 절차가 `requirements.txt` 하나로 그대로 맞음
   - 결과: 2026-11-11 — R§2 Vimeo 한 줄(`player.vimeo.com`), R§4 T28(Vimeo 로그인·401)·T29(`pip install -r` 이 yt-dlp 를 핀으로 내려 위장 꺼짐). README 설치 절은 `pip install -r requirements.txt` 하나라 그대로
-- [ ] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
+- [x] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
   - 확인: PyInstaller 빌드 성공, `dist\AVD\_internal\curl_cffi\`·`_internal\curl_cffi.libs\*.dll` 존재, 배포 폴더 크기 증가 약 5~6 MB | 실기기(기계): `dist\AVD\AVD.exe` 기동 → 창 제목 "AV Downloader"
+  - 결과: 2026-11-11 — `pyinstaller AVD.spec` 성공(spec 무수정), `_internal\curl_cffi\`·`curl_cffi-0.17.0.dist-info`·`curl_cffi.libs\libcurl-impersonate-*.dll`(4,113,920 B) 있음, 배포 폴더 244.5 MB(이전 243 MB 안팎), 번들 yt-dlp 2026.10.26, `dist\AVD\THIRD_PARTY_LICENSES` 에 curl-cffi 절. `AVD.exe` 7초 만에 창 제목 "AV Downloader"
 - [ ] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff b2f4dce -- requirements.txt`(계획 시작 전 커밋 기준) 추가 3줄 + certifi 한 줄
   - 실기기 (소스 실행과 exe 각각):
