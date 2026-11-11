@@ -1,6 +1,8 @@
 # ui/add_link_dialog.py
 # URL 입력 팝업 다이얼로그
 
+import re
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QDialog,
@@ -14,10 +16,18 @@ from PySide6.QtWidgets import (
 
 from ui import theme
 
+# yt-dlp 는 로그인 없이 vimeo.com 페이지를 못 읽고 임베드 플레이어만 읽는다 (D068)
+_VIMEO_PAGE = re.compile(r"https?://(?:www\.)?vimeo\.com/(\d+)/?(?:[?#].*)?", re.IGNORECASE)
+
+
+def _embed_url(url: str) -> str:
+    m = _VIMEO_PAGE.fullmatch(url)
+    return f"https://player.vimeo.com/video/{m[1]}" if m else url
+
 
 def extract_urls(text: str) -> list[str]:
     """글자에서 http(s) 주소를 차례대로 뽑는다. 같은 주소는 하나만 남긴다."""
-    urls = [t for t in text.split() if t.lower().startswith(("http://", "https://"))]
+    urls = [_embed_url(t) for t in text.split() if t.lower().startswith(("http://", "https://"))]
     return list(dict.fromkeys(urls))
 
 

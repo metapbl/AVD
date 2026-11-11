@@ -10,6 +10,7 @@ from ui.add_link_dialog import AddLinkDialog, extract_urls
 from ui.main_window import MainWindow, _urls_from_mime
 
 A, B = "https://example.invalid/a", "http://example.invalid/b"
+V = "https://player.vimeo.com/video/76979871"
 
 
 @pytest.mark.parametrize("text, urls", [
@@ -20,6 +21,16 @@ A, B = "https://example.invalid/a", "http://example.invalid/b"
     ("메모 " + A, [A]),
     ("httpfoo ftp://x 글자", []),
     ("", []),
+    # Vimeo `vimeo.com/숫자` 는 임베드 주소로 (F12, D068)
+    ("https://vimeo.com/76979871", [V]),
+    ("http://www.vimeo.com/76979871/", [V]),
+    ("https://vimeo.com/76979871?share=copy", [V]),
+    ("https://vimeo.com/76979871/abcdef1234", ["https://vimeo.com/76979871/abcdef1234"]),
+    ("https://vimeo.com/showcase/123", ["https://vimeo.com/showcase/123"]),
+    ("https://vimeo.com/channels/staffpicks/1", ["https://vimeo.com/channels/staffpicks/1"]),
+    (V, [V]),
+    ("https://www.youtube.com/watch?v=x", ["https://www.youtube.com/watch?v=x"]),
+    (f"https://vimeo.com/76979871 {V}", [V]),
 ])
 def test_extract_urls(text, urls):
     assert extract_urls(text) == urls

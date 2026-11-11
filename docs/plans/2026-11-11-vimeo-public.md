@@ -23,7 +23,7 @@
   - 확인: 위 테스트·전체 pytest 통과, `venv\Scripts\python -m pip check` → 문제 없음, `venv\Scripts\python -m yt_dlp --list-impersonate-targets` → Chrome 등 `curl_cffi` (unavailable 없음), `venv\Scripts\pip-audit -r requirements.txt` → 보고가 yt-dlp 핀만(D002), `git diff requirements.txt` → 추가 3줄 + certifi 한 줄 (D071)
   - 결과: 2026-11-11 — certifi 충돌(curl-cffi 0.17.0 은 `certifi>=2026.10.19`) → certifi 2026.10.23 (D071). 절 3개 + dll 구성요소 10개 원문(curl 8.23.0·curl-impersonate 2.3.1·BoringSSL main·zlib 1.3.1·brotli 1.2.1·zstd 1.5.7·c-ares 1.34.9·nghttp2 1.63.0·ngtcp2 1.20.0·nghttp3 1.15.0). pytest 274 통과, pip check 통과, pip-audit 은 yt-dlp 2026.3.17 핀 2건뿐. `pip install -r` 이 venv yt-dlp 를 핀으로 내려 위장이 꺼짐(2026.3.17 은 curl_cffi `<0.15`) → venv 를 2026.10.26 으로 되돌려 위장 대상 unavailable 0
   - 관찰: 표본 1084537 이 같은 날 오후부터 임베드도 401(위장 사용 확인, 다른 공개 영상 76979871·22439234 는 성공) → 작업 5 표본을 76979871 로
-- [ ] 2. Vimeo 주소 바꾸기 — `ui/add_link_dialog.py > extract_urls` (+ 같은 모듈의 작은 함수)
+- [x] 2. Vimeo 주소 바꾸기 — `ui/add_link_dialog.py > extract_urls` (+ 같은 모듈의 작은 함수)
   - 실패하는 테스트 먼저 (`tests/test_add_links.py::test_extract_urls` 매개변수 추가):
     - `https://vimeo.com/1084537` → `https://player.vimeo.com/video/1084537`
     - `http://www.vimeo.com/1084537/`·`https://vimeo.com/1084537?share=copy` → 같은 player 주소
@@ -31,6 +31,7 @@
     - `https://player.vimeo.com/video/1084537` → 그대로, `https://www.youtube.com/watch?v=x` → 그대로
     - `https://vimeo.com/1084537` 와 `https://player.vimeo.com/video/1084537` 를 함께 붙여 넣음 → 하나만
   - 확인: 위 테스트·전체 pytest·ruff 통과
+  - 결과: 2026-11-11 — 매개변수 9개 추가(표본 번호 76979871), 구현 전 4건 실패 → `_embed_url` 추가 후 pytest 283 통과, ruff 통과
 - [ ] 3. 문서 — `docs/REFERENCE.md` R§2 외부 사양(Vimeo 는 임베드 주소 + TLS 위장, curl_cffi 허용 범위 `>=0.10,<0.18`), R§4 함정 T 번호 하나(`vimeo.com/ID` 는 위장해도 로그인 필요, 위장 없으면 임베드 401), `README.md` 에 사이트·설치 안내가 있으면 한 줄
   - 확인: `grep -n "player.vimeo.com" docs/REFERENCE.md` → R§2·R§4 에 있음, README 설치 절차가 `requirements.txt` 하나로 그대로 맞음
 - [ ] 4. exe 빌드 확인 (빌드는 실행 전 확인) — `AVD.spec` 그대로
