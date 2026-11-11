@@ -16,6 +16,9 @@ MP3_FORMAT_ID    = "bestaudio/best"
 # 원본이 AAC(m4a) 면 재인코딩 없이 담긴다. 아니면 yt-dlp 가 AAC 로 변환 (D073).
 M4A_FORMAT_ID    = "bestaudio[ext=m4a]/bestaudio/best"
 
+# 해상도 행 라벨 앞에 붙이는 통칭 (D075)
+_K_NAMES = {4320: "8K ", 2160: "4K "}
+
 
 @dataclass
 class FormatInfo:
@@ -242,7 +245,8 @@ class InfoFetcher:
         # 비디오 행에 박을 best audio 정보 — 한 번만 스캔.
         best_acodec, best_abr = self._pick_best_audio(formats)
 
-        # 영상 포맷 파싱
+        # 영상 포맷 파싱 — 해상도 행은 고정 행 넷 뒤에 붙인다 (D075)
+        video_rows = []
         video_formats = []
         for f in formats:
             if f.get("vcodec", "none") == "none":
@@ -269,9 +273,9 @@ class InfoFetcher:
             # yt-dlp 의 raw ext (webm 등) 는 사용자에게 노출하지 않는다.
             # vcodec 은 그대로 raw 문자열로 보관 (표시 단계에서 정규화).
             # acodec/abr 은 _pick_best_audio 결과를 모든 비디오 행에 동일하게.
-            result.append(FormatInfo(
+            video_rows.append(FormatInfo(
                 format_id   = f"{f['format_id']}+bestaudio/best",
-                label       = f"{height}p MP4",
+                label       = f"{_K_NAMES.get(height, '')}{height}p MP4",
                 ext         = "mp4",
                 resolution  = f"{width}x{height}",
                 filesize    = size,
@@ -311,4 +315,4 @@ class InfoFetcher:
             abr         = m4a_abr,
         ))
 
-        return result
+        return result + video_rows

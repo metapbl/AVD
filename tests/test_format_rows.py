@@ -35,19 +35,20 @@ def _pick(selector, formats):
 
 def test_row_order_and_kinds():
     rows = _rows(YOUTUBE)
-    assert [r.format_id for r in rows[:2]] == [AUTO_FORMAT_ID, COMPAT_FORMAT_ID]
-    assert [r.format_id for r in rows[-2:]] == [MP3_FORMAT_ID, M4A_FORMAT_ID]
-    compat, m4a = rows[1], rows[-1]
+    assert [r.format_id for r in rows[:4]] == [
+        AUTO_FORMAT_ID, COMPAT_FORMAT_ID, MP3_FORMAT_ID, M4A_FORMAT_ID]
+    assert [r.label for r in rows[4:]] == ["4K 2160p MP4", "1080p MP4"]  # 높은 순, 통칭 (D075)
+    compat, m4a = rows[1], rows[3]
     assert (compat.ext, compat.is_audio) == ("mp4", False)
     assert (m4a.ext, m4a.is_audio) == ("m4a", True)
 
 
 def test_m4a_row_shows_source_aac_bitrate_not_opus():
-    assert _rows(YOUTUBE)[-1].abr == 129.5
+    assert _rows(YOUTUBE)[3].abr == 129.5
 
 
 def test_m4a_row_without_m4a_source_has_no_bitrate():
-    assert _rows([OPUS, H264])[-1].abr == 0.0
+    assert _rows([OPUS, H264])[3].abr == 0.0
 
 
 def test_compat_picks_h264_and_aac_even_when_4k_av1_exists():
@@ -62,6 +63,11 @@ def test_compat_falls_back_when_no_h264():
 def test_m4a_picks_aac_source_and_falls_back():
     assert _pick(M4A_FORMAT_ID, YOUTUBE) == ["140"]
     assert _pick(M4A_FORMAT_ID, [OPUS, H264]) == ["251"]
+
+
+def test_8k_row_label():
+    eight_k = {**AV1_4K, "format_id": "702", "height": 4320, "width": 7680}
+    assert _rows([eight_k])[4].label == "8K 4320p MP4"
 
 
 def test_playlist_modes_map_to_the_same_constants():
