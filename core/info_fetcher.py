@@ -192,6 +192,44 @@ class InfoFetcher:
 
         return (best[0], best[1] if best[1] > 0 else best[2])
 
+    @staticmethod
+    def _predict(selector: str, formats: list) -> dict:
+        """
+        포맷 문자열로 yt-dlp 가 고를 형식의 해상도·코덱·크기 (FormatInfo 필드 이름).
+
+        다운로드와 같은 선택기를 쓰므로 어림값이 아니다. 다만 받을 때 사이트가
+        목록을 바꾸면 달라질 수 있어, 실제 값은 받는 동안 항목에 덮어쓴다.
+        고를 수 없으면 {} — 표시만의 문제로 정보 추출을 실패시키지 않는다.
+        """
+        if not formats:
+            return {}
+        try:
+            with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+                # ctx 는 yt-dlp 2026.10.26 YoutubeDL.process_video_result 와 같다
+                chosen = next(iter(ydl.build_format_selector(selector)({
+                    "formats": formats,
+                    "has_merged_format": any(
+                        "none" not in (f.get("acodec"), f.get("vcodec")) for f in formats),
+                    "incomplete_formats": (
+                        all(f.get("vcodec") == "none" for f in formats)
+                        or all(f.get("acodec") == "none" for f in formats)),
+                })), None)
+        except Exception:
+            return {}
+        if not chosen:
+            return {}
+        parts = chosen.get("requested_formats") or [chosen]
+        video = next((f for f in parts if (f.get("vcodec") or "none") != "none"), {})
+        audio = next((f for f in parts if (f.get("acodec") or "none") != "none"), {})
+        sizes = [f.get("filesize") or f.get("filesize_approx") or 0 for f in parts]
+        return {
+            "resolution": f"{video.get('width') or 0}x{video['height']}" if video.get("height") else "",
+            "filesize"  : int(sum(sizes)) if all(sizes) else 0,  # 하나라도 모르면 미확인
+            "vcodec"    : video.get("vcodec") or "",
+            "acodec"    : audio.get("acodec") or "",
+            "abr"       : float(audio.get("abr") or 0.0),
+        }
+
     def _parse_formats(self, info: dict) -> list[FormatInfo]:
         """
         yt-dlp가 반환한 포맷 목록을 FormatInfo 리스트로 정리
@@ -203,8 +241,7 @@ class InfoFetcher:
         것이 거짓 라벨(예: "1080p WEBM" 인데 파일은 .mp4)을 피하는 정공법.
 
         코덱·비트레이트 정보:
-        - 통합 포맷 (bestvideo+bestaudio/best): 모두 빈 값/0 →
-          표시 헬퍼가 format_id 로 식별해 "자동" 폴백.
+        - 최고 화질·최고 호환: _predict 가 미리 계산한 값. 못 구하면 빈 값/0.
         - 비디오 포맷 행: 해당 비디오 트랙의 vcodec + best audio 후보의 acodec/abr.
           머지 결과의 오디오 정보를 메타 라벨에 미리 보여 줘 사용자가 결과를
           예측할 수 있게 한다.
@@ -214,33 +251,16 @@ class InfoFetcher:
         formats = info.get("formats", [])
         result  = []
 
-        # 통합 포맷 (최고 화질 자동 선택) 먼저 추가 — 코덱/비트레이트는 미확정.
-        # format_id 가 표시 단계의 "자동" 폴백 트리거. 여기 값이 바뀌면 위젯과
-        # 다이얼로그의 식별 분기도 같이 바꿔야 함.
-        result.append(FormatInfo(
-            format_id   = AUTO_FORMAT_ID,
-            label       = "최고 화질 (자동 선택)",
-            ext         = "mp4",
-            resolution  = "최고화질",
-            filesize    = 0,
-            is_audio    = False,
-            vcodec      = "",
-            acodec      = "",
-            abr         = 0.0,
-            tbr         = 0.0,
-        ))
-
-        # 최고 호환 — 코덱 칸은 목표 코덱. 실제 값은 받는 동안 덮어쓴다.
-        result.append(FormatInfo(
-            format_id   = COMPAT_FORMAT_ID,
-            label       = "최고 호환 (H.264 + AAC)",
-            ext         = "mp4",
-            resolution  = "",
-            filesize    = 0,
-            is_audio    = False,
-            vcodec      = "avc1",
-            acodec      = "mp4a",
-        ))
+        # 최고 화질·최고 호환 — yt-dlp 가 고를 형식을 미리 계산해 해상도·코덱·크기를
+        # 채운다 (D076). 계산이 안 되면 빈 값 → 표시 단계가 "자동" 으로 적는다.
+        for format_id, label in (
+            (AUTO_FORMAT_ID, "최고 화질 (자동 선택)"),
+            (COMPAT_FORMAT_ID, "최고 호환 (H.264 + AAC)"),
+        ):
+            result.append(FormatInfo(
+                format_id=format_id, label=label, ext="mp4", is_audio=False,
+                **{"resolution": "", "filesize": 0, **self._predict(format_id, formats)},
+            ))
 
         # 비디오 행에 박을 best audio 정보 — 한 번만 스캔.
         best_acodec, best_abr = self._pick_best_audio(formats)

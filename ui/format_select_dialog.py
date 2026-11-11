@@ -112,8 +112,8 @@ class FormatSelectDialog(QDialog):
 
         # 포맷 목록 채우기 — 형식 | 해상도 | 코덱/비트레이트 | 크기
         # - 라벨이 해상도와 같으면 해상도 칸은 비운다.
-        # - 코덱 칸: 통합 포맷(AUTO_FORMAT_ID) 은 "자동". 그 외에는
-        #   사람 친화 이름으로 정규화. 비트레이트는 abr→tbr.
+        # - 코덱 칸: 사람 친화 이름으로 정규화. 비트레이트는 abr→tbr.
+        #   코덱을 모르면 "자동".
         for fmt in self.video_info.formats:
             # 크기 칸
             size_str = (
@@ -123,33 +123,29 @@ class FormatSelectDialog(QDialog):
             )
 
             # 코덱 칸 — 정규화 후 조립.
-            if fmt.format_id == AUTO_FORMAT_ID:
-                # 통합 포맷 — 선택 시점에 코덱 미확정.
-                codec_str = "자동"
-            else:
-                v_name = humanize_codec(fmt.vcodec, "video")
-                a_name = humanize_codec(fmt.acodec, "audio")
-                bitrate = format_bitrate(fmt.abr, fmt.tbr)
+            v_name = humanize_codec(fmt.vcodec, "video")
+            a_name = humanize_codec(fmt.acodec, "audio")
+            bitrate = format_bitrate(fmt.abr, fmt.tbr)
 
-                if fmt.is_audio:
-                    # 오디오 전용: "MP3 320kbps" 또는 "MP3"
-                    base_name = a_name or (fmt.ext or "").upper()
-                    if base_name and bitrate:
-                        codec_str = f"{base_name} {bitrate}"
-                    elif base_name:
-                        codec_str = base_name
-                    else:
-                        codec_str = "자동"
+            if fmt.is_audio:
+                # 오디오 전용: "MP3 320kbps" 또는 "MP3"
+                base_name = a_name or (fmt.ext or "").upper()
+                if base_name and bitrate:
+                    codec_str = f"{base_name} {bitrate}"
+                elif base_name:
+                    codec_str = base_name
                 else:
-                    # 영상: "H.264 / AAC 192kbps"
-                    parts = []
-                    if v_name:
-                        parts.append(v_name)
-                    if a_name:
-                        parts.append(
-                            f"{a_name} {bitrate}" if bitrate else a_name
-                        )
-                    codec_str = " / ".join(parts) if parts else "자동"
+                    codec_str = "자동"
+            else:
+                # 영상: "H.264 / AAC 192kbps"
+                parts = []
+                if v_name:
+                    parts.append(v_name)
+                if a_name:
+                    parts.append(
+                        f"{a_name} {bitrate}" if bitrate else a_name
+                    )
+                codec_str = " / ".join(parts) if parts else "자동"
 
             res_col = fmt.resolution if fmt.resolution != fmt.label else ""
             item = QTreeWidgetItem([fmt.label, res_col, codec_str, size_str])

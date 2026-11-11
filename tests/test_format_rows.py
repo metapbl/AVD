@@ -65,6 +65,25 @@ def test_m4a_picks_aac_source_and_falls_back():
     assert _pick(M4A_FORMAT_ID, [OPUS, H264]) == ["251"]
 
 
+def test_top_rows_predict_what_ytdlp_will_pick():
+    sized = [{**AAC, "filesize": 10}, {**OPUS, "filesize": 20},
+             {**H264, "filesize": 100}, {**AV1_4K, "filesize_approx": 1000}]
+    auto, compat = _rows(sized)[:2]
+    assert (auto.resolution, auto.vcodec, auto.acodec, auto.abr, auto.filesize) == (
+        "3840x2160", "av01.0.12M.08", "opus", 160.0, 1020)
+    assert (compat.resolution, compat.vcodec, compat.acodec, compat.abr, compat.filesize) == (
+        "1920x1080", "avc1.640028", "mp4a.40.2", 129.5, 110)
+    assert _rows(YOUTUBE)[0].filesize == 0  # 하나라도 크기를 모르면 미확인
+
+
+def test_top_rows_stay_blank_when_nothing_to_predict():
+    for formats in ([], [OPUS]):  # 목록 없음 / 오디오만 (SoundCloud)
+        auto, compat = _rows(formats)[:2]
+        assert auto.resolution == compat.resolution == ""
+        assert auto.vcodec == compat.vcodec == ""
+    assert _rows([OPUS])[0].acodec == "opus"
+
+
 def test_8k_row_label():
     eight_k = {**AV1_4K, "format_id": "702", "height": 4320, "width": 7680}
     assert _rows([eight_k])[4].label == "8K 4320p MP4"
@@ -116,7 +135,8 @@ def test_dialog_codec_column_for_new_rows():
     tree = dlg.list_formats
     codec = {tree.topLevelItem(i).text(0): tree.topLevelItem(i).text(2)
              for i in range(tree.topLevelItemCount())}
-    assert codec["최고 호환 (H.264 + AAC)"] == "H.264 / AAC"
+    assert codec["최고 호환 (H.264 + AAC)"] == "H.264 / AAC 130kbps"
+    assert codec["최고 화질 (자동 선택)"] == "AV1 / Opus 160kbps"
     assert codec["M4A 오디오 (원본 그대로)"] == "AAC 130kbps"
 
 
