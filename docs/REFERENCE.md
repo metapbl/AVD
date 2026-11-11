@@ -81,6 +81,7 @@
 | T27 | QMessageBox 의 안내가 좁게 줄바꿈돼 읽기 어렵고, "자세히 보기"를 한 번 더 눌러야 원문이 보임 | QMessageBox 는 폭을 직접 정할 수 없고 문구 길이에 맞춰 잡는다 | 긴 안내·오류 원문은 폭을 고정한 전용 QDialog 로 띄운다 (`ui/error_detail_dialog.py`) | c4e22b9 |
 | T28 | Vimeo 링크가 "로그인 필요" 또는 401 | `vimeo.com/ID` 는 추출기의 비로그인 클라이언트가 없어 위장해도 로그인 필요. 임베드 주소도 위장(curl_cffi)이 없으면 401. 특정 영상이 나중에 임베드 401 이 되기도 한다(1084537, 2026-11-11) | 임베드 주소로 바꿔 넣고 curl_cffi 를 런타임 의존성으로 둔다. 영상 하나가 401 이면 다른 공개 영상으로 위장 동작부터 가린다 | D067, D068, Q076 |
 | T29 | curl_cffi 를 깔았는데 `--list-impersonate-targets` 가 모두 unavailable | `pip install -r requirements.txt` 가 venv 의 yt-dlp 를 일부러 낮은 핀(2026.3.17)으로 내리고, 그 버전은 curl_cffi `<0.15` 만 받는다 | 앱을 한 번 기동해 yt-dlp 를 최신화하거나 `pip install yt-dlp==<최신>`. 빌드 전 venv yt-dlp 버전을 확인 (D002) | D071 |
+| T30 | Vimeo 항목이 정보·화질 창까지 되고 다운로드만 "다운로드하지 못했습니다" (자세히: This format is DRM protected) | 영상마다 Vimeo 가 DRM 형식(HLS 목록 주소에 `/playlist/drm/cbcs`)만 줄 수 있다. 추출 단계의 `has_drm` 은 False 로 나오고 목록을 받을 때 판정된다 (76979871, 2026-11-11) | 받지 않는 것이 맞다(D012·D070). 표본은 DRM 이 아닌 영상(22439234)으로 고른다 | 계획 작업 5 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

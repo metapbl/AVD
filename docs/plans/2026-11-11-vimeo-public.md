@@ -41,9 +41,11 @@
 - [ ] 5. 인수 확인 — PRD F12 인수 기준을 모두 실행
   - 확인: 전체 테스트 `venv\Scripts\python -m pytest` 통과, `git diff b2f4dce -- requirements.txt`(계획 시작 전 커밋 기준) 추가 3줄 + certifi 한 줄
   - 실기기 (소스 실행과 exe 각각):
-    - `https://vimeo.com/76979871` 붙여넣기 → 화질 선택 창이 뜸 → 받은 파일 ▶ 재생됨
+    - `https://vimeo.com/22439234` 붙여넣기 → 화질 선택 창이 뜸 → 받은 파일 ▶ 재생됨
     - 받을 수 없는 Vimeo 링크(해시가 틀린 `https://vimeo.com/1084537/0000000000`, 없는 번호 `https://vimeo.com/1`) → 오류 표시, 다른 항목 추가·다운로드 계속 정상
     - YouTube 단일 링크 하나 → 지금처럼 완료 (회귀)
+  - 결과: 2026-11-11 실기기 1차(소스·exe 같음) — 2·3 통과, 1 실패: 76979871 은 정보·화질 창까지 되고 다운로드 "다운로드하지 못했습니다"
+  - 1차 원인: 76979871 은 형식 12개 모두 DRM 목록(`/playlist/drm/cbcs`) → yt-dlp 가 "This format is DRM protected" 로 거부. 반목표(D012·D070)대로 받지 않는 것이 맞다. DRM 이 아닌 22439234 는 같은 AVD 경로(`extract_urls`→`InfoFetcher`→`Downloader`)로 1080p H.264+AAC·썸네일 임베드, 3:05 완료 → 표본을 22439234 로 바꿔 1번만 다시 확인
 
 ## 자가 검토
 - PRD 기능 누락: 없음 (F12. F1 의 링크 추가 경로가 바뀌므로 작업 5 에 YouTube 회귀 확인)
