@@ -25,7 +25,7 @@ from controllers.download_manager import DownloadManager
 from controllers.playlist_flow import PlaylistFlow
 from core.info_fetcher import FormatInfo, VideoInfo
 from models.download_item import DownloadItem, DownloadStatus
-from ui import theme
+from ui import about_dialog, theme
 from ui.add_link_dialog import AddLinkDialog, extract_urls
 from ui.confirm_remove_dialog import ConfirmRemoveDialog
 from ui.download_item_widget import DownloadItemWidget
@@ -35,7 +35,7 @@ from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
 from utils.config_manager import ConfigManager
 from utils.file_utils import open_file, open_folder
-from utils.updater import restart_command
+from utils.updater import APP_VERSION, restart_command
 from workers.info_worker import InfoWorker
 from workers.thumbnail_worker import ThumbnailWorker
 from workers.update_check_worker import UpdateCheckWorker
@@ -228,7 +228,7 @@ class MainWindow(QMainWindow):
         self.playlist_flow.finished.connect(self._on_playlist_finished)
         self.playlist_flow.probe_finished.connect(lambda: self.playlist_banner.setVisible(False))
 
-        self.setWindowTitle("AV Downloader")
+        self.setWindowTitle(f"AV Downloader {APP_VERSION}")
         self.setMinimumSize(800, 600)
         self.setAcceptDrops(True)
         QShortcut(QKeySequence(QKeySequence.StandardKey.Paste), self, self._on_paste_links)
@@ -332,6 +332,12 @@ class MainWindow(QMainWindow):
         btn_prefs.setFixedHeight(36)
         btn_prefs.clicked.connect(self._on_preferences)
         layout.addWidget(btn_prefs)
+
+        self.btn_about = QPushButton("ⓘ 정보")
+        self.btn_about.setObjectName("btnAbout")
+        self.btn_about.setFixedHeight(36)
+        self.btn_about.clicked.connect(self._on_about)
+        layout.addWidget(self.btn_about)
 
         return toolbar
 
@@ -1182,6 +1188,10 @@ class MainWindow(QMainWindow):
         self._refresh_save_path()
         theme.apply_theme(QApplication.instance(), self.config.get("theme_mode", "system"))
 
+    def _on_about(self):
+        """정보 버튼 클릭 (D077)"""
+        about_dialog.AboutDialog(self).exec()
+
     def _on_theme_changed(self):
         """테마가 바뀌면 메인 창과 항목을 다시 칠한다 (D065)."""
         self._apply_style()
@@ -1345,7 +1355,7 @@ class MainWindow(QMainWindow):
                 padding: 0 12px;
                 font-size: 12px;
             }
-            QPushButton#btnPrefs {
+            QPushButton#btnPrefs, QPushButton#btnAbout {
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
