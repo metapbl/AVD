@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import yt_dlp
 
-from core.downloader import JS_CHALLENGE_OPTS, MP3_BITRATE_KBPS
+from core.downloader import JS_CHALLENGE_OPTS, MP3_BITRATE_KBPS, open_ydl
 from utils.file_utils import normalize_info_dict
 
 # 화질 선택 창·플레이리스트 창이 함께 쓰는 고정 행의 포맷 문자열 (D074).
@@ -61,7 +61,7 @@ class VideoInfo:
 class InfoFetcher:
     """URL에서 영상 정보를 추출하는 클래스"""
 
-    def fetch(self, url: str) -> VideoInfo:
+    def fetch(self, url: str, cookies: dict | None = None) -> VideoInfo:
         """
         URL을 받아 VideoInfo 반환
         실패 시 예외 발생
@@ -73,7 +73,7 @@ class InfoFetcher:
             **JS_CHALLENGE_OPTS,
         }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with open_ydl(ydl_opts, cookies or {}) as ydl:
             info = ydl.extract_info(url, download=False)
 
         # SoundCloud · macOS 등 일부 소스의 NFD 한글을 NFC 로 정규화.

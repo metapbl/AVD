@@ -339,8 +339,10 @@ class DownloadWorker(QThread):
         save_dir     : str,
         gain_enabled : bool  = False,
         gain_db      : float = _GAIN_REFERENCE_DB,
+        cookies      : dict | None = None,
     ):
         super().__init__()
+        self.cookies: dict = cookies or {}
         self.url          = url
         self.format_id    = format_id
         self.ext          = ext
@@ -432,6 +434,7 @@ class DownloadWorker(QThread):
                     save_dir         = self._temp_dir,
                     progress_hook    = self._on_progress,
                     postprocess_hook = self._on_postprocess,
+                    cookies          = self.cookies,
                 )
                 cancelled = False
                 errored   = False

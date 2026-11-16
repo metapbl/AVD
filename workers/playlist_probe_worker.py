@@ -6,10 +6,9 @@
 
 from dataclasses import dataclass
 
-import yt_dlp
 from PySide6.QtCore import QThread, Signal
 
-from core.downloader import JS_CHALLENGE_OPTS
+from core.downloader import JS_CHALLENGE_OPTS, open_ydl
 from utils.file_utils import normalize_info_dict, strip_ansi
 
 # 한 플레이리스트에서 받아올 최대 항목 수. ADR 합의값.
@@ -53,9 +52,10 @@ class PlaylistProbeWorker(QThread):
     probe_ready = Signal(object)  # PlaylistResult
     error       = Signal(str)
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, cookies: dict | None = None):
         super().__init__()
         self.url = url
+        self.cookies: dict = cookies or {}
 
     def run(self):
         ydl_opts = {
@@ -67,7 +67,7 @@ class PlaylistProbeWorker(QThread):
         }
 
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with open_ydl(ydl_opts, self.cookies) as ydl:
                 info = ydl.extract_info(self.url, download=False)
         except Exception as e:
             self.error.emit(strip_ansi(str(e)))

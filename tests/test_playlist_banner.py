@@ -11,13 +11,16 @@ PLAYLIST = "https://example.invalid/playlist?list=1"
 
 
 def test_playlist_link_shows_banner():
-    shown = []
+    shown, cookies = [], []
     fake = SimpleNamespace(
-        playlist_flow=SimpleNamespace(is_busy=False, start=lambda url: None),
+        config={"cookie_source": "firefox"},
+        playlist_flow=SimpleNamespace(is_busy=False, start=lambda url, cookies=None: started(cookies)),
         playlist_banner=SimpleNamespace(setVisible=shown.append),
     )
+    started = cookies.append
     MainWindow._on_link_submitted(fake, PLAYLIST)
     assert shown == [True]
+    assert cookies == [{"cookiesfrombrowser": ("firefox",)}]  # 로그인 쿠키도 넘긴다 (F15)
 
 
 def test_probe_done_signals_before_dialog(monkeypatch):

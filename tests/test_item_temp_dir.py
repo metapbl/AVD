@@ -139,7 +139,7 @@ class _FakeDownloader:
     def cancel(self):
         pass
 
-    def download(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook):
+    def download(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook, cookies=None):
         type(self).dirs.append(save_dir)
         (Path(save_dir) / "T.f1.mp4").write_text("part", encoding="utf-8")
         action = type(self).actions.pop(0)
@@ -224,7 +224,7 @@ def test_failed_move_keeps_temp_and_names_it(fake, tmp_path, monkeypatch):
 
 def test_missing_output_is_error_and_keeps_temp(fake, tmp_path, monkeypatch):
     # 결과 경로를 모르면 완료로 치지 않는다 — 받은 파일이 임시 폴더에 있을 수 있다
-    def no_hook(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook):
+    def no_hook(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook, cookies=None):
         type(self).dirs.append(save_dir)
 
     monkeypatch.setattr(_FakeDownloader, "download", no_hook)

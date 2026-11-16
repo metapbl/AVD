@@ -8,6 +8,7 @@ import unicodedata
 from pathlib import Path
 
 import yt_dlp
+from yt_dlp.cookies import CookieLoadError
 from yt_dlp.postprocessor.common import PostProcessor
 from yt_dlp.postprocessor.ffmpeg import (
     FFmpegMergerPP,
@@ -199,6 +200,35 @@ JS_CHALLENGE_OPTS = {
     "remote_components": ["ejs:github"],
 }
 
+def cookie_opts(config) -> dict:
+    """설정의 로그인 쿠키 출처를 yt-dlp 옵션으로 (F15, D079·D080). 쿠키 값은 다루지 않는다."""
+    source = config.get("cookie_source", "none")
+    if source == "firefox":
+        return {"cookiesfrombrowser": ("firefox",)}
+    if source == "file" and config.get("cookie_file", ""):
+        return {"cookiefile": config.get("cookie_file")}
+    return {}
+
+
+def open_ydl(opts: dict, cookies: dict) -> yt_dlp.YoutubeDL:
+    """쿠키 옵션을 붙여 YoutubeDL 을 연다. 사용자 cookies.txt 는 읽기만 한다 (D079)."""
+    path = cookies.get("cookiefile")
+    # 없는 파일은 yt-dlp 가 조용히 건너뛰고 닫을 때 새로 만든다 — 앞에서 막는다
+    if path and not os.path.isfile(path):
+        raise CookieLoadError(f"failed to load cookies: {path} 파일이 없습니다")
+    ydl = yt_dlp.YoutubeDL({**opts, **cookies})
+    if cookies:
+        try:
+            _ = ydl.cookiejar  # 지금 불러온다
+        except Exception as e:
+            # yt-dlp 는 원인 문구(DPAPI·DB 없음 등)만 담은 DownloadError 를 던진다 — 한 문구로 감싼다.
+            # close() 는 부르지 않는다: save_cookies() 가 cookiefile 에 쓸 수 있다 (아직 연결도 없음)
+            raise CookieLoadError(f"failed to load cookies: {e}") from e
+        # close() 의 save_cookies() 가 사용자 파일에 다시 쓰지 않게
+        ydl.params["cookiefile"] = None
+    return ydl
+
+
 _BASE_OPTS = {
     "quiet"                : True,
     "no_warnings"          : True,
@@ -221,7 +251,7 @@ class Downloader:
     def cancel(self):
         self._cancelled = True
 
-    def download(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook):
+    def download(self, url, format_id, ext, save_dir, progress_hook, postprocess_hook, cookies=None):
         self._cancelled = False
         ensure_dir(save_dir)
 
@@ -290,7 +320,7 @@ class Downloader:
         )
         ydl_opts["postprocessors"].insert(embed_idx, convert_pp)
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with open_ydl(ydl_opts, cookies or {}) as ydl:
             ydl.add_post_processor(_NFCNormalizePP(), when="pre_process")
             ydl.download([url])
 

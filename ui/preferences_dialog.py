@@ -19,7 +19,11 @@ from PySide6.QtWidgets import (
 )
 
 from ui import theme
+from ui.about_dialog import REPO_URL
 from utils.config_manager import ConfigManager
+
+# README 의 "## 로그인 쿠키" 절 — 확장 안내는 앱을 다시 배포하지 않고 README 만 고쳐 갱신한다
+COOKIE_HELP_URL = REPO_URL + "#로그인-쿠키"
 
 # ── MP3 음량 정규화 목표 dB 범위 ──────────────────────
 # 슬라이더는 정수 스텝만 다루므로 dB 값을 2배 스케일한 정수로 저장한다
@@ -207,6 +211,49 @@ class PreferencesDialog(QDialog):
 
         root.addWidget(grp_dl)
 
+        # ── 로그인 쿠키 그룹 (F15, D079·D080) — 출처만 저장, 쿠키 값은 다루지 않는다 ──
+        grp_cookie = QGroupBox("로그인 쿠키")
+        grp_cookie.setObjectName("settingsGroup")
+        cookie_layout = QVBoxLayout(grp_cookie)
+        cookie_layout.setSpacing(8)
+
+        radio_row = QHBoxLayout()
+        radio_row.setSpacing(16)
+        self._cookie_radios = {
+            "none": QRadioButton("사용 안 함"),
+            "firefox": QRadioButton("Firefox 에서 읽기"),
+            "file": QRadioButton("cookies.txt 파일"),
+        }
+        for radio in self._cookie_radios.values():
+            radio_row.addWidget(radio)
+            radio.toggled.connect(self._on_cookie_source_changed)
+        radio_row.addStretch()
+        cookie_layout.addLayout(radio_row)
+
+        self.cookie_file_row = QWidget()
+        file_row = QHBoxLayout(self.cookie_file_row)
+        file_row.setContentsMargins(0, 0, 0, 0)
+        file_row.setSpacing(8)
+        self.input_cookie_file = QLineEdit()
+        self.input_cookie_file.setFixedHeight(32)
+        self.input_cookie_file.setReadOnly(True)
+        file_row.addWidget(self.input_cookie_file)
+        self.btn_cookie_file = QPushButton("찾아보기")
+        self.btn_cookie_file.setObjectName("btnBrowse")
+        self.btn_cookie_file.setFixedSize(80, 32)
+        self.btn_cookie_file.clicked.connect(self._browse_cookie_file)
+        file_row.addWidget(self.btn_cookie_file)
+        cookie_layout.addWidget(self.cookie_file_row)
+
+        # 고른 선택마다 문구가 바뀐다 (_on_cookie_source_changed)
+        self.lbl_cookie_note = QLabel()
+        self.lbl_cookie_note.setObjectName("gainHint")
+        self.lbl_cookie_note.setWordWrap(True)
+        self.lbl_cookie_note.setOpenExternalLinks(True)
+        cookie_layout.addWidget(self.lbl_cookie_note)
+
+        root.addWidget(grp_cookie)
+
         # ── MP3 음량 정규화 그룹 ──
         # 체크박스를 켜면 접혀 있던 게인 컨트롤(슬라이더+입력창)이 펼쳐진다.
         # 목표 dB 는 0.5dB 단위(슬라이더 정수 스텝 = 0.5dB, GAIN_SCALE=2).
@@ -363,6 +410,32 @@ class PreferencesDialog(QDialog):
             w.style().unpolish(w)
             w.style().polish(w)
 
+    # ── 로그인 쿠키 컨트롤 ──────────────────────────
+
+    def _on_cookie_source_changed(self):
+        """cookies.txt 를 골랐을 때만 경로 칸이 보이고, 안내 문구도 선택을 따른다."""
+        is_file = self._cookie_radios["file"].isChecked()
+        self.cookie_file_row.setVisible(is_file)
+        if is_file:
+            note = (
+                "Chrome, Edge 등에서 확장으로 내보낸 cookies.txt 를 지정하세요. "
+                f'<a href="{COOKIE_HELP_URL}" style="color:{theme.color("accent")};">만드는 법 ↗</a>'
+            )
+        elif self._cookie_radios["firefox"].isChecked():
+            note = "Firefox 에 로그인한 계정으로 받습니다. Firefox 에서 사이트에 로그인해 두세요."
+        else:
+            note = "연령 제한처럼 로그인해야 볼 수 있는 영상을 받을 때 켜세요."
+        self.lbl_cookie_note.setText(note)
+        # 높이가 바뀌므로 다시 맞춘다
+        self.adjustSize()
+
+    def _browse_cookie_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "cookies.txt 선택", self.input_cookie_file.text(), "쿠키 파일 (*.txt);;모든 파일 (*)"
+        )
+        if path:
+            self.input_cookie_file.setText(path)
+
     # ── MP3 음량 정규화 컨트롤 ──────────────────────
 
     def _on_gain_toggled(self, checked: bool):
@@ -420,6 +493,11 @@ class PreferencesDialog(QDialog):
         mode = self.config.get("theme_mode", "system")
         self._theme_radios.get(mode, self._theme_radios["system"]).setChecked(True)
 
+        source = self.config.get("cookie_source", "none")
+        self._cookie_radios.get(source, self._cookie_radios["none"]).setChecked(True)
+        self.input_cookie_file.setText(self.config.get("cookie_file", ""))
+        self._on_cookie_source_changed()   # 같은 값이라 toggled 가 안 올 때도 맞춘다
+
         # MP3 음량 정규화 — 목표 dB 를 슬라이더(정수 스텝)로 환산해 반영,
         # 슬라이더 핸들러가 입력창까지 동기화한다. 체크 상태로 상세 펼침 결정.
         gain_db = float(self.config.get("mp3_gain_db", _GAIN_DB_DEFAULT) or _GAIN_DB_DEFAULT)
@@ -458,6 +536,8 @@ class PreferencesDialog(QDialog):
             "mp3_gain_enabled"  : self.chk_gain.isChecked(),
             # 슬라이더는 GAIN_SCALE 배 정수 → 실제 dB(float, 0.5 단위)로 환산.
             "mp3_gain_db"       : self.slider_gain.value() / _GAIN_SCALE,
+            "cookie_source"     : next(s for s, r in self._cookie_radios.items() if r.isChecked()),
+            "cookie_file"       : self.input_cookie_file.text(),
         }
 
         # ConfigManager 에 저장

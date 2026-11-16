@@ -1,4 +1,5 @@
 """오류 원문의 ANSI 색 코드 제거 (아홉 번째 계획 작업 2)."""
+import yt_dlp
 from yt_dlp.utils import DownloadError
 
 RAW = "\x1b[0;31mERROR:\x1b[0m [youtube] x: Private video"
@@ -48,7 +49,7 @@ def test_info_worker_strips_ansi():
     from workers.info_worker import InfoWorker
 
     class _Fetcher:
-        def fetch(self, _url):
+        def fetch(self, _url, cookies=None):
             raise DownloadError(RAW)
 
     w = InfoWorker("u")
@@ -74,7 +75,7 @@ def test_playlist_probe_worker_strips_ansi(monkeypatch):
         def extract_info(self, *_a, **_k):
             raise DownloadError(RAW)
 
-    monkeypatch.setattr(pw.yt_dlp, "YoutubeDL", _YDL)
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", _YDL)
     w = pw.PlaylistProbeWorker("u")
     got = _errors(w)
     w.run()

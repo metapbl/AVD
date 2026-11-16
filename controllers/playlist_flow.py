@@ -72,14 +72,14 @@ class PlaylistFlow(QObject):
 
     # ── 진입점 ────────────────────────────────────────
 
-    def start(self, url: str):
+    def start(self, url: str, cookies: dict | None = None):
         """플레이리스트 처리 시작. 이미 진행 중이면 조용히 무시."""
         if self._busy:
             return
         self._busy = True
         self.status.emit("플레이리스트 정보를 가져오는 중...")
 
-        worker = PlaylistProbeWorker(url)
+        worker = PlaylistProbeWorker(url, cookies=cookies)
         # 취소로 현재 워커가 아니게 된 워커의 늦은 결과는 버린다.
         worker.probe_ready.connect(
             lambda r, w=worker: self._worker is w and self._on_probe_done(r),

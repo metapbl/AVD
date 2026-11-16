@@ -5,6 +5,7 @@ import time
 
 from PySide6.QtCore import QObject, Qt, Signal
 
+from core.downloader import cookie_opts
 from models.download_item import DownloadStatus
 from utils.file_utils import sweep_stale_temp_dirs
 from workers.download_worker import DownloadWorker
@@ -231,6 +232,7 @@ class DownloadManager(QObject):
             save_dir     = save_dir,
             gain_enabled = gain_enabled,
             gain_db      = gain_db,
+            cookies      = cookie_opts(self.config),
         )
         # 진행률·속도·ETA·크기·코덱정보는 워커→위젯 직접 연결.
         worker.progress.connect(widget.update_progress)

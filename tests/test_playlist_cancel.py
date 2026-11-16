@@ -10,7 +10,7 @@ class _FakeWorker(QObject):
     error = Signal(str)
     finished = Signal()
 
-    def __init__(self, url):
+    def __init__(self, url, cookies=None):
         super().__init__()
 
     def start(self):

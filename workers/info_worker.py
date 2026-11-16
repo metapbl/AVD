@@ -28,9 +28,10 @@ class InfoWorker(QThread):
     # 실패 시그널 - 에러 메시지 전달
     error      = Signal(str)
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, cookies: dict | None = None):
         super().__init__()
         self.url     = url
+        self.cookies: dict = cookies or {}
         self._fetcher = InfoFetcher()
 
     def run(self):
@@ -39,7 +40,7 @@ class InfoWorker(QThread):
         InfoFetcher로 영상 정보 추출 후 시그널로 결과 전달
         """
         try:
-            info = self._fetcher.fetch(self.url)
+            info = self._fetcher.fetch(self.url, cookies=self.cookies)
             self.info_ready.emit(info)
 
         except Exception as e:

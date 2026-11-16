@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from controllers.download_manager import DownloadManager
 from controllers.playlist_flow import PlaylistFlow
+from core.downloader import cookie_opts
 from core.info_fetcher import FormatInfo, VideoInfo
 from models.download_item import DownloadItem, DownloadStatus
 from ui import about_dialog, theme
@@ -81,6 +82,29 @@ def _friendly_error(msg: str) -> tuple[str, str]:
     """
     low = (msg or "").lower()
 
+    # 쿠키 읽기 실패 — open_ydl 이 원인(Firefox 프로필 없음·DB 잠김·파일 없음)과 상관없이 이 문구로 감싼다
+    if "failed to load cookies" in low:
+        return (
+            "로그인 쿠키를 읽지 못했습니다",
+            (
+                "환경설정에서 고른 Firefox 나 cookies.txt 에서 쿠키를 읽지 못했습니다.\n\n대처 방법:\n"
+                "  • Firefox: 설치돼 있고 YouTube 등에 로그인했는지 확인하고, "
+                "Firefox 를 닫은 뒤 다시 시도하세요.\n"
+                "  • cookies.txt: 파일이 그 자리에 있는지 확인하고, "
+                "브라우저 확장으로 다시 내보내 지정하세요."
+            ),
+        )
+
+    # 연령 제한 — YouTube 원문 "Sign in to confirm your age" 가 아래 봇 감지에 먼저 걸리지 않게 앞에 둔다
+    if "confirm your age" in low or ("age" in low and "restrict" in low):
+        return (
+            "연령 제한 영상입니다",
+            (
+                "연령 제한이 걸린 영상이라 로그인이 필요합니다. "
+                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요."
+            ),
+        )
+
     # YouTube 봇 감지 / 로그인 요구 — 가장 흔한 대량 실패 원인.
     if "sign in to confirm" in low or "not a bot" in low or "confirm you" in low:
         return (
@@ -90,27 +114,21 @@ def _friendly_error(msg: str) -> tuple[str, str]:
                 "일시 차단합니다.\n\n대처 방법:\n"
                 "  • 몇 분~몇 시간 뒤 다시 시도하세요 (차단은 시간이 지나면 풀립니다).\n"
                 "  • 한 번에 받는 영상 수를 줄이고, 동시 다운로드 수도 낮춰 보세요.\n"
-                "  • 계속된다면 브라우저 로그인 쿠키 사용 기능이 필요합니다 "
-                "(추후 지원 예정)."
+                "  • 계속된다면 환경설정의 로그인 쿠키를 켜 보세요."
             ),
         )
     if "private video" in low:
         return (
             "비공개 영상입니다",
             (
-                "이 영상은 비공개로 설정되어 있어 다운로드할 수 없습니다. "
-                "접근 권한이 있는 계정의 쿠키가 필요합니다."
+                "이 영상은 비공개로 설정되어 있습니다. 볼 권한이 있는 계정이라면 "
+                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요."
             ),
         )
     if "members-only" in low or "join this channel" in low:
         return (
             "멤버십 전용 영상입니다",
             "채널 멤버십 가입자만 볼 수 있는 영상이라 다운로드할 수 없습니다.",
-        )
-    if "age" in low and "restrict" in low:
-        return (
-            "연령 제한 영상입니다",
-            "연령 제한이 걸린 영상이라 로그인(쿠키) 없이는 다운로드할 수 없습니다.",
         )
     if "video unavailable" in low or "has been removed" in low or "was deleted" in low:
         return (
@@ -409,7 +427,7 @@ class MainWindow(QMainWindow):
                     "이미 플레이리스트를 처리 중입니다. 잠시 후 다시 시도해 주세요."
                 )
                 return
-            self.playlist_flow.start(url)
+            self.playlist_flow.start(url, cookies=cookie_opts(self.config))
             self.playlist_banner.setVisible(True)
             return
 
@@ -491,7 +509,7 @@ class MainWindow(QMainWindow):
             self._info_running.add(item_id)
             item = self.items[item_id]
 
-            worker = InfoWorker(item.url)
+            worker = InfoWorker(item.url, cookies=cookie_opts(self.config))
             # "작업 결과" 는 info_ready 로 받는다 (내장 finished 와 다른 이름).
             # 취소·재시도로 현재 워커가 아니게 된 워커의 늦은 결과는 버린다.
             worker.info_ready.connect(

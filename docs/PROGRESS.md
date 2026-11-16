@@ -1,15 +1,15 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 스물일곱 번째 계획 `docs/plans/2026-11-16-login-cookies.md` in-progress
-- 갱신: 2026-11-16 · 로그인 쿠키(F15, D078·D079) PRD·보안 정책 승인. 직전 릴리스 v1.5.0(태그 `b13aae1`, Latest). OPEN 미결 0
+- 단계: 7 계획 대기 · 스물일곱 번째 계획 `docs/plans/2026-11-16-login-cookies.md` done
+- 갱신: 2026-11-16 · 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt) 구현·실기 확인. **미릴리스** (직전 v1.5.0, 태그 `b13aae1`). OPEN 미결 0
 
 ## 다음 할 일
-1. 스물일곱 번째 계획 — 로그인 쿠키(F15). 작업 1(테스트 먼저)부터
+1. v1.6.0 릴리스 — 로그인 쿠키(F15). 릴리스 때 PRD §2.2 완료 표시, exe 에서 Firefox·cookies.txt 받기 확인
 2. (후보) PRD §2.2 로드맵 — 다국어, macOS 정식화
 
 ## 미해결
-- (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 이후 29회 통과. 다시 나오면 `pytest -q` 전체 출력을 남긴다
+- (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 2026-11-16 다시 1회: `tests/test_move_unique.py::test_concurrent_moves_do_not_overwrite` (PermissionError 로 보임, 요약 줄만 남음), 바로 다음 4회 통과. 다시 나오면 `pytest -q tests/test_move_unique.py` 전체 출력을 남긴다
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
 - (기록) Vimeo: F12 로 공개·비DRM 영상 지원. 영상마다 DRM 형식만 주기도 함(76979871) — 받지 않음 (T30)
@@ -20,6 +20,7 @@
 - (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
+- 환경설정 cookies.txt 의 "만드는 법 ↗" 이 브라우저로 README `#로그인-쿠키` 절을 여는지 — README 를 push 한 뒤 (기대: 저장소 페이지가 그 절로 스크롤)
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
 

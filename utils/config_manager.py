@@ -27,6 +27,9 @@ DEFAULT_CONFIG = {
     "language"          : "ko",    # 언어 설정
     "mp3_gain_enabled"  : False,   # MP3 다운로드 시 음량 정규화 여부
     "mp3_gain_db"       : 89.0,    # 목표 음량 (dB). 75.0~105.0 범위, 기본 89.0
+    # 로그인 쿠키 출처 (F15, D079·D080) — 출처·경로만 저장하고 쿠키 값은 저장하지 않는다
+    "cookie_source"     : "none",     # none / firefox / file
+    "cookie_file"       : "",         # 사용자가 내보낸 cookies.txt 경로
 }
 
 

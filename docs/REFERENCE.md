@@ -48,6 +48,7 @@
 - D033 — 첫 계획 완료 조건 (성공 기준·F11 기동 실패만 미완)
 - D055 — JS 런타임 옵션을 세 경로가 공유, Node·Deno·Bun 모두 켬
 - D056 — 항목별 임시 폴더에서 완료 후 저장 폴더로 이동, 같은 이름은 번호 보관 (D054)
+- D079·D080 — 로그인 쿠키는 Firefox·cookies.txt 출처만 yt-dlp 에 넘기고 `open_ydl` 로 연다 (사용자 파일 무수정)
 
 ## R§4 함정 대장
 | ID | 증상 | 원인 | 대처 | 근거 |
@@ -83,6 +84,8 @@
 | T29 | curl_cffi 를 깔았는데 `--list-impersonate-targets` 가 모두 unavailable | `pip install -r requirements.txt` 가 venv 의 yt-dlp 를 일부러 낮은 핀(2026.3.17)으로 내리고, 그 버전은 curl_cffi `<0.15` 만 받는다 | 앱을 한 번 기동해 yt-dlp 를 최신화하거나 `pip install yt-dlp==<최신>`. 빌드 전 venv yt-dlp 버전을 확인 (D002) | D071 |
 | T30 | Vimeo 항목이 정보·화질 창까지 되고 다운로드만 "다운로드하지 못했습니다" (자세히: This format is DRM protected) | 영상마다 Vimeo 가 DRM 형식(HLS 목록 주소에 `/playlist/drm/cbcs`)만 줄 수 있다. 추출 단계의 `has_drm` 은 False 로 나오고 목록을 받을 때 판정된다 (76979871, 2026-11-11) | 받지 않는 것이 맞다(D012·D070). 표본은 DRM 이 아닌 영상(22439234)으로 고른다 | 계획 작업 5 |
 | T31 | YouTube 를 m4a 로 받으면 "Unable to embed using ffprobe & ffmpeg; Conversion failed!" | 챕터가 있는 영상은 `FFmpegMetadata` 가 m4a 에 챕터 텍스트 트랙(`bin_data`)을 만들고, ffmpeg 의 m4a(ipod) 출력이 그 트랙을 복사하지 못한다(`Tag text incompatible`). mp4 는 된다. mutagen 이 있으면 yt-dlp 가 그쪽으로 임베드해 안 생기지만 AVD 는 mutagen 을 넣지 않는다 (jNQXAC9IVRw, 2026-11-11) | `core/downloader.py` 가 m4a 일 때 `add_chapters=False` | 스물세 번째 계획 작업 7 |
+| T32 | cookies.txt 를 지정해 받고 나면 사용자 파일 내용·수정 시각이 바뀜. 없는 경로를 지정하면 그 자리에 파일이 새로 생김 | yt-dlp 는 `close()` 때 `save_cookies()` 로 `cookiefile` 에 쿠키를 다시 쓴다. 파일이 없으면 읽기를 조용히 건너뛰고 닫을 때 만든다 | 세 경로 모두 `open_ydl` 로 연다: 없는 파일은 앞에서 실패, 쿠키를 미리 불러온 뒤 `params["cookiefile"]=None`. 불러오기 실패 때 `close()` 를 부르지 않는다 | D079 |
+| T33 | 쿠키를 못 읽었는데 항목에 일반 문구 "다운로드하지 못했습니다" | yt-dlp 의 `cookiejar` 는 원인 문구(`could not find … cookies database`, DPAPI 등)만 담은 `DownloadError` 를 던진다. `failed to load cookies` 는 그 안의 `CookieLoadError` 에만 있다 | `open_ydl` 이 불러오기 예외를 `CookieLoadError("failed to load cookies: …")` 로 감싼다. 오류 판별 테스트는 yt-dlp 가 실제로 던지는 예외로 쓴다 | 스물일곱 번째 계획 작업 4 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
