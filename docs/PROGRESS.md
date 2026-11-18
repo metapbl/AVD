@@ -1,11 +1,11 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 · 스물아홉 번째 계획 `docs/plans/2026-11-18-macos-source-run.md` active
-- 갱신: 2026-11-18 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경 없음. OPEN 미결 0
+- 단계: 7 계획 대기 · 스물아홉 번째 계획 `docs/plans/2026-11-18-macos-source-run.md` done (macOS 실기 미확인)
+- 갱신: 2026-11-18 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경: 동시 옮기기 간헐 실패 수정, macOS 소스 실행(F16, D081). OPEN 미결 0
 
 ## 다음 할 일
-1. 스물아홉 번째 계획 작업 4 — macOS 실기 확인 (사용자). 통과하면 계획 done, 릴리스 여부 결정
+1. 미릴리스 변경: 간헐 실패 수정(fix), macOS 소스 실행(F16) — 릴리스 여부 결정 (macOS 실기 전이면 노트에 "macOS 미확인")
 2. (후보) PRD §2.2 로드맵 — 다국어, macOS .app 배포
 
 ## 미해결
@@ -19,7 +19,7 @@
 - (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
-- macOS 소스 실행 (F16) — `docs/plans/2026-11-18-macos-source-run.md` 작업 4. 기대 결과: 📂 → Finder 에서 파일 선택된 채 열림, 한글 UI 가 Apple SD Gothic Neo
+- macOS 소스 실행 (F16) — `docs/plans/2026-11-18-macos-source-run.md` 작업 4 (2026-11-18 실기기 없어 보류). 기대 결과: 📂 → Finder 에서 파일 선택된 채 열림, 한글 UI 가 Apple SD Gothic Neo
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
 
