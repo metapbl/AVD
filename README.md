@@ -26,7 +26,7 @@ yt-dlp 기반의 영상·오디오 다운로더입니다. YouTube를 비롯해 y
 - **Node.js** (선택이지만 YouTube에는 사실상 필수) — yt-dlp가 YouTube의 자바스크립트 챌린지를 해결하기 위해 외부 JS 런타임(EJS)을 요구합니다. Node.js / Deno / Bun 중 하나면 됩니다.
   - Windows: [Node.js 공식 사이트](https://nodejs.org/) 또는 `winget install OpenJS.NodeJS`
   - 배경: [yt-dlp EJS Wiki](https://github.com/yt-dlp/yt-dlp/wiki/EJS)
-- **운영체제**: Windows 11에서 개발·검증되었습니다. macOS/Linux는 일부 경로(폴더 열기, 폰트 등)가 아직 분기 처리되지 않아 제한적으로 동작합니다.
+- **운영체제**: Windows 11에서 개발·검증되었습니다. macOS는 소스 실행(`python main.py`)을 지원합니다 — .app 배포본은 없습니다. Linux는 폴더 열기가 동작하지 않습니다.
 
 ## 설치
 

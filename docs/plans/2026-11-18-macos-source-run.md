@@ -16,12 +16,14 @@
 ## 작업
 - [x] 0. PRD 변경·승인 — §2.2 "macOS 실행 정식화" 를 "소스 실행"으로 좁히고 .app 배포는 로드맵에 남김, 실행 환경 줄(152행) 갱신. 결정 D081 기록 (`/metarche discover`)
   - 확인: 2026-11-18 사용자 "승인" (Q092, D081, F16)
-- [ ] 1. 테스트 먼저 — `tests/test_open_folder.py`
+- [x] 1. 테스트 먼저 — `tests/test_open_folder.py`
   - darwin + 파일 → `["open", "-R", path]` | darwin + 폴더 → `["open", path]` | win32 + 파일 → `["explorer", "/select,", path]`(현행 고정) | 없는 경로 → 호출 없음
   - 확인: 구현 전 darwin 2건 빨강, win32·없는 경로 초록
-- [ ] 2. 구현 — `open_folder` 분기, `main.py` 글꼴 한 줄
+  - 2026-11-18: 2 failed(darwin), 2 passed
+- [x] 2. 구현 — `open_folder` 분기, `main.py` 글꼴 한 줄
   - 확인: 작업 1 초록, 전체 테스트 통과, ruff 통과
-- [ ] 3. 문서 — README 운영체제 문구(macOS 소스 실행 지원, .app 없음), CHANGELOG, PROGRESS
+  - 2026-11-18: 337 passed, ruff All checks passed
+- [x] 3. 문서 — README 운영체제 문구(macOS 소스 실행 지원, .app 없음), CHANGELOG, PROGRESS
 - [ ] 4. 사용자 실기 확인 (macOS, 소스 실행)
   - 영상 1건·mp3 1건 받기 → 완료 항목 📂 → Finder 에서 그 파일이 선택된 채 열림 | ▶ 재생 → 기본 앱으로 열림 | UI 한글이 Apple SD Gothic Neo 로 보임(네모·대체 글꼴 아님) | 저장 파일명 한글이 Finder 에서 정상
 - [ ] 5. 커밋 (`feat(macos): ...`, 작성자 확인)

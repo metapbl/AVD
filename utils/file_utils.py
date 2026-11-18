@@ -175,10 +175,14 @@ def strip_ansi(text: str) -> str:
 
 def open_folder(path: str):
     """
-    해당 경로를 Windows 탐색기로 열기
+    해당 경로를 Windows 탐색기(macOS 는 Finder)로 열기 (D081)
     """
     import subprocess
-    if os.path.isfile(path):
+    import sys
+    if sys.platform == "darwin":
+        if os.path.exists(path):
+            subprocess.run(["open", "-R", path] if os.path.isfile(path) else ["open", path], check=False)
+    elif os.path.isfile(path):
         # 파일이면 해당 파일을 탐색기에서 선택한 채로 열기
         subprocess.run(["explorer", "/select,", path], check=False)  # explorer 는 성공해도 1 을 돌려줄 수 있다
     elif os.path.isdir(path):
