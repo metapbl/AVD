@@ -86,6 +86,7 @@
 | T31 | YouTube 를 m4a 로 받으면 "Unable to embed using ffprobe & ffmpeg; Conversion failed!" | 챕터가 있는 영상은 `FFmpegMetadata` 가 m4a 에 챕터 텍스트 트랙(`bin_data`)을 만들고, ffmpeg 의 m4a(ipod) 출력이 그 트랙을 복사하지 못한다(`Tag text incompatible`). mp4 는 된다. mutagen 이 있으면 yt-dlp 가 그쪽으로 임베드해 안 생기지만 AVD 는 mutagen 을 넣지 않는다 (jNQXAC9IVRw, 2026-11-11) | `core/downloader.py` 가 m4a 일 때 `add_chapters=False` | 스물세 번째 계획 작업 7 |
 | T32 | cookies.txt 를 지정해 받고 나면 사용자 파일 내용·수정 시각이 바뀜. 없는 경로를 지정하면 그 자리에 파일이 새로 생김 | yt-dlp 는 `close()` 때 `save_cookies()` 로 `cookiefile` 에 쿠키를 다시 쓴다. 파일이 없으면 읽기를 조용히 건너뛰고 닫을 때 만든다 | 세 경로 모두 `open_ydl` 로 연다: 없는 파일은 앞에서 실패, 쿠키를 미리 불러온 뒤 `params["cookiefile"]=None`. 불러오기 실패 때 `close()` 를 부르지 않는다 | D079 |
 | T33 | 쿠키를 못 읽었는데 항목에 일반 문구 "다운로드하지 못했습니다" | yt-dlp 의 `cookiejar` 는 원인 문구(`could not find … cookies database`, DPAPI 등)만 담은 `DownloadError` 를 던진다. `failed to load cookies` 는 그 안의 `CookieLoadError` 에만 있다 | `open_ydl` 이 불러오기 예외를 `CookieLoadError("failed to load cookies: …")` 로 감싼다. 오류 판별 테스트는 yt-dlp 가 실제로 던지는 예외로 쓴다 | 스물일곱 번째 계획 작업 4 |
+| T34 | 전체 테스트가 가끔 `test_concurrent_moves_do_not_overwrite` 에서 PermissionError(WinError 5) | Windows 는 한 스레드가 자리표시 파일 위로 `os.replace` 하는 동안 다른 스레드가 같은 이름을 `open(..., "x")` 하면 replace 를 거부한다 (2,400회 중 4회 재현, 2026-11-18) | `move_unique` 를 모듈 잠금으로 직렬화. 다른 프로세스와는 여전히 "x" 선점만 막는다 | 2026-11-18 fix |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

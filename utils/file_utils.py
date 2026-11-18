@@ -5,9 +5,12 @@ import logging
 import os
 import re
 import shutil
+import threading
 import time
 import unicodedata
 from pathlib import Path
+
+_move_lock = threading.Lock()
 
 
 def normalize_unicode(text: str) -> str:
@@ -80,20 +83,22 @@ def move_unique(src: str, save_dir: str) -> str:
     """
     source = Path(src)
     counter = 0
-    while True:
-        name = f"{source.stem} ({counter}){source.suffix}" if counter else source.name
-        target = Path(save_dir) / name
-        try:
-            open(target, "x").close()
-        except FileExistsError:
-            counter += 1
-            continue
-        try:
-            os.replace(source, target)
-        except OSError:
-            target.unlink(missing_ok=True)
-            raise
-        return str(target)
+    # Windows 는 replace 중인 이름을 다른 스레드가 열려 하면 replace 를 WinError 5 로 거부한다
+    with _move_lock:
+        while True:
+            name = f"{source.stem} ({counter}){source.suffix}" if counter else source.name
+            target = Path(save_dir) / name
+            try:
+                open(target, "x").close()
+            except FileExistsError:
+                counter += 1
+                continue
+            try:
+                os.replace(source, target)
+            except OSError:
+                target.unlink(missing_ok=True)
+                raise
+            return str(target)
 
 
 def sweep_stale_temp_dirs(save_dir: str) -> None:

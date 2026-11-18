@@ -8,7 +8,6 @@
 1. (후보) PRD §2.2 로드맵 — 다국어, macOS 정식화. 고르면 계획부터
 
 ## 미해결
-- (확인 필요) 전체 테스트 간헐 실패 — 2026-11-05 1회 1건 실패, 테스트 이름을 남기지 못함. 2026-11-16 다시 1회: `tests/test_move_unique.py::test_concurrent_moves_do_not_overwrite` (PermissionError 로 보임, 요약 줄만 남음), 바로 다음 4회 통과. 다시 나오면 `pytest -q tests/test_move_unique.py` 전체 출력을 남긴다
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
 - (기록) Vimeo: F12 로 공개·비DRM 영상 지원. 영상마다 DRM 형식만 주기도 함(76979871) — 받지 않음 (T30)
