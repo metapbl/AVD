@@ -1,11 +1,12 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 스물여덟 번째 계획 `docs/plans/2026-11-16-release-1.6.0.md` done
+- 단계: 7 · 스물아홉 번째 계획 `docs/plans/2026-11-18-macos-source-run.md` active
 - 갱신: 2026-11-18 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) PRD §2.2 로드맵 — 다국어, macOS 정식화. 고르면 계획부터
+1. 스물아홉 번째 계획 작업 1~5 — macOS 폴더 열기·글꼴 분기 (F16, D081)
+2. (후보) PRD §2.2 로드맵 — 다국어, macOS .app 배포
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
