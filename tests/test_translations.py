@@ -19,7 +19,7 @@ NOT_UI = {"utils/i18n.py"}
 # README 절 앵커(링크 주소) — 화면 문구가 아니다
 NOT_UI_STRINGS = {"#로그인-쿠키"}
 # 번역을 다 채운 언어 — 작업 7(en)·8(나머지) 에서 늘린다
-COMPLETE = set()
+COMPLETE = {"en"}
 
 
 def _rel(path: Path) -> str:
