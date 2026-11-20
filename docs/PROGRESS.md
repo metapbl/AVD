@@ -1,12 +1,13 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 7 계획 대기 · 스물아홉 번째 계획 `docs/plans/2026-11-18-macos-source-run.md` done (macOS 실기 미확인)
+- 단계: 8 구현 · 서른 번째 계획 `docs/plans/2026-11-20-i18n-readme.md` active (F17 다국어·README 6개 언어)
 - 갱신: 2026-11-18 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경: 동시 옮기기 간헐 실패 수정, macOS 소스 실행(F16, D081). OPEN 미결 0
 
 ## 다음 할 일
-1. 미릴리스 변경: 간헐 실패 수정(fix), macOS 소스 실행(F16) — 릴리스 여부 결정 (macOS 실기 전이면 노트에 "macOS 미확인")
-2. (후보) PRD §2.2 로드맵 — 다국어, macOS .app 배포
+1. 서른 번째 계획 작업 1 — 언어 결정·번역기 교체 (`utils/i18n.py`)
+2. 미릴리스 변경: 간헐 실패 수정, macOS 소스 실행(F16), pytest 종료 크래시 수정 — 다국어 끝난 뒤 함께 릴리스할지 결정
+3. (후보) PRD §2.2 로드맵 — macOS .app 배포
 
 ## 미해결
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
