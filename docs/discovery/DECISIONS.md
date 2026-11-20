@@ -91,6 +91,9 @@
 | D083 | 2026-11-20 | 8 PRD 변경 | 번역은 Qt `tr()`/`QCoreApplication.translate` + `pyside6-lupdate`·`lrelease`. 한글 문구를 원문으로 두고, `.ts`·`.qm` 을 모두 저장소에 넣는다(소스 실행에 빌드 단계 없음). 번역 완결성·`.qm` 최신 여부는 테스트로 지킨다 | [U] 방식, [AI] 커밋·테스트 | Q094 | Python 사전 + `_()` (추출·검사를 직접 만들어야 함) | 확정 |
 | D084 | 2026-11-20 | 8 PRD 변경 | 언어는 새 설정 키 `ui_language`(system 기본·en·ko·zh_CN·ja·es·ru). system 이면 OS 언어, 지원 밖이면 English. 환경설정에서 바꾸면 재시작 없이 바로 바뀐다. 기존 `language` 키는 "ko" 가 이미 저장돼 있어 쓰지 않는다 | [U] 규칙·즉시 전환, [AI] 새 키 | Q095 | 다음 실행부터 적용 (작업이 작음) | 확정 |
 | D085 | 2026-11-20 | 8 PRD 변경 | README 는 앱 언어와 같은 6개: 영어 `README.md` 기본 + `README.{ko,zh-CN,ja,es,ru}.md`, 언어 줄·AI 번역 안내·Shields 배지는 readme.md 표준대로. 바꿀 때 여섯 개를 한 커밋에 | [U] | Q096 | 영어+한국어 2개, 한국어 하나 유지 | 확정 |
+| D086 | 2026-11-21 | 구현 | 기여: 버그·제안은 GitHub Issue, 번역 수정·작은 버그 수정 PR 은 받고 큰 변경은 Issue 에서 먼저 의논. 기여자는 `pytest`·`ruff check` 를 돌린다 (README "Help and contributing") | [U] | Q097 | PR 받지 않음 (번역 제보를 받기로 한 F17 과 어긋남) | 확정 |
+| D087 | 2026-11-21 | 구현 | 취약점은 GitHub 비공개 취약점 제보(Security 탭)로만 받는다, 공개 Issue 금지. 저장소 설정의 Private vulnerability reporting 은 사용자가 켠다 | [U] | Q098 | 이메일 공개 | 확정 |
+| D088 | 2026-11-21 | 구현 | README 는 처음 쓰는 사람 기준 — 디렉터리 구조는 docs/REFERENCE.md R§1 로 옮기고, 내부 문서(한국어) 목록은 기여 절의 링크 한 줄로 | [U] | Q099 | README 에 그대로 두고 6개 언어로 번역 | 확정 |
 
 ## 재논의 금지 규칙
 상태가 '확정'이고 버린 안이 적힌 결정은, 새로운 사실이 없으면 다시 제안하지 않는다.
