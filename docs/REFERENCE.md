@@ -17,6 +17,29 @@
 - `ui/theme.py` > `apply_theme` — 다크·라이트 색표, Windows 따라가기, 공통 위젯 스타일 (D065). 창별 QSS 는 각 창의 `_apply_style` 에서 `@이름` 으로 색을 쓴다
 - `utils/file_utils.py` — `sanitize_filename`, `normalize_unicode`, `snapshot_child_pids`·`terminate_pids`(취소 시 ffmpeg/Node 정리), `move_unique`(번호 붙여 이동, D054), `sweep_stale_temp_dirs`(기동 시 1일 지난 임시 폴더 삭제)
 - `gaindb/api.py` > `apply_file_track_gain`, `analyze_file` — 본체가 부르는 유일한 경계 (D017)
+- 디렉터리 구조 (README 에서 옮김, D088):
+  ```
+  AV_Downloader/
+  ├── main.py                       # 진입점
+  ├── AGENTS.md                     # 에이전트 지침 (CLAUDE.md 는 @AGENTS.md 연결)
+  ├── README*.md                    # 사용자 안내 6개 언어 (D085)
+  ├── CHANGELOG.md                  # 변경 이력
+  ├── requirements.txt              # 앱 의존성 / requirements-dev.txt 개발 도구
+  ├── pyproject.toml                # ruff·pytest 설정
+  ├── AVD.spec                      # PyInstaller onedir 빌드
+  ├── core/                         # yt-dlp 호출 (downloader, info_fetcher)
+  ├── models/                       # DownloadItem, DownloadStatus
+  ├── controllers/                  # download_manager(대기열·동시성), playlist_flow
+  ├── workers/                      # QThread 워커 (다운로드·정보·썸네일·플레이리스트·업데이트)
+  ├── ui/                           # 메인 창·항목 위젯·대화 상자·theme
+  ├── utils/                        # 설정·파일·업데이터·i18n
+  ├── i18n/                         # 화면 번역 avd_{언어}.ts(원본)·.qm (F17)
+  ├── tools/                        # update_translations.py
+  ├── gaindb/                       # MP3 음량 정규화 (LGPL-2.1-or-later, 상류 무수정)
+  ├── assets/icons/                 # 앱·테마 아이콘
+  ├── tests/                        # pytest
+  └── docs/                         # PRD·진행·참고·계획·결정
+  ```
 
 ## R§2 외부 사양·제약
 - yt-dlp (핀 2026.3.17, 기동 시 최신화): YouTube 는 JS 런타임(Node/Deno/Bun) 필요. `js_runtimes` 를 빼면 Deno 만 켜지므로 셋을 모두 켜서 특정 런타임에 고정하지 않는다 (D055, 출처: https://github.com/yt-dlp/yt-dlp/wiki/EJS)

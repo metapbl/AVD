@@ -698,6 +698,10 @@
 <context>
     <name>PreferencesDialog</name>
     <message>
+        <source>README.ko.md#로그인-쿠키</source>
+        <translation>README.ja.md#ログイン-cookie</translation>
+    </message>
+    <message>
         <source>환경설정</source>
         <translation>設定</translation>
     </message>

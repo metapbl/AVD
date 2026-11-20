@@ -16,8 +16,6 @@ TRANSLATE_CALLS = {"tr", "translate", "QT_TRANSLATE_NOOP"}
 LOG_METHODS = {"debug", "info", "warning", "error", "exception", "critical"}
 # 언어 이름은 번역하지 않는다 (D084)
 NOT_UI = {"utils/i18n.py"}
-# README 절 앵커(링크 주소) — 화면 문구가 아니다
-NOT_UI_STRINGS = {"#로그인-쿠키"}
 # 번역을 다 채운 언어 — 작업 7(en)·8(나머지) 에서 늘린다
 COMPLETE = set(ut.TARGETS)
 
@@ -43,8 +41,7 @@ def _untranslated_hangul(path: Path) -> list[str]:
                 skip.update(id(n) for n in ast.walk(node))
     return [f"{_rel(path)}:{n.lineno} {n.value!r}" for n in ast.walk(tree)
             if isinstance(n, ast.Constant) and isinstance(n.value, str)
-            and HANGUL.search(QSS_COMMENT.sub("", n.value)) and id(n) not in skip
-            and n.value not in NOT_UI_STRINGS]
+            and HANGUL.search(QSS_COMMENT.sub("", n.value)) and id(n) not in skip]
 
 
 def test_no_unwrapped_hangul_in_ui_code():

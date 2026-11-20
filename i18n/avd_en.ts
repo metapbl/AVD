@@ -698,6 +698,10 @@ or copy a link and press Ctrl+V, or drag it onto the window</translation>
 <context>
     <name>PreferencesDialog</name>
     <message>
+        <source>README.ko.md#로그인-쿠키</source>
+        <translation>README.md#login-cookies</translation>
+    </message>
+    <message>
         <source>환경설정</source>
         <translation>Settings</translation>
     </message>

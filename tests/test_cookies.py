@@ -251,18 +251,15 @@ def test_preferences_note_follows_choice():
 
 
 def test_cookie_help_link_points_to_readme_section():
-    from pathlib import Path
-
     from ui.about_dialog import REPO_URL
-    from ui.preferences_dialog import COOKIE_HELP_URL
+    from ui.preferences_dialog import cookie_help_url
 
-    assert COOKIE_HELP_URL == REPO_URL + "#로그인-쿠키"
-    readme = (Path(__file__).parent.parent / "README.md").read_text(encoding="utf-8")
-    assert "\n## 로그인 쿠키\n" in readme  # 링크가 가리키는 절이 있어야 한다
+    # 번역기 없음(원문) → 한국어 README 의 절. 언어별 링크·절 존재는 tests/test_readme.py
+    assert cookie_help_url() == REPO_URL + "/blob/main/README.ko.md#로그인-쿠키"
 
     dlg = _dialog(_DictConfig(DEFAULT_CONFIG))
     dlg._cookie_radios["file"].setChecked(True)
-    assert f'href="{COOKIE_HELP_URL}"' in dlg.lbl_cookie_note.text()
+    assert f'href="{cookie_help_url()}"' in dlg.lbl_cookie_note.text()
     assert dlg.lbl_cookie_note.openExternalLinks()
 
 

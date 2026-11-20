@@ -26,8 +26,11 @@ from utils.i18n import LANGUAGES
 
 translate = QCoreApplication.translate
 
-# README 의 "## 로그인 쿠키" 절 — 확장 안내는 앱을 다시 배포하지 않고 README 만 고쳐 갱신한다
-COOKIE_HELP_URL = REPO_URL + "#로그인-쿠키"
+
+def cookie_help_url() -> str:
+    """지금 언어 README 의 로그인 쿠키 절. 확장 안내는 앱을 다시 배포하지 않고 README 만 고쳐 갱신한다.
+    번역문은 그 언어 README 파일과 절 앵커다 (D085)."""
+    return REPO_URL + "/blob/main/" + translate("PreferencesDialog", "README.ko.md#로그인-쿠키")
 
 # ── MP3 음량 정규화 목표 dB 범위 ──────────────────────
 # 슬라이더는 정수 스텝만 다루므로 dB 값을 2배 스케일한 정수로 저장한다
@@ -441,7 +444,7 @@ class PreferencesDialog(QDialog):
                 "PreferencesDialog",
                 "Chrome, Edge 등에서 확장으로 내보낸 cookies.txt 를 지정하세요. "
                 '<a href="{0}" style="color:{1};">만드는 법 ↗</a>',
-            ).format(COOKIE_HELP_URL, theme.color("accent"))
+            ).format(cookie_help_url(), theme.color("accent"))
         elif self._cookie_radios["firefox"].isChecked():
             note = translate("PreferencesDialog", "Firefox 에 로그인한 계정으로 받습니다. Firefox 에서 사이트에 로그인해 두세요.")
         else:

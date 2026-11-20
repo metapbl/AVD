@@ -1,170 +1,155 @@
-# AV Downloader
+<p align="center">
+  <strong>Language:</strong>
+  <a href="README.md">English</a> |
+  <a href="README.ko.md">한국어</a> |
+  <a href="README.zh-CN.md">简体中文</a> |
+  <a href="README.ja.md">日本語</a> |
+  <a href="README.es.md">Español</a> |
+  <a href="README.ru.md">Русский</a>
+</p>
 
-yt-dlp 기반의 영상·오디오 다운로더입니다. YouTube를 비롯해 yt-dlp가 지원하는 1000여 개 사이트에서 동작하며, PySide6로 작성된 데스크톱 GUI를 제공합니다.
+# AVD
 
-> 이 저장소는 1인 개발 + AI 협업으로 진행됩니다. 협업 규칙은 [`CLAUDE.md`](CLAUDE.md), 요구사항·진행 상황·설계 근거는 [`docs/`](docs/) 아래 문서에 정리되어 있습니다.
+<p align="center">
+  <a href="https://github.com/metapbl/AVD/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/metapbl/AVD?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue?style=flat-square"></a>
+  <a href="#requirements"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white"></a>
+  <a href="#requirements"><img alt="Platform: Windows | macOS" src="https://img.shields.io/badge/platform-Windows_%7C_macOS-lightgrey?style=flat-square"></a>
+</p>
 
-## 주요 기능
+A Python-based video & audio downloader powered by yt-dlp — supports YouTube and 1000+ other sites.
 
-- 영상·오디오(MP3/M4A) 다운로드와 자동 메타데이터·썸네일 임베드
-- 포맷 선택 다이얼로그 (해상도/코덱/컨테이너) 및 마지막 선택 확장자 기억
-- 다중 동시 다운로드와 대기열(WAITING 큐, 사용자 지정 동시 실행 수)
-- 진행률·속도·남은 시간(ETA) 실시간 표시, HLS 등 ETA 미상 시 추정값 `~M:SS` 표기
-- 다크·라이트 테마 (Windows 설정을 따르거나 환경설정에서 고정)
-- 로그인 쿠키(Firefox 또는 cookies.txt)로 연령 제한 등 본인 계정이 볼 수 있는 영상 받기 — [로그인 쿠키](#로그인-쿠키)
-- 클립보드 URL 자동 감지, Ctrl+V·끌어다 놓기·여러 줄 붙여넣기, yt-dlp 자체 업데이트 체크
-- 다운로드 취소·재시도, 디스크 파일 동시 삭제 옵션, 부분 파일(`.part`/`.ytdl`) 정리
-- 한글 파일명·태그의 NFC 정규화 (Windows NFC ↔ macOS APFS NFD 호환)
-- MP3 음량 정규화 — 번들 `gaindb/` 서브패키지가 ReplayGain 트랙 모드로 무손실 게인을 적용합니다(목표 dB는 설정에서 조절, `numpy`/`scipy` 필요)
-- 다크 테마 GUI
+## Features
 
-## 요구 사항
+AV Downloader is a desktop app (PySide6) that puts [yt-dlp](https://github.com/yt-dlp/yt-dlp) behind a window, so you can download without the command line.
 
-- **Python 3.12 이상** (3.15 에서 개발·검증)
-- **ffmpeg / ffprobe** — 영상·오디오 병합, MP3·M4A 변환, 메타데이터·썸네일 임베드에 필요합니다. 시스템 PATH에 등록되어 있어야 합니다.
-  - Windows: [공식 빌드](https://www.gyan.dev/ffmpeg/builds/) 다운로드 후 PATH 등록, 또는 `winget install Gyan.FFmpeg`
-- **Node.js** (선택이지만 YouTube에는 사실상 필수) — yt-dlp가 YouTube의 자바스크립트 챌린지를 해결하기 위해 외부 JS 런타임(EJS)을 요구합니다. Node.js / Deno / Bun 중 하나면 됩니다.
-  - Windows: [Node.js 공식 사이트](https://nodejs.org/) 또는 `winget install OpenJS.NodeJS`
-  - 배경: [yt-dlp EJS Wiki](https://github.com/yt-dlp/yt-dlp/wiki/EJS)
-- **운영체제**: Windows 11에서 개발·검증되었습니다. macOS는 소스 실행(`python main.py`)을 지원합니다 — .app 배포본은 없습니다. Linux는 폴더 열기가 동작하지 않습니다.
+- Video and audio (MP3/M4A) downloads with metadata and the thumbnail embedded in the file
+- A quality dialog: best quality, most compatible (H.264 + AAC), each resolution, MP3 or M4A; it remembers your last choice
+- Several downloads at once with a queue, live progress, speed and time left
+- Playlists: pick the items you want (up to 500)
+- MP3 volume normalization (lossless ReplayGain) with the bundled `gaindb` package
+- Login cookies (Firefox or cookies.txt) for videos your own account can watch, such as age-restricted ones
+- Links from the clipboard, Ctrl+V, drag and drop, or several lines at once
+- Dark and light themes; six languages (English, 한국어, 简体中文, 日本語, Español, Русский)
+- Keeps yt-dlp up to date by itself, and never overwrites a file with the same name
 
-## 설치
+## Requirements
 
-### 배포본 (Windows x64)
+- **Windows 11** (the release build is Windows x64). **macOS** works when run from source. Linux is not supported: opening the download folder does not work there.
+- **ffmpeg / ffprobe** on your PATH — for merging, MP3/M4A conversion and embedding tags. Windows: `winget install Gyan.FFmpeg` or the [builds by Gyan](https://www.gyan.dev/ffmpeg/builds/).
+- **Node.js** on your PATH — optional in general but needed for YouTube, which makes yt-dlp solve a JavaScript challenge ([yt-dlp EJS](https://github.com/yt-dlp/yt-dlp/wiki/EJS)). Deno or Bun also work. Windows: `winget install OpenJS.NodeJS`.
+- **Python 3.12 or later** — only when running from source.
 
-1. [Releases](https://github.com/metapbl/AVD/releases) 에서 `AVD-v{버전}-win64.zip` 을 받아 원하는 곳에 풉니다. `AVD` 폴더가 생깁니다.
-2. 위 [요구 사항](#요구-사항)의 **ffmpeg/ffprobe** 와 **Node.js** 를 설치해 PATH 에 둡니다. 배포본에는 들어 있지 않습니다.
-3. `AVD\AVD.exe` 를 실행합니다. Python 설치는 필요 없습니다.
+## Install
 
-- 설정 파일은 `AVD.exe` 옆의 `config.json` 입니다 (첫 실행 뒤 생김). 폴더째 옮기면 설정도 따라갑니다.
-- yt-dlp 는 `AVD\_internal\yt_dlp\` 에 평문 `.py` 로 들어 있고, 기동 때 새 버전이 있으면 앱이 그 폴더를 교체합니다.
-- `gaindb` (LGPL-2.1-or-later) 는 `AVD\_internal\gaindb\` 에 평문 `.py` 로 들어 있습니다. 이 폴더를 자기 수정본으로 바꿔 넣으면 다음 실행부터 그 코드가 쓰입니다. 같은 릴리스의 `AVD-v{버전}-src.zip` 이 해당 소스입니다.
+### Release build (Windows x64)
 
-### 소스에서
+1. Download `AVD-v{version}-win64.zip` from [Releases](https://github.com/metapbl/AVD/releases) and unzip it anywhere. You get an `AVD` folder.
+2. Install ffmpeg and Node.js (see [Requirements](#requirements)). They are not included.
+3. Run `AVD\AVD.exe`. Python is not needed.
+
+Settings are kept in `config.json` next to `AVD.exe`, so moving the folder moves your settings too.
+
+### From source
 
 ```bash
-git clone https://github.com/metapbl/AVD.git AV_Downloader
-cd AV_Downloader
-
+git clone https://github.com/metapbl/AVD.git
+cd AVD
 python -m venv venv
-venv\Scripts\activate          # Windows (PowerShell)
-# source venv/bin/activate     # macOS/Linux
-
-pip install -r requirements.txt
+venv\Scripts\python -m pip install -r requirements.txt
 ```
 
-## 실행
+This creates a virtual environment and installs the app's packages into it. On macOS use `venv/bin/python` instead of `venv\Scripts\python`. `requirements.txt` pins an older yt-dlp on purpose; the app updates it the first time it starts.
+
+## Quick start
 
 ```bash
-python main.py
+venv\Scripts\python main.py
 ```
 
-첫 실행 시 사용자 홈 폴더의 `Downloads`가 저장 경로로 지정되며, 앱 내 **⚙ 설정**에서 변경할 수 있습니다. 설정은 앱 폴더(`main.py` 옆, 배포본은 `AVD.exe` 옆)의 `config.json`에 저장됩니다.
+A window titled **AV Downloader** and its version opens, in your system language, with an empty list and a hint for adding links. Copy a video link, press **Ctrl+V** in the window, choose a quality and press **Download**. The file goes to your `Downloads` folder; **📂 Open** shows it when it is done.
 
-저장 폴더에 같은 이름의 파일이 있으면 덮어쓰지 않고 `제목 (1).mp4`처럼 번호를 붙여 저장합니다. 다운로드 중 저장 폴더에 보이는 `.avd_*` 임시 폴더는 정상이며, 끝나면 사라집니다. 앱이 강제 종료되어 남은 임시 폴더는 1일이 지난 뒤 앱을 시작할 때 지워집니다.
+## Usage
 
-## 로그인 쿠키
+- **Add links** — the **+ Add links** button, Ctrl+V, or drag links onto the window. Each link opens the quality dialog in turn; a playlist link opens a list to pick from.
+- **Quality** — *Best quality (auto)* lets yt-dlp choose; *Most compatible* picks H.264 + AAC MP4 that plays almost anywhere; MP3 and M4A save audio only.
+- **Settings (⚙)** — save folder, number of simultaneous downloads (1–3 recommended), login cookies, MP3 volume normalization, automatic yt-dlp update check, language and theme. Changes apply when you press **Save**, without a restart.
+- **Files** — a file with the same name is never overwritten; the new one is saved as `Title (1).mp4`. While downloading, a `.avd_*` work folder appears in the save folder and disappears when the item finishes. Work folders left behind by a crash are removed a day later, when the app starts.
 
-연령 제한처럼 로그인해야 볼 수 있는 영상은 **⚙ 설정 > 로그인 쿠키**에서 본인 계정의 쿠키를 쓰도록 하면 받을 수 있습니다. 기본은 꺼져 있습니다.
+## Login cookies
 
-- **Firefox 에서 읽기** — Firefox 에서 해당 사이트(YouTube 등)에 로그인해 두고 이것을 고르면 끝입니다. 가장 간단합니다.
-- **cookies.txt 파일** — Chrome, Edge 등 다른 브라우저를 쓴다면 쿠키를 파일로 내보내 지정합니다. Windows 의 Chrome·Edge 는 쿠키를 앱 전용으로 암호화해 직접 읽을 수 없습니다.
+Videos that need a signed-in account, such as age-restricted ones, can be downloaded with your own account's cookies. Turn it on in **⚙ Settings > Login cookies**; it is off by default.
 
-cookies.txt 만드는 법 (Chrome·Edge):
+- **Read from Firefox** — sign in to the site (YouTube or others) in Firefox and choose this. This is the simplest way.
+- **cookies.txt file** — for Chrome, Edge and other browsers, export the cookies to a file and choose it. On Windows, Chrome and Edge encrypt cookies for their own use, so they cannot be read directly.
 
-1. Chrome 웹 스토어에서 **Get cookies.txt LOCALLY** 확장을 설치합니다 (yt-dlp 문서가 권하는 확장). 이름이 비슷한 다른 확장 중에는 쿠키를 외부로 보낸 사례가 있으니 이름을 정확히 확인하세요.
-2. **시크릿(InPrivate) 창**을 열고 사이트에 로그인합니다. 일반 창의 쿠키는 사이트가 곧 바꿔서 내보낸 파일이 금방 쓸모없어집니다.
-3. 그 창에서 확장 아이콘을 눌러 해당 사이트의 쿠키를 **Export** 하고, 시크릿 창을 닫습니다.
-4. AVD 의 **cookies.txt 파일**에서 **찾아보기**로 그 파일을 지정합니다.
+Making cookies.txt (Chrome, Edge):
 
-알아 둘 점:
+1. Install the **Get cookies.txt LOCALLY** extension from the Chrome Web Store (the one the yt-dlp documentation recommends). Some extensions with similar names have sent cookies elsewhere, so check the name exactly.
+2. Open a **private (Incognito/InPrivate) window** and sign in to the site. Cookies from a normal window are soon replaced by the site, which makes the exported file useless.
+3. In that window, click the extension and **Export** the cookies for the site, then close the private window.
+4. In AVD, choose the file with **Browse** next to **cookies.txt file**.
 
-- cookies.txt 에는 로그인 정보가 들어 있습니다. 남에게 주지 말고, 다 쓰면 지우세요.
-- AVD 는 쿠키를 복사·저장하지 않고, cookies.txt 를 고치지 않습니다. 설정 파일에는 고른 방식과 파일 경로만 남습니다.
-- 로그인한 계정으로 짧은 시간에 많이 받으면 사이트가 그 계정을 제한할 수 있습니다.
-- DRM 이 걸린 콘텐츠는 쿠키가 있어도 받지 않습니다 ([배포 방침](#배포-방침)).
+Good to know:
 
-## 디렉터리 구조
+- cookies.txt contains your sign-in. Do not share it, and delete it when you are done.
+- AVD does not copy or store cookies and never changes your cookies.txt. Only the chosen method and the file path are saved in the settings.
+- Downloading a lot in a short time with a signed-in account can get that account limited by the site.
+- DRM-protected content is not downloaded, even with cookies ([Distribution policy](#distribution-policy)).
 
-```
-AV_Downloader/
-├── main.py                       # 엔트리 포인트
-├── CLAUDE.md                     # AI 협업 규칙
-├── CHANGELOG.md                  # 변경 이력
-├── README.md                     # (이 문서)
-├── requirements.txt              # 앱 의존성
-├── requirements-dev.txt          # 개발 도구 (pytest·ruff)
-├── pyproject.toml                # ruff·pytest 설정
-├── core/
-│   ├── downloader.py             # yt-dlp 래퍼 + PostProcessor 파이프라인
-│   └── info_fetcher.py           # 사전 메타데이터/포맷 조회
-├── models/
-│   └── download_item.py          # DownloadItem 데이터 모델, 상태 Enum
-├── controllers/
-│   ├── download_manager.py       # 동시 다운로드 디스패치·대기열·라이프사이클
-│   └── playlist_flow.py          # 플레이리스트 목록 조회 → 선택 → 일괄 등록
-├── ui/
-│   ├── main_window.py            # 메인 윈도우
-│   ├── download_item_widget.py   # 다운로드 항목 위젯
-│   ├── add_link_dialog.py        # URL 추가 다이얼로그
-│   ├── format_select_dialog.py   # 포맷 선택 다이얼로그
-│   ├── playlist_select_dialog.py # 플레이리스트 항목 선택 다이얼로그
-│   ├── confirm_remove_dialog.py  # 삭제 확인 다이얼로그
-│   ├── preferences_dialog.py     # 설정 다이얼로그
-│   └── update_progress_dialog.py # yt-dlp 업데이트 진행 모달
-├── utils/
-│   ├── config_manager.py         # JSON 설정 입출력
-│   ├── file_utils.py             # 파일·프로세스·유니코드 유틸
-│   └── updater.py                # yt-dlp / 앱 업데이트 체크
-├── workers/
-│   ├── download_worker.py        # 다운로드 백그라운드 스레드
-│   ├── info_worker.py            # 정보 조회 백그라운드 스레드
-│   ├── playlist_probe_worker.py  # 플레이리스트 목록 조회 스레드
-│   ├── thumbnail_worker.py       # 썸네일 다운로드 백그라운드 스레드
-│   └── update_worker.py          # yt-dlp 업데이트 스레드
-├── gaindb/                       # MP3 음량 정규화 서브패키지 (LGPL-2.1-or-later)
-├── assets/                       # 아이콘
-└── docs/                         # PRD·진행 상황·참고 문서·계획
-```
+## Project status
 
-다운로드 큐와 동시 실행 디스패치는 `controllers/download_manager.py`(`DownloadManager`, `QObject` 상속)가 담당하며, `MainWindow`는 UI 이벤트와 표시만 책임집니다. 결정은 [`docs/discovery/DECISIONS.md`의 D005](docs/discovery/DECISIONS.md) 참조.
+- Developed and tested on **Windows 11**, both from source and as the release build. Every change runs an automated test suite (pytest).
+- **macOS** from source is supported but has not yet been checked on a real Mac. There is no macOS app bundle.
+- The interface languages other than English and Korean are AI translations. Corrections are welcome (see below).
+- One developer, working with AI assistants. Features still change between releases; see [CHANGELOG.md](CHANGELOG.md).
 
-## 사용된 주요 라이브러리
+## Help and contributing
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — 영상 추출 핵심 엔진
-- [PySide6](https://doc.qt.io/qtforpython-6/) — GUI 프레임워크 (Qt for Python)
-- [requests](https://requests.readthedocs.io/) — 썸네일·업데이트 체크
-- [psutil](https://pypi.org/project/psutil/) — 다운로드 취소 시 ffmpeg/Node 자식 프로세스 정리
+- **Questions and bugs** — open an [issue](https://github.com/metapbl/AVD/issues). For a download error, include the text from **Details** on the failed item.
+- **Pull requests** — translation corrections and small bug fixes are welcome. For larger changes, open an issue first so we can agree on the approach.
+- **Before sending a pull request**, run the tests and the linter:
 
-## 문서
+  ```bash
+  venv\Scripts\python -m pip install -r requirements-dev.txt
+  venv\Scripts\python -m pytest
+  venv\Scripts\ruff check .
+  ```
 
-- [`CLAUDE.md`](CLAUDE.md) — AI 협업 규칙, 실행·테스트 명령, 이 프로젝트에서 지켜야 할 규칙
-- [`docs/PRD.md`](docs/PRD.md) — 목적·범위·기능 요구사항 (승인본)
-- [`docs/PROGRESS.md`](docs/PROGRESS.md) — 현재 상태·다음 할 일·미해결 문제
-- [`docs/REFERENCE.md`](docs/REFERENCE.md) — 구조, 외부 사양·제약, 반복해서 부딪힌 함정 대장
-- [`docs/discovery/DECISIONS.md`](docs/discovery/DECISIONS.md) — 결정 기록 (버린 안 포함)
-- [`docs/RELEASE.md`](docs/RELEASE.md) — 릴리스(배포본 빌드·게시) 절차
-- [`CHANGELOG.md`](CHANGELOG.md) — 날짜별 변경 이력
+  This installs the development tools, runs the full test suite and checks the code style; all three should finish without errors.
+- **Translations** live in `i18n/avd_{language}.ts` and can be edited with Qt Linguist (`venv\Scripts\pyside6-linguist`). After editing, run `venv\Scripts\python tools/update_translations.py` to rebuild the `.qm` files, and commit both.
+- Project rules and design notes are in [AGENTS.md](AGENTS.md) and [docs/](docs/) (in Korean).
 
-## 라이선스
+## Security
 
-이 프로젝트는 **폴더 경계 이중 라이선스**입니다.
+Please report vulnerabilities privately through GitHub: the repository's **Security** tab → **Report a vulnerability**. Do not open a public issue for them.
 
-- **AVD 본체** — MIT License. 전문은 [LICENSE](LICENSE), 저작권·서드파티 고지는 [NOTICE](NOTICE) 를 참조하세요.
-- **번들 서브패키지 `gaindb/`** — **GNU LGPL v2.1 or later**. mp3gain(LGPL-2.1-or-later) C 소스에서 개작·파생된 부분을 포함하므로 원본과 같은 조건으로 배포합니다. 전문은 [`gaindb/LICENSE`](gaindb/LICENSE), mp3gain 원저작자 고지와 변경 내역은 [`gaindb/NOTICE`](gaindb/NOTICE), 의존성 고지는 [`gaindb/THIRD_PARTY_LICENSES`](gaindb/THIRD_PARTY_LICENSES) 에 있습니다. 상류 저장소는 <https://github.com/metapbl/GainDB> (번들 버전 1.1.2).
+## Distribution policy
 
-AVD 본체는 `gaindb.api` 의 공개 함수만 호출하므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"에 해당하며, 본체의 MIT 라이선싱은 영향을 받지 않습니다. 이는 PySide6(LGPLv3)를 동적 링크로 사용하는 구조와 동일합니다. PySide6·Qt 의 소스 위치는 [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) 의 PySide6 절에 있습니다.
+**Free distribution.** The author distributes AVD for free as open source on GitHub and does not sell it or offer paid editions. This only describes how the author distributes it and adds no restriction to the licenses below.
 
-배포 방침 — LGPL 준수를 위해 배포물의 `gaindb/` 는 사용자가 자기 수정본으로 교체할 수 있도록 실행 파일에 묶지 않고 평문 `.py` 로 배치하며(onedir 구성), 각 GitHub Release 에 해당 태그의 소스 아카이브를 실행 파일과 함께 첨부합니다.
+**No DRM circumvention.** Features that help bypass DRM (technical protection measures) or access paid or restricted content without permission will not be added, and feature requests are judged by this policy. [Login cookies](#login-cookies) are for content your own account can already watch; that is not unauthorized access, and DRM-protected content is still not downloaded.
 
-## 배포 방침
+## Disclaimer
 
-**무료 배포.** 저작자는 AVD 를 GitHub 에서 오픈소스로 무료 배포하며, 유료 판매나 유료 에디션을 제공하지 않습니다. 이는 저작자 자신의 배포 방식을 설명할 뿐이며, 위 라이선스에 제한을 더하지 않습니다.
+Use this tool for personal study and backup. Following each site's terms of use and copyright law is your responsibility; use it only within what the law allows, at your own risk.
 
-**DRM 우회 금지 방침.** DRM(기술적 보호조치) 우회나 유료·인증 전용 콘텐츠에 대한 무단 접근을 돕는 기능은 도입하지 않습니다. 관련 기능 요청은 이 방침을 기준으로 판단합니다. [로그인 쿠키](#로그인-쿠키) 기능은 사용자 본인 계정이 이미 볼 수 있는 콘텐츠를 받기 위한 것으로, 무단 접근에 해당하지 않으며 DRM 이 걸린 콘텐츠는 받지 않습니다.
+This software is provided "as is", **without any warranty**, including the implied warranties of merchantability or fitness for a particular purpose (the no-warranty clauses of both MIT and LGPL-2.1).
 
-## 면책
+## Credits
 
-이 도구는 개인적 학습과 백업 목적으로 사용하시기 바랍니다. 각 사이트의 이용 약관과 저작권법을 준수하는 것은 사용자의 책임입니다. 사용자는 자신의 책임 아래 합법적인 범위에서만 이 도구를 사용해야 하며, 그로 인해 발생하는 모든 결과와 책임은 사용자에게 있습니다.
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — the download engine
+- [PySide6](https://doc.qt.io/qtforpython-6/) (Qt for Python) — the GUI
+- [requests](https://requests.readthedocs.io/) — thumbnails and update checks
+- [psutil](https://pypi.org/project/psutil/) — stopping ffmpeg/Node child processes on cancel
+- [numpy](https://numpy.org/) and [SciPy](https://scipy.org/) — volume analysis in `gaindb`
+- [GainDB](https://github.com/metapbl/GainDB) — MP3 volume normalization, derived from mp3gain
 
-이 소프트웨어는 **어떠한 보증도 없이(WITHOUT ANY WARRANTY)** "있는 그대로" 제공됩니다. 상품성이나 특정 목적 적합성에 대한 묵시적 보증도 포함되지 않습니다(MIT 및 LGPL-2.1 양쪽의 무보증 조항).
+## License
+
+AVD uses a license per folder.
+
+- **AVD itself** — `MIT`. See [LICENSE](LICENSE) for the text and [NOTICE](NOTICE) for copyright and third-party notices.
+- **The bundled `gaindb/` package** — `LGPL-2.1-or-later`. It contains code adapted from mp3gain (LGPL-2.1-or-later), so it is distributed under the same terms. See [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE) and [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES). Upstream: <https://github.com/metapbl/GainDB> (bundled version 1.1.2).
+
+AVD only calls the public functions in `gaindb.api`, so it is a "work that uses the library" under LGPL-2.1 §5 and its MIT licensing is unaffected — the same as using PySide6 (LGPLv3) through dynamic linking. Where to get the PySide6 and Qt sources is in the PySide6 section of [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES). To comply with the LGPL, the release build keeps `gaindb/` as plain `.py` files you can replace with your own version, and each GitHub release includes the source archive for its tag.
