@@ -134,7 +134,8 @@ class PreferencesDialog(QDialog):
 
         btn_browse = QPushButton(translate("PreferencesDialog", "찾아보기"))
         btn_browse.setObjectName("btnBrowse")
-        btn_browse.setFixedSize(80, 32)
+        btn_browse.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_browse.setFixedHeight(32)
         btn_browse.clicked.connect(self._browse_path)
         path_layout.addWidget(btn_browse)
 
@@ -244,7 +245,8 @@ class PreferencesDialog(QDialog):
         file_row.addWidget(self.input_cookie_file)
         self.btn_cookie_file = QPushButton(translate("PreferencesDialog", "찾아보기"))
         self.btn_cookie_file.setObjectName("btnBrowse")
-        self.btn_cookie_file.setFixedSize(80, 32)
+        self.btn_cookie_file.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        self.btn_cookie_file.setFixedHeight(32)
         self.btn_cookie_file.clicked.connect(self._browse_cookie_file)
         file_row.addWidget(self.btn_cookie_file)
         cookie_layout.addWidget(self.cookie_file_row)
@@ -380,14 +382,16 @@ class PreferencesDialog(QDialog):
 
         btn_cancel = QPushButton(translate("PreferencesDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
-        btn_cancel.setFixedSize(80, 32)
+        btn_cancel.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_cancel.setFixedHeight(32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
         btn_save = QPushButton(translate("PreferencesDialog", "저장"))
         btn_save.setObjectName("btnConfirm")
         btn_save.setProperty("role", "primary")
-        btn_save.setFixedSize(80, 32)
+        btn_save.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_save.setFixedHeight(32)
         btn_save.clicked.connect(self._on_save)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
         btn_save.setDefault(True)

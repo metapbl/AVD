@@ -150,3 +150,28 @@ def test_same_source_cancel_keeps_two_meanings_in_english():
     item = DownloadItem(url="u", status=DownloadStatus.CANCELLED)
     assert window.btn_banner_cancel.text() == "Cancel"
     assert _summary_text({item.item_id: item}) == "Canceled 1"
+
+
+@pytest.mark.parametrize("platform, code, family", [
+    ("win32", "ja", "Yu Gothic UI"),
+    ("win32", "zh_CN", "Microsoft YaHei UI"),
+    ("win32", "ko", "Malgun Gothic"),
+    ("win32", "ru", "Malgun Gothic"),
+    ("darwin", "ja", "Hiragino Sans"),
+    ("darwin", "zh_CN", "PingFang SC"),
+    ("darwin", "en", "Apple SD Gothic Neo"),
+])
+def test_font_family_per_language(platform, code, family):
+    from utils.i18n import font_family
+
+    assert font_family(code, platform) == family
+
+
+def test_apply_language_switches_app_font():
+    from utils.i18n import font_family
+
+    app = QApplication.instance() or QApplication([])
+    apply_language(app, "ja")
+    assert app.font().family() == font_family("ja")
+    apply_language(app, "en")
+    assert app.font().family() == font_family("en")

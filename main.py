@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QLocale
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
@@ -61,7 +61,9 @@ def main():
     app.setWindowIcon(QIcon(str(ICON_PATH)))
 
     # 기본 폰트 설정
-    font = QFont("Apple SD Gothic Neo" if sys.platform == "darwin" else "Malgun Gothic", 10)  # D081
+    # 글꼴 이름은 apply_language 가 언어별로 정한다 (F17 작업 8-1, D081)
+    font = app.font()
+    font.setPointSize(10)
     app.setFont(font)
 
     # 메인 윈도우 생성 및 표시

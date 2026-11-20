@@ -93,7 +93,7 @@ class ConfirmRemoveDialog(QDialog):
 
         btn_close = QPushButton(translate("ConfirmRemoveDialog", "닫기"))
         btn_close.setObjectName("confirmClose")
-        btn_close.setFixedWidth(80)
+        btn_close.setMinimumWidth(80)
         btn_close.clicked.connect(self._on_close)
         # 기본 포커스 — 엔터 잘못 눌러도 사고 방지
         btn_close.setDefault(True)
@@ -101,7 +101,7 @@ class ConfirmRemoveDialog(QDialog):
 
         btn_remove = QPushButton(translate("ConfirmRemoveDialog", "제거"))
         btn_remove.setObjectName("confirmRemove")
-        btn_remove.setFixedWidth(80)
+        btn_remove.setMinimumWidth(80)
         btn_remove.clicked.connect(self._on_remove)
         btn_remove.setDefault(False)
         btn_remove.setAutoDefault(False)

@@ -319,14 +319,14 @@ class DownloadItemWidget(QWidget):
         # cancel_requested / retry_requested 중 하나를 발사한다.
         self.btn_cancel = QPushButton()
         self.btn_cancel.setObjectName("btnCancel")
-        self.btn_cancel.setFixedWidth(60)
+        self.btn_cancel.setMinimumWidth(60)
         self.btn_cancel.clicked.connect(self._on_cancel_or_retry)
         btn_layout.addWidget(self.btn_cancel)
 
         # 오류 내용 보기 버튼 (오류 상태에서만 표시, D061)
         self.btn_detail = QPushButton()
         self.btn_detail.setObjectName("btnDetail")
-        self.btn_detail.setFixedWidth(60)
+        self.btn_detail.setMinimumWidth(60)
         self.btn_detail.setVisible(False)
         self.btn_detail.clicked.connect(
             lambda: self.detail_requested.emit(self.item.item_id)
@@ -336,7 +336,7 @@ class DownloadItemWidget(QWidget):
         # 폴더 열기 버튼 (완료 후 표시)
         self.btn_open = QPushButton()
         self.btn_open.setObjectName("btnOpen")
-        self.btn_open.setFixedWidth(60)
+        self.btn_open.setMinimumWidth(60)
         self.btn_open.setVisible(False)
         self.btn_open.clicked.connect(
             lambda: self.open_requested.emit(self.item.item_id)
@@ -346,7 +346,7 @@ class DownloadItemWidget(QWidget):
         # 재생 버튼 — 받은 파일을 기본 앱으로 (완료 후 표시, D049)
         self.btn_play = QPushButton()
         self.btn_play.setObjectName("btnPlay")
-        self.btn_play.setFixedWidth(60)
+        self.btn_play.setMinimumWidth(60)
         self.btn_play.setVisible(False)
         self.btn_play.clicked.connect(
             lambda: self.play_requested.emit(self.item.item_id)
@@ -356,7 +356,7 @@ class DownloadItemWidget(QWidget):
         # 삭제 버튼
         self.btn_remove = QPushButton("✕")
         self.btn_remove.setObjectName("btnRemove")
-        self.btn_remove.setFixedWidth(60)
+        self.btn_remove.setMinimumWidth(60)
         self.btn_remove.clicked.connect(
             lambda: self.remove_requested.emit(self.item.item_id)
         )

@@ -6,13 +6,17 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _no_translator_left():
-    # 언어를 바꾼 테스트 뒤에 번역기가 남으면 다른 테스트의 한글 문구가 바뀐다
-    yield
+    # 언어를 바꾼 테스트 뒤에 번역기·글꼴이 남으면 다른 테스트의 문구·크기가 바뀐다
     from PySide6.QtWidgets import QApplication
 
     from utils import i18n
 
     app = QApplication.instance()
+    font = app.font() if app is not None else None
+    yield
+    app = QApplication.instance()
+    if font is not None:
+        app.setFont(font)
     for translator in i18n._installed:
         if app is not None:
             app.removeTranslator(translator)

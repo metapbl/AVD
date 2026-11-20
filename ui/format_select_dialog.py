@@ -167,14 +167,16 @@ class FormatSelectDialog(QDialog):
 
         btn_cancel = QPushButton(translate("FormatSelectDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
-        btn_cancel.setFixedSize(80, 32)
+        btn_cancel.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_cancel.setFixedHeight(32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
         btn_confirm = QPushButton(translate("FormatSelectDialog", "다운로드"))
         btn_confirm.setObjectName("btnConfirm")
         btn_confirm.setProperty("role", "primary")
-        btn_confirm.setFixedSize(100, 32)
+        btn_confirm.setMinimumWidth(100)  # 긴 번역문이면 늘어난다 (F17)
+        btn_confirm.setFixedHeight(32)
         btn_confirm.clicked.connect(self._on_confirm)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
         btn_confirm.setDefault(True)

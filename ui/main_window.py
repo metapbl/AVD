@@ -316,7 +316,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(bar, stretch=1)
 
         self.btn_banner_cancel = QPushButton()
-        self.btn_banner_cancel.setFixedSize(60, 26)
+        self.btn_banner_cancel.setMinimumWidth(60)  # 긴 번역문이면 늘어난다 (F17)
+        self.btn_banner_cancel.setFixedHeight(26)
         self.btn_banner_cancel.clicked.connect(self._on_playlist_cancel)
         layout.addWidget(self.btn_banner_cancel)
 

@@ -1,6 +1,7 @@
 # utils/i18n.py
 # 화면 언어 결정과 번역기 교체 (F17, D083, D084)
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import QLibraryInfo, QTranslator
@@ -19,6 +20,18 @@ LANGUAGES = {
 I18N_DIR = Path(__file__).parent.parent / "i18n"
 
 _installed: list = []
+
+# 언어별 기본 글꼴 — 맑은 고딕은 일본어 가나 모양·간격이 어색하고 간체자 글꼴이 아니다 (작업 8-1)
+_FONTS = {
+    "win32": {"ja": "Yu Gothic UI", "zh_CN": "Microsoft YaHei UI"},
+    "darwin": {"ja": "Hiragino Sans", "zh_CN": "PingFang SC"},
+}
+_DEFAULT_FONT = {"darwin": "Apple SD Gothic Neo"}
+
+
+def font_family(code: str, platform: str = sys.platform) -> str:
+    """화면 언어에 맞는 기본 글꼴 이름. 그 외 OS·언어는 맑은 고딕(macOS 는 Apple SD Gothic Neo)."""
+    return _FONTS.get(platform, {}).get(code) or _DEFAULT_FONT.get(platform, "Malgun Gothic")
 
 
 def resolve_language(setting: str, locale_name: str) -> str:
@@ -47,3 +60,6 @@ def apply_language(app, code: str) -> None:
         if translator.load(name, folder):  # 파일이 없으면 원문(앱 한국어, Qt 영어)으로 둔다
             app.installTranslator(translator)
             _installed.append(translator)
+    font = app.font()
+    font.setFamily(font_family(code))
+    app.setFont(font)

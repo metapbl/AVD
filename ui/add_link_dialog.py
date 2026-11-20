@@ -80,7 +80,8 @@ class AddLinkDialog(QDialog):
         # 취소 버튼
         btn_cancel = QPushButton(translate("AddLinkDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
-        btn_cancel.setFixedSize(80, 32)
+        btn_cancel.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_cancel.setFixedHeight(32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
@@ -88,7 +89,8 @@ class AddLinkDialog(QDialog):
         btn_confirm = QPushButton(translate("AddLinkDialog", "확인"))
         btn_confirm.setObjectName("btnConfirm")
         btn_confirm.setProperty("role", "primary")
-        btn_confirm.setFixedSize(80, 32)
+        btn_confirm.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+        btn_confirm.setFixedHeight(32)
         btn_confirm.clicked.connect(self._on_confirm)
         btn_row.addWidget(btn_confirm)
 
