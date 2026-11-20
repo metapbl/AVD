@@ -6,7 +6,6 @@ from itertools import pairwise
 from pathlib import Path
 
 from PySide6.QtCore import (
-    QT_TRANSLATE_NOOP,
     QCoreApplication,
     QEvent,
     QLocale,
@@ -71,17 +70,18 @@ def _urls_from_mime(mime) -> list[str]:
 
 def _summary_text(items: dict) -> str:
     """상태 표시줄의 목록 요약. 0개인 묶음은 뺀다."""
-    active = QT_TRANSLATE_NOOP("MainWindow", "진행")
-    group = {
-        DownloadStatus.WAITING: QT_TRANSLATE_NOOP("MainWindow", "대기"),
-        DownloadStatus.DONE: QT_TRANSLATE_NOOP("MainWindow", "완료"),
-        DownloadStatus.ERROR: QT_TRANSLATE_NOOP("MainWindow", "오류"),
-        DownloadStatus.CANCELLED: QT_TRANSLATE_NOOP("MainWindow", "취소"),
+    # "목록 요약" 구분: 같은 원문 "취소" 가 배너의 취소 버튼에도 있어 번역이 섞이지 않게 한다
+    names = {
+        None: translate("MainWindow", "진행", "목록 요약"),
+        DownloadStatus.WAITING: translate("MainWindow", "대기", "목록 요약"),
+        DownloadStatus.DONE: translate("MainWindow", "완료", "목록 요약"),
+        DownloadStatus.ERROR: translate("MainWindow", "오류", "목록 요약"),
+        DownloadStatus.CANCELLED: translate("MainWindow", "취소", "목록 요약"),
     }
-    counts = dict.fromkeys([active, *group.values()], 0)
+    counts = dict.fromkeys(names, 0)
     for item in items.values():
-        counts[group.get(item.status, active)] += 1
-    return " · ".join(f"{translate('MainWindow', name)} {n}" for name, n in counts.items() if n)
+        counts[item.status if item.status in names else None] += 1
+    return " · ".join(f"{names[key]} {n}" for key, n in counts.items() if n)
 
 
 # ── 오류 메시지 → 사용자 친화 안내 ───────────────────

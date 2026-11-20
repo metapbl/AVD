@@ -136,3 +136,17 @@ def test_preferences_language_applies_on_save(tmp_path, monkeypatch):
     app.processEvents()
     assert window.btn_add.text() == "+ Add link"
     assert json.loads(config_path.read_text(encoding="utf-8"))["ui_language"] == "en"
+
+
+def test_same_source_cancel_keeps_two_meanings_in_english():
+    # 원문 "취소" 가 배너 버튼(Cancel)과 목록 요약(Canceled)에 함께 쓰인다 — 구분 표시로 나눈다
+    from models.download_item import DownloadItem, DownloadStatus
+    from ui.main_window import MainWindow, _summary_text
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow()
+    apply_language(app, "en")
+    app.processEvents()
+    item = DownloadItem(url="u", status=DownloadStatus.CANCELLED)
+    assert window.btn_banner_cancel.text() == "Cancel"
+    assert _summary_text({item.item_id: item}) == "Canceled 1"

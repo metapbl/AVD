@@ -305,28 +305,37 @@ Work folder: {1}</translation>
 <context>
     <name>MainWindow</name>
     <message>
-        <source>진행</source>
-        <translation>Active</translation>
-    </message>
-    <message>
-        <source>대기</source>
-        <translation>Waiting</translation>
-    </message>
-    <message>
-        <source>완료</source>
-        <translation>Done</translation>
-    </message>
-    <message>
-        <source>오류</source>
-        <translation>Error</translation>
-    </message>
-    <message>
         <source>취소</source>
-        <translation>Canceled</translation>
+        <translation>Cancel</translation>
     </message>
     <message>
         <source>로그인 쿠키를 읽지 못했습니다</source>
         <translation>Could not read login cookies</translation>
+    </message>
+    <message>
+        <source>진행</source>
+        <comment>목록 요약</comment>
+        <translation>Active</translation>
+    </message>
+    <message>
+        <source>대기</source>
+        <comment>목록 요약</comment>
+        <translation>Waiting</translation>
+    </message>
+    <message>
+        <source>완료</source>
+        <comment>목록 요약</comment>
+        <translation>Done</translation>
+    </message>
+    <message>
+        <source>오류</source>
+        <comment>목록 요약</comment>
+        <translation>Error</translation>
+    </message>
+    <message>
+        <source>취소</source>
+        <comment>목록 요약</comment>
+        <translation>Canceled</translation>
     </message>
     <message>
         <source>환경설정에서 고른 Firefox 나 cookies.txt 에서 쿠키를 읽지 못했습니다.
