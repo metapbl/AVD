@@ -20,6 +20,7 @@
 - (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
+- GitHub 저장소 Settings → Code security → Private vulnerability reporting 켜기 (D087, README Security 절이 안내함). 2026-11-21 확인 때 꺼져 있음
 - macOS 소스 실행 (F16) — `docs/plans/2026-11-18-macos-source-run.md` 작업 4 (2026-11-18 실기기 없어 보류). 기대 결과: 📂 → Finder 에서 파일 선택된 채 열림, 한글 UI 가 Apple SD Gothic Neo
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
