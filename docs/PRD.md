@@ -1,6 +1,6 @@
 # PRD — AV_Downloader (AVD)
 
-Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
+Status: approved (2026-11-20) | 단계: 8 구현 | 갱신: 2026-11-20
 
 <!-- 상태가 approved (YYYY-MM-DD)가 되기 전에는 코드·뼈대·의존성 설치를 하지 않는다. -->
 <!-- 모든 항목 끝에 출처를 단다: [U] 사용자 · [X] 기존 코드·문서 · [AI] AI 기본값. 근거 결정은 (D###). -->
@@ -29,7 +29,7 @@ Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
 - 오디오 비트레이트 정책 (ADR-005 Proposed) [X] — F13 으로 (D073, D074) [U] — 스물세 번째 계획에서 완료, v1.4.0 게시 [X]
 - Vimeo 공개 영상 지원 (F12) [U] (D067~D071) — 스물한 번째 계획에서 완료, v1.3.0 게시 [X]
 - 쿠키(브라우저 로그인) 지원 (F15) [U] (D078~D080) — 스물일곱 번째 계획에서 완료, v1.6.0 게시 [X]
-- 다국어 [X] WORKLOG 3.4
+- 다국어 [X] WORKLOG 3.4 — F17 로 (D082~D085) [U]
 - macOS .app 배포 — 설정 파일 위치, Finder 실행 때 PATH, 빌드 spec·아이콘, 미서명 앱 안내 [U] (D081)
 ### 2.3 이번에는 안 함
 - 다운로드 일시정지/재개 — URL 토큰 만료로 사실상 재시작이 되어 보류 [X] WORKLOG 3.3
@@ -146,6 +146,21 @@ Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
   - Given Windows / When 같은 동작 / Then 지금과 같다 (탐색기 `/select,`, 맑은 고딕) [X]
 - 확인 방법: 자동(`sys.platform`·`subprocess.run` 을 가로채 명령 확인) + 실기(macOS, 소스 실행)
 
+### F17 [서른 번째 계획] 다국어 화면 (D082~D085)
+- 앱 화면을 English·한국어·简体中文·日本語·Español·Русский 로 보인다 [U] (D082)
+- 방식: 코드의 한글 문구를 원문으로 두고 Qt `tr()`/`QCoreApplication.translate` 로 감싼다. `pyside6-lupdate` 가 언어별 `.ts` 를 만들고 `pyside6-lrelease` 가 `.qm` 을 만든다. `.ts`·`.qm` 둘 다 저장소에 넣어 소스 실행에 빌드 단계가 없게 한다 [U] 방식, [AI] 커밋 (D083)
+- 언어 결정: 설정 `ui_language` = system(기본)·en·ko·zh_CN·ja·es·ru. system 이면 OS 언어, 지원하지 않는 언어면 English. 기존 `language` 키(값 "ko" 가 저장돼 있음)는 쓰지 않는다 [U] 규칙, [AI] 새 키 (D084)
+- 환경설정에서 언어를 바꾸면 재시작 없이 열린 창·목록 항목의 문구가 바로 바뀐다 [U] (D084)
+- 번역 범위: 앱이 만든 문구(창·버튼·상태·안내·오류 안내)와 Qt 기본 버튼(`qtbase_*`). yt-dlp 원문 오류("자세히"), 로그, 파일명, CHANGELOG·릴리스 노트·docs/ 는 번역하지 않는다 [AI]
+- 번역문은 AI 번역이다. 영어판은 개발자가 검토하고, 나머지는 사용자 제보로 고친다 [AI]
+- 인수 기준:
+  - Given OS 언어가 일본어, 설정이 system / When 앱을 켠다 / Then 화면이 日本語 [AI]
+  - Given OS 언어가 지원 밖(예: 독일어), 설정이 system / When 앱을 켠다 / Then English [U]
+  - Given 다운로드 중인 항목이 있는 창 / When 환경설정에서 English → 한국어 / Then 재시작 없이 메뉴·버튼·항목 상태 문구가 한국어로 바뀌고 진행 중인 다운로드는 계속된다 [U]
+  - Given 여섯 언어의 `.ts` / When 테스트 / Then 번역 안 된 문구(`unfinished`) 0개, 코드의 `tr()` 문구가 모두 `.ts` 에 있고, 저장소의 `.qm` 이 `.ts` 로 새로 만든 것과 같다 [AI]
+  - Given `ui_language` 가 없는 예전 설정 파일 / When 앱을 켠다 / Then system 으로 동작 [AI]
+- 확인 방법: 자동(언어 결정 함수, 번역 완결성, 언어 바꿀 때 위젯 문구 변화) + 실기(Windows: 6개 언어 화면 훑어보기, 중국어·일본어 글꼴 깨짐 없음)
+
 ## 4. 기술 결정
 | 항목 | 선택 | 버린 안 (이유) | 근거 |
 |---|---|---|---|
@@ -161,6 +176,7 @@ Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
 ## 5. 비기능 요구
 - 실행 환경 (OS, 언어 버전, 네트워크): Windows 11 정식, macOS 는 소스 실행(`python main.py`)만 지원하고 .app 배포 없음 (F16, D081), Python ≥3.12 (개발 3.15), 인터넷 필수 (D028) [X]
 - 성능 (시작 시간, 반응 속도, 자원): 별도 목표 없음. 참고 — yt-dlp 단일 프로세스 병렬은 1~3개가 경험상 안정 (기본 2) [X] LESSONS
+- README 언어: 영어 `README.md` 기본 + `README.ko.md`·`README.zh-CN.md`·`README.ja.md`·`README.es.md`·`README.ru.md` (번역은 AI 번역, 영어판 우선 안내). 바꿀 때는 여섯 개를 한 커밋에 (D085) [U]
 - 배포 형태: PyInstaller onedir exe (Windows x64) — GitHub Release 에 exe zip + 같은 커밋의 소스 zip, exe 옆 `config.json`, 절차는 `docs/RELEASE.md` (D011, D039, D040) [X]
 - 앱 아이콘: `assets/icons/avd.png`·`avd.ico` 하나로 창·작업표시줄·`AVD.exe` 에 통일 (D042) [X]
 - 로그 (위치, 형식, 상세 모드): 앱 로그 체계 없음, 지금은 도입 안 함 [U] (D030)
@@ -209,3 +225,4 @@ Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
 | 2026-11-18 | §2.2 쿠키 지원(F15) 완료 표시 (v1.6.0) | D078~D080 |
 | 2026-11-18 | §2.2·§5·F16 macOS 정식화를 소스 실행으로 좁힘, .app 배포는 로드맵 | D081, Q092 |
 | 2026-11-20 | §6 턴 끝 검사(pytest)·에이전트(Claude Code 만) — metarche upgrade U6·U9 | 사용자 답 (2026-11-20) |
+| 2026-11-20 | §2.2·§5·F17 다국어 화면(6개 언어, Qt tr, 즉시 전환), README 6개 언어 | D082~D085, Q093~Q096 |
