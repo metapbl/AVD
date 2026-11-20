@@ -4,13 +4,14 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QLibraryInfo, QTranslator
+from PySide6.QtCore import QLocale
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from ui.main_window import MainWindow
 from ui.theme import apply_theme
 from utils.config_manager import ConfigManager
+from utils.i18n import apply_language, resolve_language
 from utils.updater import APP_VERSION
 
 # 동결 빌드에서도 main.py 는 _internal\ 에 있다고 보므로 datas 경로와 맞는다 (AVD.spec)
@@ -39,15 +40,6 @@ def set_window_class_icon(window):
             user32.SetClassLongPtrW(hwnd, index, hicon)
 
 
-def install_korean_translator(app) -> QTranslator:
-    """Qt 기본 버튼(OK, Yes, 자세히 보기 등)을 한국어로 표시한다. 파일이 없으면 영어로 둔다."""
-    translator = QTranslator(app)
-    path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
-    if translator.load("qtbase_ko", path):
-        app.installTranslator(translator)
-    return translator
-
-
 def main():
     # 소스 실행 때 작업표시줄이 python.exe 아이콘으로 묶이지 않게 앱 ID 를 따로 준다 (D042)
     if sys.platform == "win32":
@@ -58,8 +50,9 @@ def main():
     app = QApplication(sys.argv)
 
     # 테마가 Fusion 스타일·팔레트·공통 위젯 스타일을 함께 건다 (ui/theme.py, D065)
-    apply_theme(app, ConfigManager().get("theme_mode", "system"))
-    install_korean_translator(app)
+    config = ConfigManager()
+    apply_theme(app, config.get("theme_mode", "system"))
+    apply_language(app, resolve_language(config.get("ui_language", "system"), QLocale.system().name()))
 
     # 앱 기본 정보 설정
     app.setApplicationName("AV Downloader")

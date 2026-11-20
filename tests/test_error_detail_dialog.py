@@ -3,11 +3,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialog, QMessageBox, QWidget
 
-import main
 from models.download_item import DownloadItem
 from ui import main_window as mw
 from ui.error_detail_dialog import ErrorDetailDialog
 from ui.main_window import MainWindow, _friendly_error
+from utils.i18n import apply_language
 
 TRUNCATED = "ERROR: [youtube:truncated_id] 1: Incomplete YouTube ID 1. URL looks truncated."
 
@@ -73,10 +73,10 @@ def test_guidance_does_not_tell_user_to_press_detail_again():
 
 def test_standard_buttons_are_korean():
     app = _app()
-    translator = main.install_korean_translator(app)
+    apply_language(app, "ko")
     try:
         box = QMessageBox()
         box.setStandardButtons(QMessageBox.StandardButton.Ok)
         assert box.button(QMessageBox.StandardButton.Ok).text() == "확인"
     finally:
-        app.removeTranslator(translator)
+        apply_language(app, "en")

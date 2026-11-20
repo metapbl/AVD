@@ -25,6 +25,7 @@
 
 ## 2026-11-20
 
+- **`feat(i18n)`**: 화면 언어 결정·번역기 교체 장치 — 새 설정 `ui_language`(기본 system: OS 언어, 지원 밖이면 English). 번역 파일은 다음 작업에서. **(F17, D084)**
 - **`chore`**: metarche upgrade — 지침 파일을 `AGENTS.md` 로, 훅을 `.metarche/hooks/` 로 옮기고 턴 끝 테스트 검사 추가.
 - **`fix(test)`**: 테스트가 모두 통과해도 pytest 종료 코드가 가끔 실패로 나오던 문제 (Qt 위젯 정리 순서).
 
