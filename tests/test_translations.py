@@ -16,18 +16,8 @@ TRANSLATE_CALLS = {"tr", "translate", "QT_TRANSLATE_NOOP"}
 LOG_METHODS = {"debug", "info", "warning", "error", "exception", "critical"}
 # 언어 이름은 번역하지 않는다 (D084)
 NOT_UI = {"utils/i18n.py"}
-# 아직 tr() 로 감싸지 않은 파일 — 작업 3~5 에서 줄여 비운다
-PENDING = {
-    "main.py",
-    "ui/about_dialog.py",
-    "ui/add_link_dialog.py",
-    "ui/confirm_remove_dialog.py",
-    "ui/error_detail_dialog.py",
-    "ui/format_select_dialog.py",
-    "ui/playlist_select_dialog.py",
-    "ui/preferences_dialog.py",
-    "ui/update_progress_dialog.py",
-}
+# README 절 앵커(링크 주소) — 화면 문구가 아니다
+NOT_UI_STRINGS = {"#로그인-쿠키"}
 # 번역을 다 채운 언어 — 작업 7(en)·8(나머지) 에서 늘린다
 COMPLETE = set()
 
@@ -53,22 +43,16 @@ def _untranslated_hangul(path: Path) -> list[str]:
                 skip.update(id(n) for n in ast.walk(node))
     return [f"{_rel(path)}:{n.lineno} {n.value!r}" for n in ast.walk(tree)
             if isinstance(n, ast.Constant) and isinstance(n.value, str)
-            and HANGUL.search(QSS_COMMENT.sub("", n.value)) and id(n) not in skip]
+            and HANGUL.search(QSS_COMMENT.sub("", n.value)) and id(n) not in skip
+            and n.value not in NOT_UI_STRINGS]
 
 
 def test_no_unwrapped_hangul_in_ui_code():
     found = []
     for path in ut.source_files():
-        rel = _rel(path)
-        if rel not in NOT_UI and rel not in PENDING:
+        if _rel(path) not in NOT_UI:
             found += _untranslated_hangul(path)
     assert found == []
-
-
-def test_pending_files_still_need_wrapping():
-    # 다 감싼 파일이 목록에 남아 검사를 피하지 않게 한다
-    done = [rel for rel in PENDING if not _untranslated_hangul(ut.ROOT / rel)]
-    assert done == []
 
 
 def test_ts_and_qm_are_current(tmp_path):

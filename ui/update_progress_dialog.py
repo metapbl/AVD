@@ -19,7 +19,7 @@
 
 import re
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QCoreApplication, Qt, QTimer
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -33,6 +33,8 @@ from PySide6.QtWidgets import (
 _SIZE_RE = re.compile(r"([\d.]+)\s*/\s*([\d.]+)\s*(k|K|M|G)?i?B", re.IGNORECASE)
 
 from ui import theme
+
+translate = QCoreApplication.translate
 
 
 class UpdateProgressDialog(QDialog):
@@ -50,7 +52,7 @@ class UpdateProgressDialog(QDialog):
     def __init__(self, current: str, latest: str, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("yt-dlp 업데이트 중")
+        self.setWindowTitle(translate("UpdateProgressDialog", "yt-dlp 업데이트 중"))
         self.setModal(True)
         # 진행 중 사용자가 X(닫기) 로 강제 종료하지 못하게 도움말 버튼과
         # 닫기 버튼을 숨긴다. 완료되면 on_done 에서 다시 열어 준다.
@@ -74,7 +76,7 @@ class UpdateProgressDialog(QDialog):
         layout.setSpacing(12)
 
         self.lbl_title = QLabel(
-            f"yt-dlp를 업데이트하고 있습니다.\n현재: {current}  →  최신: {latest}"
+            translate("UpdateProgressDialog", "yt-dlp를 업데이트하고 있습니다.\n현재: {0}  →  최신: {1}").format(current, latest)
         )
         self.lbl_title.setWordWrap(True)
         layout.addWidget(self.lbl_title)
@@ -88,7 +90,7 @@ class UpdateProgressDialog(QDialog):
         self.bar.setTextVisible(False)
         layout.addWidget(self.bar)
 
-        self.lbl_status = QLabel("준비 중…")
+        self.lbl_status = QLabel(translate("UpdateProgressDialog", "준비 중…"))
         self.lbl_status.setWordWrap(True)
         self.lbl_status.setStyleSheet(theme.qss("color: @muted; font-size: 12px;"))
         layout.addWidget(self.lbl_status)
@@ -100,7 +102,7 @@ class UpdateProgressDialog(QDialog):
         # 하단 버튼: 진행 중에는 비활성. 완료되면 '닫기' 로 바뀐다.
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
-        self.btn_close = QPushButton("업데이트 중…")
+        self.btn_close = QPushButton(translate("UpdateProgressDialog", "업데이트 중…"))
         self.btn_close.setEnabled(False)
         self.btn_close.clicked.connect(self.accept)
         btn_row.addWidget(self.btn_close)
@@ -161,7 +163,7 @@ class UpdateProgressDialog(QDialog):
         self.lbl_status.setStyleSheet(
             theme.qss("color: %s; font-size: 12px;" % ("@success2" if success else "@danger"))
         )
-        self.btn_close.setText("닫기")
+        self.btn_close.setText(translate("UpdateProgressDialog", "닫기"))
         self.btn_close.setEnabled(True)
 
     # ── 진행률 헬퍼 ──────────────────────────────────

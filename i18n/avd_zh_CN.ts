@@ -2,6 +2,64 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN" sourcelanguage="ko_KR">
 <context>
+    <name>AboutDialog</name>
+    <message>
+        <source>프로그램 정보</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>버전 {0}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>yt-dlp 기반 영상·오디오 다운로더</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MIT License · © 2026 META PUBLIC
+함께 배포하는 구성요소의 고지는 THIRD_PARTY_LICENSES 파일에 있습니다.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>닫기</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>AddLinkDialog</name>
+    <message>
+        <source>링크 붙여넣기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>다운로드할 영상의 URL을 붙여넣으세요.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>취소</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>확인</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ConfirmRemoveDialog</name>
+    <message>
+        <source>확인</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>닫기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>제거</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DownloadItem</name>
     <message>
         <source>제목 가져오는 중...</source>
@@ -151,9 +209,67 @@
     </message>
 </context>
 <context>
+    <name>ErrorDetailDialog</name>
+    <message>
+        <source>오류 내용</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>오류 원문</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>닫기</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>FileUtils</name>
     <message>
         <source>알 수 없음</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>FormatSelectDialog</name>
+    <message>
+        <source>화질 선택</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>다운로드 형식을 선택하세요</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>형식</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>해상도</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>코덱</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>크기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>크기 미확인</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>자동</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>취소</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>다운로드</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -494,6 +610,226 @@
     </message>
     <message>
         <source>플레이리스트</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PlaylistSelectDialog</name>
+    <message>
+        <source>플레이리스트 선택</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&quot;{0}&quot; — {1}개 항목</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> (상한 500개까지 표시)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>제목</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>길이</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>전체 선택</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>전체 해제</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>형태:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>영상 (최고 화질)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>영상 (최고 호환)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>취소</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>추가</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>PreferencesDialog</name>
+    <message>
+        <source>환경설정</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>저장 경로</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>찾아보기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>다운로드 설정</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>동시 다운로드 수</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>권장</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>주의</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>비권장</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>yt-dlp 는 단일 인스턴스 병렬 다운로드를 공식 지원하지 않습니다.
+1~3 권장. 높은 값은 IP 차단 위험.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>로그인 쿠키</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>사용 안 함</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Firefox 에서 읽기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>cookies.txt 파일</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MP3 음량 정규화</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MP3 다운로드 시 음량 정규화</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>MP3 로 저장할 때 곡별 음량을 목표 dB 로 맞춥니다(무손실 ReplayGain).
+여러 곡의 음량 편차를 줄여 재생 시 볼륨을 다시 만질 필요를 덜어줍니다.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>목표 음량</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{0} 조용</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{0} 표준</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>{0} 크게</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>값이 높을수록 음량이 커지지만 클리핑(왜곡) 위험이 있습니다.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>업데이트 설정</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>앱 시작 시 yt-dlp 자동 업데이트 확인</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>화면 테마</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Windows 설정 따르기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>다크</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>라이트</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>취소</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>저장</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Chrome, Edge 등에서 확장으로 내보낸 cookies.txt 를 지정하세요. &lt;a href=&quot;{0}&quot; style=&quot;color:{1};&quot;&gt;만드는 법 ↗&lt;/a&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Firefox 에 로그인한 계정으로 받습니다. Firefox 에서 사이트에 로그인해 두세요.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>연령 제한처럼 로그인해야 볼 수 있는 영상을 받을 때 켜세요.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>cookies.txt 선택</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>쿠키 파일 (*.txt);;모든 파일 (*)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>저장 폴더 선택</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>UpdateProgressDialog</name>
+    <message>
+        <source>yt-dlp 업데이트 중</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>yt-dlp를 업데이트하고 있습니다.
+현재: {0}  →  최신: {1}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>준비 중…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>업데이트 중…</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>닫기</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

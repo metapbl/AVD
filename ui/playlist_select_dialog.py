@@ -3,7 +3,7 @@
 # probe 로 받은 항목 목록을 체크박스 표로 보여주고, 받을 항목과
 # 출력 형태(영상/음원)를 한 번에 고르게 한다.
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QCoreApplication, Qt, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -20,6 +20,8 @@ from PySide6.QtWidgets import (
 
 from ui import theme
 from utils.file_utils import format_duration
+
+translate = QCoreApplication.translate
 
 
 class PlaylistSelectDialog(QDialog):
@@ -53,7 +55,7 @@ class PlaylistSelectDialog(QDialog):
         self._total_found = result.total_found
         self._pl_title = result.title
 
-        self.setWindowTitle("플레이리스트 선택")
+        self.setWindowTitle(translate("PlaylistSelectDialog", "플레이리스트 선택"))
         self.setMinimumSize(640, 520)
         self.setModal(True)
         self._build_ui()
@@ -67,9 +69,9 @@ class PlaylistSelectDialog(QDialog):
 
         # 안내 — 플레이리스트 제목과 개수. 상한 도달 시 그 사실을 알린다.
         n = len(self._entries)
-        head = f"\"{self._pl_title}\" — {n}개 항목"
+        head = translate("PlaylistSelectDialog", "\"{0}\" — {1}개 항목").format(self._pl_title, n)
         if n >= 500:
-            head += " (상한 500개까지 표시)"
+            head += translate("PlaylistSelectDialog", " (상한 500개까지 표시)")
         lbl = QLabel(head)
         lbl.setObjectName("dialogLabel")
         lbl.setTextFormat(Qt.TextFormat.PlainText)  # 사이트가 준 제목 (SECURITY_POLICY §4)
@@ -78,7 +80,7 @@ class PlaylistSelectDialog(QDialog):
 
         # 항목 표
         self.table = QTableWidget(n, 3)
-        self.table.setHorizontalHeaderLabels(["", "제목", "길이"])
+        self.table.setHorizontalHeaderLabels(["", translate("PlaylistSelectDialog", "제목"), translate("PlaylistSelectDialog", "길이")])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -107,10 +109,10 @@ class PlaylistSelectDialog(QDialog):
         # 전체 선택/해제
         toggle_row = QHBoxLayout()
         toggle_row.setSpacing(8)
-        btn_all = QPushButton("전체 선택")
+        btn_all = QPushButton(translate("PlaylistSelectDialog", "전체 선택"))
         btn_all.setObjectName("btnGhost")
         btn_all.clicked.connect(lambda: self._set_all(True))
-        btn_none = QPushButton("전체 해제")
+        btn_none = QPushButton(translate("PlaylistSelectDialog", "전체 해제"))
         btn_none.setObjectName("btnGhost")
         btn_none.clicked.connect(lambda: self._set_all(False))
         toggle_row.addWidget(btn_all)
@@ -121,14 +123,14 @@ class PlaylistSelectDialog(QDialog):
         # 출력 형태 선택
         mode_row = QHBoxLayout()
         mode_row.setSpacing(16)
-        mode_label = QLabel("형태:")
+        mode_label = QLabel(translate("PlaylistSelectDialog", "형태:"))
         mode_label.setObjectName("dialogLabel")
         self._mode_group = QButtonGroup(self)
         mode_row.addWidget(mode_label)
         # (mode, 라벨) — mode 는 PlaylistFlow._MODES 의 키
         for mode, text in (
-            ("video", "영상 (최고 화질)"),
-            ("video_compat", "영상 (최고 호환)"),
+            ("video", translate("PlaylistSelectDialog", "영상 (최고 화질)")),
+            ("video_compat", translate("PlaylistSelectDialog", "영상 (최고 호환)")),
             ("audio", "MP3"),
             ("audio_m4a", "M4A"),
         ):
@@ -144,12 +146,12 @@ class PlaylistSelectDialog(QDialog):
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
         btn_row.addStretch()
-        btn_cancel = QPushButton("취소")
+        btn_cancel = QPushButton(translate("PlaylistSelectDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
         btn_cancel.setFixedSize(90, 32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
-        self.btn_confirm = QPushButton("추가")
+        self.btn_confirm = QPushButton(translate("PlaylistSelectDialog", "추가"))
         self.btn_confirm.setObjectName("btnConfirm")
         self.btn_confirm.setProperty("role", "primary")
         self.btn_confirm.setFixedSize(90, 32)

@@ -3,7 +3,7 @@
 
 import PySide6
 import yt_dlp.version
-from PySide6.QtCore import Qt, qVersion
+from PySide6.QtCore import QCoreApplication, Qt, qVersion
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -17,6 +17,8 @@ import gaindb
 from ui import theme
 from utils.updater import APP_VERSION
 
+translate = QCoreApplication.translate
+
 REPO_URL = "https://github.com/metapbl/AVD"
 
 
@@ -25,7 +27,7 @@ class AboutDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("프로그램 정보")
+        self.setWindowTitle(translate("AboutDialog", "프로그램 정보"))
         self.setFixedWidth(420)
         self.setModal(True)
 
@@ -43,13 +45,13 @@ class AboutDialog(QDialog):
         lbl_name = QLabel("AV Downloader")
         lbl_name.setObjectName("aboutName")
         name_col.addWidget(lbl_name)
-        lbl_version = QLabel(f"버전 {APP_VERSION}")
+        lbl_version = QLabel(translate("AboutDialog", "버전 {0}").format(APP_VERSION))
         lbl_version.setObjectName("aboutVersion")
         name_col.addWidget(lbl_version)
         head.addLayout(name_col, stretch=1)
         root.addLayout(head)
 
-        lbl_desc = QLabel("yt-dlp 기반 영상·오디오 다운로더")
+        lbl_desc = QLabel(translate("AboutDialog", "yt-dlp 기반 영상·오디오 다운로더"))
         lbl_desc.setObjectName("aboutText")
         root.addWidget(lbl_desc)
 
@@ -70,8 +72,8 @@ class AboutDialog(QDialog):
         root.addWidget(lbl_link)
 
         lbl_license = QLabel(
-            "MIT License · © 2026 META PUBLIC\n"
-            "함께 배포하는 구성요소의 고지는 THIRD_PARTY_LICENSES 파일에 있습니다."
+            translate("AboutDialog", "MIT License · © 2026 META PUBLIC\n"
+            "함께 배포하는 구성요소의 고지는 THIRD_PARTY_LICENSES 파일에 있습니다.")
         )
         lbl_license.setObjectName("aboutSmall")
         lbl_license.setWordWrap(True)
@@ -79,7 +81,7 @@ class AboutDialog(QDialog):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_close = QPushButton("닫기")
+        btn_close = QPushButton(translate("AboutDialog", "닫기"))
         btn_close.setObjectName("btnClose")
         btn_close.setProperty("role", "primary")
         btn_close.setFixedSize(80, 32)

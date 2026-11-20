@@ -1,7 +1,7 @@
 # ui/preferences_dialog.py
 # 환경설정 팝업 다이얼로그
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QCoreApplication, Qt, Signal
 from PySide6.QtGui import QColor, QDoubleValidator, QPainter
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
 from ui import theme
 from ui.about_dialog import REPO_URL
 from utils.config_manager import ConfigManager
+
+translate = QCoreApplication.translate
 
 # README 의 "## 로그인 쿠키" 절 — 확장 안내는 앱을 다시 배포하지 않고 README 만 고쳐 갱신한다
 COOKIE_HELP_URL = REPO_URL + "#로그인-쿠키"
@@ -100,7 +102,7 @@ class PreferencesDialog(QDialog):
         super().__init__(parent)
         self.config = config
 
-        self.setWindowTitle("환경설정")
+        self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
         # 게인 그룹이 체크 상태에 따라 접혔다 펴지므로 고정 높이 대신 폭만
         # 고정하고 높이는 내용에 맞춰 자동 조정한다(adjustSize).
         self.setFixedWidth(480)
@@ -118,7 +120,7 @@ class PreferencesDialog(QDialog):
         root.setSpacing(16)
 
         # ── 저장 경로 그룹 ──
-        grp_path = QGroupBox("저장 경로")
+        grp_path = QGroupBox(translate("PreferencesDialog", "저장 경로"))
         grp_path.setObjectName("settingsGroup")
         path_layout = QHBoxLayout(grp_path)
         path_layout.setSpacing(8)
@@ -128,7 +130,7 @@ class PreferencesDialog(QDialog):
         self.input_path.setReadOnly(True)
         path_layout.addWidget(self.input_path)
 
-        btn_browse = QPushButton("찾아보기")
+        btn_browse = QPushButton(translate("PreferencesDialog", "찾아보기"))
         btn_browse.setObjectName("btnBrowse")
         btn_browse.setFixedSize(80, 32)
         btn_browse.clicked.connect(self._browse_path)
@@ -137,7 +139,7 @@ class PreferencesDialog(QDialog):
         root.addWidget(grp_path)
 
         # ── 다운로드 설정 그룹 ──
-        grp_dl = QGroupBox("다운로드 설정")
+        grp_dl = QGroupBox(translate("PreferencesDialog", "다운로드 설정"))
         grp_dl.setObjectName("settingsGroup")
         dl_layout = QVBoxLayout(grp_dl)
         dl_layout.setSpacing(8)
@@ -148,7 +150,7 @@ class PreferencesDialog(QDialog):
 
         # 상단 행: 라벨 + 현재 값 큰 숫자 (우측)
         top_row = QHBoxLayout()
-        top_row.addWidget(QLabel("동시 다운로드 수"))
+        top_row.addWidget(QLabel(translate("PreferencesDialog", "동시 다운로드 수")))
         top_row.addStretch()
         self.lbl_concurrent_value = QLabel("2")
         self.lbl_concurrent_value.setObjectName("concurrentValue")
@@ -177,17 +179,17 @@ class PreferencesDialog(QDialog):
         zone_label_row.setSpacing(0)
         zone_label_row.setContentsMargins(0, 0, 0, 0)
 
-        lbl_green = QLabel("권장")
+        lbl_green = QLabel(translate("PreferencesDialog", "권장"))
         lbl_green.setObjectName("zoneLabelGreen")
         lbl_green.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zone_label_row.addWidget(lbl_green, stretch=2)   # 좌측 약 22%
 
-        lbl_yellow = QLabel("주의")
+        lbl_yellow = QLabel(translate("PreferencesDialog", "주의"))
         lbl_yellow.setObjectName("zoneLabelYellow")
         lbl_yellow.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zone_label_row.addWidget(lbl_yellow, stretch=4)  # 중앙 약 44%
 
-        lbl_red = QLabel("비권장")
+        lbl_red = QLabel(translate("PreferencesDialog", "비권장"))
         lbl_red.setObjectName("zoneLabelRed")
         lbl_red.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zone_label_row.addWidget(lbl_red, stretch=3)     # 우측 약 33%
@@ -203,8 +205,8 @@ class PreferencesDialog(QDialog):
         self.slider_concurrent.setPageStep(1)
         self.slider_concurrent.setTickPosition(QSlider.TickPosition.NoTicks)
         self.slider_concurrent.setToolTip(
-            "yt-dlp 는 단일 인스턴스 병렬 다운로드를 공식 지원하지 않습니다.\n"
-            "1~3 권장. 높은 값은 IP 차단 위험."
+            translate("PreferencesDialog", "yt-dlp 는 단일 인스턴스 병렬 다운로드를 공식 지원하지 않습니다.\n"
+            "1~3 권장. 높은 값은 IP 차단 위험.")
         )
         self.slider_concurrent.valueChanged.connect(self._on_concurrent_changed)
         dl_layout.addWidget(self.slider_concurrent)
@@ -212,7 +214,7 @@ class PreferencesDialog(QDialog):
         root.addWidget(grp_dl)
 
         # ── 로그인 쿠키 그룹 (F15, D079·D080) — 출처만 저장, 쿠키 값은 다루지 않는다 ──
-        grp_cookie = QGroupBox("로그인 쿠키")
+        grp_cookie = QGroupBox(translate("PreferencesDialog", "로그인 쿠키"))
         grp_cookie.setObjectName("settingsGroup")
         cookie_layout = QVBoxLayout(grp_cookie)
         cookie_layout.setSpacing(8)
@@ -220,9 +222,9 @@ class PreferencesDialog(QDialog):
         radio_row = QHBoxLayout()
         radio_row.setSpacing(16)
         self._cookie_radios = {
-            "none": QRadioButton("사용 안 함"),
-            "firefox": QRadioButton("Firefox 에서 읽기"),
-            "file": QRadioButton("cookies.txt 파일"),
+            "none": QRadioButton(translate("PreferencesDialog", "사용 안 함")),
+            "firefox": QRadioButton(translate("PreferencesDialog", "Firefox 에서 읽기")),
+            "file": QRadioButton(translate("PreferencesDialog", "cookies.txt 파일")),
         }
         for radio in self._cookie_radios.values():
             radio_row.addWidget(radio)
@@ -238,7 +240,7 @@ class PreferencesDialog(QDialog):
         self.input_cookie_file.setFixedHeight(32)
         self.input_cookie_file.setReadOnly(True)
         file_row.addWidget(self.input_cookie_file)
-        self.btn_cookie_file = QPushButton("찾아보기")
+        self.btn_cookie_file = QPushButton(translate("PreferencesDialog", "찾아보기"))
         self.btn_cookie_file.setObjectName("btnBrowse")
         self.btn_cookie_file.setFixedSize(80, 32)
         self.btn_cookie_file.clicked.connect(self._browse_cookie_file)
@@ -257,15 +259,15 @@ class PreferencesDialog(QDialog):
         # ── MP3 음량 정규화 그룹 ──
         # 체크박스를 켜면 접혀 있던 게인 컨트롤(슬라이더+입력창)이 펼쳐진다.
         # 목표 dB 는 0.5dB 단위(슬라이더 정수 스텝 = 0.5dB, GAIN_SCALE=2).
-        grp_gain = QGroupBox("MP3 음량 정규화")
+        grp_gain = QGroupBox(translate("PreferencesDialog", "MP3 음량 정규화"))
         grp_gain.setObjectName("settingsGroup")
         gain_layout = QVBoxLayout(grp_gain)
         gain_layout.setSpacing(8)
 
-        self.chk_gain = QCheckBox("MP3 다운로드 시 음량 정규화")
+        self.chk_gain = QCheckBox(translate("PreferencesDialog", "MP3 다운로드 시 음량 정규화"))
         self.chk_gain.setToolTip(
-            "MP3 로 저장할 때 곡별 음량을 목표 dB 로 맞춥니다(무손실 ReplayGain).\n"
-            "여러 곡의 음량 편차를 줄여 재생 시 볼륨을 다시 만질 필요를 덜어줍니다."
+            translate("PreferencesDialog", "MP3 로 저장할 때 곡별 음량을 목표 dB 로 맞춥니다(무손실 ReplayGain).\n"
+            "여러 곡의 음량 편차를 줄여 재생 시 볼륨을 다시 만질 필요를 덜어줍니다.")
         )
         self.chk_gain.toggled.connect(self._on_gain_toggled)
         gain_layout.addWidget(self.chk_gain)
@@ -278,7 +280,7 @@ class PreferencesDialog(QDialog):
 
         # 상단 행: "목표 음량" 라벨 + 입력창(dB)
         gain_top = QHBoxLayout()
-        gain_top.addWidget(QLabel("목표 음량"))
+        gain_top.addWidget(QLabel(translate("PreferencesDialog", "목표 음량")))
         gain_top.addStretch()
         self.input_gain_db = QLineEdit()
         self.input_gain_db.setObjectName("gainInput")
@@ -306,12 +308,12 @@ class PreferencesDialog(QDialog):
         # 범위 안내 — 최소/기본/최대 텍스트(값 텍스트 표기).
         hint_row = QHBoxLayout()
         hint_row.setContentsMargins(0, 0, 0, 0)
-        lbl_min = QLabel(f"{_GAIN_DB_MIN:.0f} 조용")
+        lbl_min = QLabel(translate("PreferencesDialog", "{0} 조용").format(f"{_GAIN_DB_MIN:.0f}"))
         lbl_min.setObjectName("gainHint")
-        lbl_mid = QLabel(f"{_GAIN_DB_DEFAULT:.0f} 표준")
+        lbl_mid = QLabel(translate("PreferencesDialog", "{0} 표준").format(f"{_GAIN_DB_DEFAULT:.0f}"))
         lbl_mid.setObjectName("gainHint")
         lbl_mid.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl_max = QLabel(f"{_GAIN_DB_MAX:.0f} 크게")
+        lbl_max = QLabel(translate("PreferencesDialog", "{0} 크게").format(f"{_GAIN_DB_MAX:.0f}"))
         lbl_max.setObjectName("gainHint")
         lbl_max.setAlignment(Qt.AlignmentFlag.AlignRight)
         hint_row.addWidget(lbl_min, stretch=1)
@@ -320,7 +322,7 @@ class PreferencesDialog(QDialog):
         detail_layout.addLayout(hint_row)
 
         # 클리핑 주의 안내 — 높은 값일수록 음이 깨질(클리핑) 수 있음.
-        lbl_clip = QLabel("값이 높을수록 음량이 커지지만 클리핑(왜곡) 위험이 있습니다.")
+        lbl_clip = QLabel(translate("PreferencesDialog", "값이 높을수록 음량이 커지지만 클리핑(왜곡) 위험이 있습니다."))
         lbl_clip.setObjectName("gainClipNote")
         lbl_clip.setWordWrap(True)
         detail_layout.addWidget(lbl_clip)
@@ -329,26 +331,26 @@ class PreferencesDialog(QDialog):
         root.addWidget(grp_gain)
 
         # ── 업데이트 설정 그룹 ──
-        grp_update = QGroupBox("업데이트 설정")
+        grp_update = QGroupBox(translate("PreferencesDialog", "업데이트 설정"))
         grp_update.setObjectName("settingsGroup")
         update_layout = QVBoxLayout(grp_update)
 
         self.chk_auto_update = QCheckBox(
-            "앱 시작 시 yt-dlp 자동 업데이트 확인"
+            translate("PreferencesDialog", "앱 시작 시 yt-dlp 자동 업데이트 확인")
         )
         update_layout.addWidget(self.chk_auto_update)
 
         root.addWidget(grp_update)
 
         # ── 화면 테마 그룹 (D065) ──
-        grp_theme = QGroupBox("화면 테마")
+        grp_theme = QGroupBox(translate("PreferencesDialog", "화면 테마"))
         grp_theme.setObjectName("settingsGroup")
         theme_layout = QHBoxLayout(grp_theme)
         theme_layout.setSpacing(16)
         self._theme_radios = {
-            "system": QRadioButton("Windows 설정 따르기"),
-            "dark": QRadioButton("다크"),
-            "light": QRadioButton("라이트"),
+            "system": QRadioButton(translate("PreferencesDialog", "Windows 설정 따르기")),
+            "dark": QRadioButton(translate("PreferencesDialog", "다크")),
+            "light": QRadioButton(translate("PreferencesDialog", "라이트")),
         }
         for radio in self._theme_radios.values():
             theme_layout.addWidget(radio)
@@ -362,13 +364,13 @@ class PreferencesDialog(QDialog):
         btn_row.setSpacing(8)
         btn_row.addStretch()
 
-        btn_cancel = QPushButton("취소")
+        btn_cancel = QPushButton(translate("PreferencesDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
         btn_cancel.setFixedSize(80, 32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
-        btn_save = QPushButton("저장")
+        btn_save = QPushButton(translate("PreferencesDialog", "저장"))
         btn_save.setObjectName("btnConfirm")
         btn_save.setProperty("role", "primary")
         btn_save.setFixedSize(80, 32)
@@ -417,21 +419,22 @@ class PreferencesDialog(QDialog):
         is_file = self._cookie_radios["file"].isChecked()
         self.cookie_file_row.setVisible(is_file)
         if is_file:
-            note = (
+            note = translate(
+                "PreferencesDialog",
                 "Chrome, Edge 등에서 확장으로 내보낸 cookies.txt 를 지정하세요. "
-                f'<a href="{COOKIE_HELP_URL}" style="color:{theme.color("accent")};">만드는 법 ↗</a>'
-            )
+                '<a href="{0}" style="color:{1};">만드는 법 ↗</a>',
+            ).format(COOKIE_HELP_URL, theme.color("accent"))
         elif self._cookie_radios["firefox"].isChecked():
-            note = "Firefox 에 로그인한 계정으로 받습니다. Firefox 에서 사이트에 로그인해 두세요."
+            note = translate("PreferencesDialog", "Firefox 에 로그인한 계정으로 받습니다. Firefox 에서 사이트에 로그인해 두세요.")
         else:
-            note = "연령 제한처럼 로그인해야 볼 수 있는 영상을 받을 때 켜세요."
+            note = translate("PreferencesDialog", "연령 제한처럼 로그인해야 볼 수 있는 영상을 받을 때 켜세요.")
         self.lbl_cookie_note.setText(note)
         # 높이가 바뀌므로 다시 맞춘다
         self.adjustSize()
 
     def _browse_cookie_file(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "cookies.txt 선택", self.input_cookie_file.text(), "쿠키 파일 (*.txt);;모든 파일 (*)"
+            self, translate("PreferencesDialog", "cookies.txt 선택"), self.input_cookie_file.text(), translate("PreferencesDialog", "쿠키 파일 (*.txt);;모든 파일 (*)")
         )
         if path:
             self.input_cookie_file.setText(path)
@@ -514,7 +517,7 @@ class PreferencesDialog(QDialog):
         """저장 경로 탐색기 열기"""
         folder = QFileDialog.getExistingDirectory(
             self,
-            "저장 폴더 선택",
+            translate("PreferencesDialog", "저장 폴더 선택"),
             self.input_path.text()
         )
         if folder:

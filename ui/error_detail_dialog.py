@@ -1,7 +1,7 @@
 # ui/error_detail_dialog.py
 # 항목의 "자세히" 버튼이 여는 오류 내용 창 (D061)
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -13,13 +13,15 @@ from PySide6.QtWidgets import (
 
 from ui import theme
 
+translate = QCoreApplication.translate
+
 
 class ErrorDetailDialog(QDialog):
     """오류 요약·대처법·원문을 보여 준다. 원문은 그대로 복사할 수 있다."""
 
     def __init__(self, title: str, description: str, original: str, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("오류 내용")
+        self.setWindowTitle(translate("ErrorDetailDialog", "오류 내용"))
         self.setFixedWidth(520)
         self.setModal(True)
 
@@ -37,7 +39,7 @@ class ErrorDetailDialog(QDialog):
         self.lbl_description.setWordWrap(True)
         root.addWidget(self.lbl_description)
 
-        lbl_original = QLabel("오류 원문")
+        lbl_original = QLabel(translate("ErrorDetailDialog", "오류 원문"))
         lbl_original.setObjectName("errorSection")
         root.addWidget(lbl_original)
 
@@ -53,7 +55,7 @@ class ErrorDetailDialog(QDialog):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_close = QPushButton("닫기")
+        btn_close = QPushButton(translate("ErrorDetailDialog", "닫기"))
         btn_close.setObjectName("btnClose")
         btn_close.setProperty("role", "primary")
         btn_close.setFixedSize(80, 32)

@@ -3,7 +3,7 @@
 
 import re
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QCoreApplication, Signal
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
 )
 
 from ui import theme
+
+translate = QCoreApplication.translate
 
 # yt-dlp 는 로그인 없이 vimeo.com 페이지를 못 읽고 임베드 플레이어만 읽는다 (D068)
 _VIMEO_PAGE = re.compile(r"https?://(?:www\.)?vimeo\.com/(\d+)/?(?:[?#].*)?", re.IGNORECASE)
@@ -43,7 +45,7 @@ class AddLinkDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("링크 붙여넣기")
+        self.setWindowTitle(translate("AddLinkDialog", "링크 붙여넣기"))
         self.setFixedSize(520, 160)
         self.setModal(True)
         self._build_ui()
@@ -57,7 +59,7 @@ class AddLinkDialog(QDialog):
         root.setSpacing(16)
 
         # 안내 레이블
-        lbl = QLabel("다운로드할 영상의 URL을 붙여넣으세요.")
+        lbl = QLabel(translate("AddLinkDialog", "다운로드할 영상의 URL을 붙여넣으세요."))
         lbl.setObjectName("dialogLabel")
         root.addWidget(lbl)
 
@@ -76,14 +78,14 @@ class AddLinkDialog(QDialog):
         btn_row.addStretch()
 
         # 취소 버튼
-        btn_cancel = QPushButton("취소")
+        btn_cancel = QPushButton(translate("AddLinkDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
         btn_cancel.setFixedSize(80, 32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
         # 확인 버튼
-        btn_confirm = QPushButton("확인")
+        btn_confirm = QPushButton(translate("AddLinkDialog", "확인"))
         btn_confirm.setObjectName("btnConfirm")
         btn_confirm.setProperty("role", "primary")
         btn_confirm.setFixedSize(80, 32)

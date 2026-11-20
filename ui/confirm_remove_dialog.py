@@ -7,7 +7,7 @@
 # - 버튼은 Yes/No 가 아니라 "제거" / "닫기" — 동작을 라벨로 명시.
 # - 기본 포커스는 "닫기" — 엔터 잘못 눌러도 사고 방지.
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from ui import theme
+
+translate = QCoreApplication.translate
 
 
 class ConfirmRemoveDialog(QDialog):
@@ -44,7 +46,7 @@ class ConfirmRemoveDialog(QDialog):
     def __init__(
         self,
         parent          = None,
-        title           : str       = "확인",
+        title           : str       = translate("ConfirmRemoveDialog", "확인"),
         message         : str       = "",
         checkbox_text   : str | None = None,
     ):
@@ -89,7 +91,7 @@ class ConfirmRemoveDialog(QDialog):
         btn_row = QHBoxLayout()
         btn_row.addStretch()
 
-        btn_close = QPushButton("닫기")
+        btn_close = QPushButton(translate("ConfirmRemoveDialog", "닫기"))
         btn_close.setObjectName("confirmClose")
         btn_close.setFixedWidth(80)
         btn_close.clicked.connect(self._on_close)
@@ -97,7 +99,7 @@ class ConfirmRemoveDialog(QDialog):
         btn_close.setDefault(True)
         btn_close.setAutoDefault(True)
 
-        btn_remove = QPushButton("제거")
+        btn_remove = QPushButton(translate("ConfirmRemoveDialog", "제거"))
         btn_remove.setObjectName("confirmRemove")
         btn_remove.setFixedWidth(80)
         btn_remove.clicked.connect(self._on_remove)

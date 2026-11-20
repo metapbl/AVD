@@ -61,7 +61,7 @@ def main():
     app.setWindowIcon(QIcon(str(ICON_PATH)))
 
     # 기본 폰트 설정
-    font = QFont("Apple SD Gothic Neo" if sys.platform == "darwin" else "맑은 고딕", 10)  # D081
+    font = QFont("Apple SD Gothic Neo" if sys.platform == "darwin" else "Malgun Gothic", 10)  # D081
     app.setFont(font)
 
     # 메인 윈도우 생성 및 표시

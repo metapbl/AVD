@@ -1,7 +1,7 @@
 # ui/format_select_dialog.py
 # 화질/형식 선택 팝업 다이얼로그
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QCoreApplication, Qt, Signal
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -25,6 +25,8 @@ from ui import theme
 from ui.download_item_widget import format_bitrate, humanize_codec
 from utils.config_manager import ConfigManager
 from utils.file_utils import format_duration, format_file_size
+
+translate = QCoreApplication.translate
 
 # 모든 영상에 같은 포맷 문자열로 나오는 행 — 고른 행을 포맷으로 기억할 수 있다.
 _FIXED_FORMAT_IDS = (AUTO_FORMAT_ID, COMPAT_FORMAT_ID, MP3_FORMAT_ID, M4A_FORMAT_ID)
@@ -50,7 +52,7 @@ class FormatSelectDialog(QDialog):
         self.config = config
         self.selected_format: FormatInfo | None = None
 
-        self.setWindowTitle("화질 선택")
+        self.setWindowTitle(translate("FormatSelectDialog", "화질 선택"))
         self.setFixedSize(600, 520)
         self.setModal(True)
         self._build_ui()
@@ -93,12 +95,12 @@ class FormatSelectDialog(QDialog):
         root.addWidget(line)
 
         # ── 포맷 목록 ──
-        lbl_fmt = QLabel("다운로드 형식을 선택하세요")
+        lbl_fmt = QLabel(translate("FormatSelectDialog", "다운로드 형식을 선택하세요"))
         lbl_fmt.setObjectName("sectionLabel")
         root.addWidget(lbl_fmt)
 
         self.list_formats = QTreeWidget()
-        self.list_formats.setHeaderLabels(["형식", "해상도", "코덱", "크기"])
+        self.list_formats.setHeaderLabels([translate("FormatSelectDialog", "형식"), translate("FormatSelectDialog", "해상도"), translate("FormatSelectDialog", "코덱"), translate("FormatSelectDialog", "크기")])
         self.list_formats.setRootIsDecorated(False)
         self.list_formats.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
@@ -119,7 +121,7 @@ class FormatSelectDialog(QDialog):
             size_str = (
                 format_file_size(fmt.filesize)
                 if fmt.filesize > 0
-                else "크기 미확인"
+                else translate("FormatSelectDialog", "크기 미확인")
             )
 
             # 코덱 칸 — 정규화 후 조립.
@@ -135,7 +137,7 @@ class FormatSelectDialog(QDialog):
                 elif base_name:
                     codec_str = base_name
                 else:
-                    codec_str = "자동"
+                    codec_str = translate("FormatSelectDialog", "자동")
             else:
                 # 영상: "H.264 / AAC 192kbps"
                 parts = []
@@ -145,7 +147,7 @@ class FormatSelectDialog(QDialog):
                     parts.append(
                         f"{a_name} {bitrate}" if bitrate else a_name
                     )
-                codec_str = " / ".join(parts) if parts else "자동"
+                codec_str = " / ".join(parts) if parts else translate("FormatSelectDialog", "자동")
 
             res_col = fmt.resolution if fmt.resolution != fmt.label else ""
             item = QTreeWidgetItem([fmt.label, res_col, codec_str, size_str])
@@ -163,13 +165,13 @@ class FormatSelectDialog(QDialog):
         btn_row.setSpacing(8)
         btn_row.addStretch()
 
-        btn_cancel = QPushButton("취소")
+        btn_cancel = QPushButton(translate("FormatSelectDialog", "취소"))
         btn_cancel.setObjectName("btnCancel")
         btn_cancel.setFixedSize(80, 32)
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
 
-        btn_confirm = QPushButton("다운로드")
+        btn_confirm = QPushButton(translate("FormatSelectDialog", "다운로드"))
         btn_confirm.setObjectName("btnConfirm")
         btn_confirm.setProperty("role", "primary")
         btn_confirm.setFixedSize(100, 32)
