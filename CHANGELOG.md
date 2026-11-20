@@ -23,6 +23,11 @@
 
 ---
 
+## 2026-11-20
+
+- **`chore`**: metarche upgrade — 지침 파일을 `AGENTS.md` 로, 훅을 `.metarche/hooks/` 로 옮기고 턴 끝 테스트 검사 추가.
+- **`fix(test)`**: 테스트가 모두 통과해도 pytest 종료 코드가 가끔 실패로 나오던 문제 (Qt 위젯 정리 순서).
+
 ## 2026-11-18
 
 - **`feat(macos)`**: macOS 소스 실행 지원 — 완료 항목 📂 가 Finder 에서 파일을 선택해 열고, 기본 글꼴이 Apple SD Gothic Neo. .app 배포본은 없다. **(F16, D081)**

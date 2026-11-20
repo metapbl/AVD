@@ -1,5 +1,5 @@
 # 일곱 번째 계획 — 의존성 보안 핀 올림·v1.0.2 릴리스
-상태: done (2026-11-02) | 시작: 2026-11-02 | 근거: OPEN O19, Q056, SECURITY_POLICY §6, PRD §2.6 (D040, D045)
+Status: done (2026-11-02) | 시작: 2026-11-02 | 근거: OPEN O19, Q056, SECURITY_POLICY §6, PRD §2.6 (D040, D045)
 
 목표: pip-audit 가 보고한 certifi·urllib3 취약점을 핀 상향으로 없애고, 그 빌드를 v1.0.2 로 게시한다. 끝나면 `pip-audit -r requirements.txt` 가 yt-dlp(D002 의도된 옛 핀) 말고는 보고하지 않고, GitHub Release v1.0.2 에 zip 2개가 있다.
 구조:

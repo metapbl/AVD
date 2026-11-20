@@ -253,3 +253,6 @@ all_changes.txt
 
 # Claude Code 개인 설정
 .claude/settings.local.json
+
+# metarche 편집 표시 (턴 끝 검사)
+.metarche/.unchecked

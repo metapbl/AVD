@@ -1,6 +1,6 @@
 # PRD — AV_Downloader (AVD)
 
-상태: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
+Status: approved (2026-11-18) | 단계: 8 구현 | 갱신: 2026-11-18
 
 <!-- 상태가 approved (YYYY-MM-DD)가 되기 전에는 코드·뼈대·의존성 설치를 하지 않는다. -->
 <!-- 모든 항목 끝에 출처를 단다: [U] 사용자 · [X] 기존 코드·문서 · [AI] AI 기본값. 근거 결정은 (D###). -->
@@ -169,6 +169,8 @@
 - 자동 테스트 대상 / 실기기 확인 대상과 결과 전달 방식: pytest — Qt 무관 순수 함수 특성 테스트 (D023). GUI·사이트는 실기 — 절차서 번호별 통과/실패를 채팅으로 (D026, D032) [U]
 - 전체 테스트 명령과 걸리는 시간: `pytest` (F9 에서 신설, 수 초 예상) [AI]
 - 편집 때 자동 검사 (확장자별 린터·타입 검사 명령): `.py` → `ruff check` (`gaindb/` 제외) 훅 (D031) [U]. VS Code 저장 시 Ruff fixAll 은 기존대로 [X]
+- 턴 끝 검사 (파일을 고친 턴이 끝날 때 프로젝트 전체 명령): `venv/Scripts/python -m pytest -q` (`.metarche/hooks/finish.ps1`) [U]
+- 에이전트: Claude Code 만 (Codex 안 씀) [U]
 - 위험한 명령 (실행 전 확인 대상): `git push`, `gh release`, PyInstaller 릴리스 빌드, `pip install`/업그레이드, venv 삭제 (D032) [U]
 - 버전 관리 (커밋 단위, 메시지 형식): Conventional Commits, 의미 단위 즉시 커밋, 작성자 고정 (D014) [X]
 
@@ -206,3 +208,4 @@
 | 2026-11-16 | F15 브라우저 읽기를 Firefox 하나로, 고른 쪽 입력만 표시 (실기 1차: Chrome·Edge 실패) | D080, Q091 |
 | 2026-11-18 | §2.2 쿠키 지원(F15) 완료 표시 (v1.6.0) | D078~D080 |
 | 2026-11-18 | §2.2·§5·F16 macOS 정식화를 소스 실행으로 좁힘, .app 배포는 로드맵 | D081, Q092 |
+| 2026-11-20 | §6 턴 끝 검사(pytest)·에이전트(Claude Code 만) — metarche upgrade U6·U9 | 사용자 답 (2026-11-20) |

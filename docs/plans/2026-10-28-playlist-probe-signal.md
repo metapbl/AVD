@@ -1,5 +1,5 @@
 # 두 번째 계획 — PlaylistProbeWorker 결과 시그널 개명 (T2 위반 해소)
-상태: done (2026-10-29) | 시작: 2026-10-28 | 근거: PRD F2 (D007, D013), R§4 T2
+Status: done (2026-10-29) | 시작: 2026-10-28 | 근거: PRD F2 (D007, D013), R§4 T2
 
 목표: `PlaylistProbeWorker` 가 QThread 내장 `finished` 를 가리지 않게 하고, 워커 정리(`deleteLater`)를 스레드가 실제로 끝난 뒤인 내장 `finished` 에만 연결한다. 같은 위반이 다시 들어오면 테스트가 잡는다.
 구조:
