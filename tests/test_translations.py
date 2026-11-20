@@ -18,10 +18,6 @@ NOT_UI = {"utils/i18n.py"}
 # 아직 tr() 로 감싸지 않은 파일 — 작업 3~5 에서 줄여 비운다
 PENDING = {
     "main.py",
-    "controllers/playlist_flow.py",
-    "core/downloader.py",
-    "core/info_fetcher.py",
-    "models/download_item.py",
     "ui/about_dialog.py",
     "ui/add_link_dialog.py",
     "ui/confirm_remove_dialog.py",
@@ -33,12 +29,6 @@ PENDING = {
     "ui/preferences_dialog.py",
     "ui/theme.py",
     "ui/update_progress_dialog.py",
-    "utils/config_manager.py",
-    "utils/file_utils.py",
-    "utils/updater.py",
-    "workers/download_worker.py",
-    "workers/playlist_probe_worker.py",
-    "workers/update_worker.py",
 }
 # 번역을 다 채운 언어 — 작업 7(en)·8(나머지) 에서 늘린다
 COMPLETE = set()
@@ -56,9 +46,12 @@ def _untranslated_hangul(path: Path) -> list[str]:
         if isinstance(body, list) and body and isinstance(body[0], ast.Expr) \
                 and isinstance(body[0].value, ast.Constant):
             skip.add(id(body[0].value))  # docstring
+        if isinstance(node, ast.Raise):
+            skip.update(id(n) for n in ast.walk(node))  # 예외 원문은 "자세히" 원문이라 번역하지 않는다 (F17)
         if isinstance(node, ast.Call):
             name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
-            if name in TRANSLATE_CALLS or (name in LOG_METHODS and isinstance(node.func, ast.Attribute)):
+            if name in TRANSLATE_CALLS or name == "print" \
+                    or (name in LOG_METHODS and isinstance(node.func, ast.Attribute)):
                 skip.update(id(n) for n in ast.walk(node))
     return [f"{_rel(path)}:{n.lineno} {n.value!r}" for n in ast.walk(tree)
             if isinstance(n, ast.Constant) and isinstance(n.value, str)

@@ -4,9 +4,12 @@
 from dataclasses import dataclass
 
 import yt_dlp
+from PySide6.QtCore import QCoreApplication
 
 from core.downloader import JS_CHALLENGE_OPTS, MP3_BITRATE_KBPS, open_ydl
 from utils.file_utils import normalize_info_dict
+
+translate = QCoreApplication.translate
 
 # 화질 선택 창·플레이리스트 창이 함께 쓰는 고정 행의 포맷 문자열 (D074).
 AUTO_FORMAT_ID   = "bestvideo+bestaudio/best"
@@ -85,7 +88,7 @@ class InfoFetcher:
 
         return VideoInfo(
             url       = url,
-            title     = info.get("title", "제목 없음"),
+            title     = info.get("title", translate("InfoFetcher", "제목 없음")),
             thumbnail = candidates[0] if candidates else "",
             duration  = info.get("duration", 0),
             uploader  = info.get("uploader", ""),
@@ -254,8 +257,8 @@ class InfoFetcher:
         # 최고 화질·최고 호환 — yt-dlp 가 고를 형식을 미리 계산해 해상도·코덱·크기를
         # 채운다 (D076). 계산이 안 되면 빈 값 → 표시 단계가 "자동" 으로 적는다.
         for format_id, label in (
-            (AUTO_FORMAT_ID, "최고 화질 (자동 선택)"),
-            (COMPAT_FORMAT_ID, "최고 호환 (H.264 + AAC)"),
+            (AUTO_FORMAT_ID, translate("InfoFetcher", "최고 화질 (자동 선택)")),
+            (COMPAT_FORMAT_ID, translate("InfoFetcher", "최고 호환 (H.264 + AAC)")),
         ):
             result.append(FormatInfo(
                 format_id=format_id, label=label, ext="mp4", is_audio=False,
@@ -311,9 +314,9 @@ class InfoFetcher:
         # 한쪽만 바꾸면 다른 쪽이 거짓이 되므로 반드시 함께 갱신.
         result.append(FormatInfo(
             format_id   = MP3_FORMAT_ID,
-            label       = "MP3 오디오만",
+            label       = translate("InfoFetcher", "MP3 오디오만"),
             ext         = "mp3",
-            resolution  = "오디오 전용",
+            resolution  = translate("InfoFetcher", "오디오 전용"),
             filesize    = 0,
             is_audio    = True,
             vcodec      = "",
@@ -326,9 +329,9 @@ class InfoFetcher:
         _, m4a_abr = self._pick_best_audio([f for f in formats if f.get("ext") == "m4a"])
         result.append(FormatInfo(
             format_id   = M4A_FORMAT_ID,
-            label       = "M4A 오디오 (원본 그대로)",
+            label       = translate("InfoFetcher", "M4A 오디오 (원본 그대로)"),
             ext         = "m4a",
-            resolution  = "오디오 전용",
+            resolution  = translate("InfoFetcher", "오디오 전용"),
             filesize    = 0,
             is_audio    = True,
             acodec      = "mp4a",

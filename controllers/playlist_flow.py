@@ -77,7 +77,7 @@ class PlaylistFlow(QObject):
         if self._busy:
             return
         self._busy = True
-        self.status.emit("플레이리스트 정보를 가져오는 중...")
+        self.status.emit(self.tr("플레이리스트 정보를 가져오는 중..."))
 
         worker = PlaylistProbeWorker(url, cookies=cookies)
         # 취소로 현재 워커가 아니게 된 워커의 늦은 결과는 버린다.
@@ -119,7 +119,7 @@ class PlaylistFlow(QObject):
     def _on_probe_error(self, message: str):
         self._worker = None
         self.probe_finished.emit()
-        self.status.emit(f"플레이리스트를 가져오지 못했습니다: {message}")
+        self.status.emit(self.tr("플레이리스트를 가져오지 못했습니다: {0}").format(message))
         self._finish()
 
     # ── 다이얼로그 단계 ───────────────────────────────
@@ -142,7 +142,7 @@ class PlaylistFlow(QObject):
             # entry 는 PlaylistEntry. url 만 MainWindow 로 넘기면 거기서
             # InfoWorker 가 제목·메타·썸네일을 풀 추출로 채운다.
             self.entry_ready.emit(entry.url, format_id, ext)
-        self.status.emit(f"{len(entries)}개 항목을 추가했습니다.")
+        self.status.emit(self.tr("{0}개 항목을 추가했습니다.").format(len(entries)))
 
     @staticmethod
     def _mode_to_format(mode: str) -> tuple[str, str]:

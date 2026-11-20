@@ -4,17 +4,24 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication
+
 
 class DownloadStatus(Enum):
     """다운로드 상태값 정의"""
-    WAITING     = "대기중"
-    FETCHING    = "정보 가져오는 중"
-    DOWNLOADING = "다운로드 중"
-    MERGING     = "병합 중"
-    NORMALIZING = "음량 조정 중"
-    DONE        = "완료"
-    ERROR       = "오류"
-    CANCELLED   = "취소됨"
+    # 값은 내부 비교에 쓰므로 번역하지 않고, 보일 때 label() 로 번역한다 (F17)
+    WAITING     = QT_TRANSLATE_NOOP("DownloadStatus", "대기중")
+    FETCHING    = QT_TRANSLATE_NOOP("DownloadStatus", "정보 가져오는 중")
+    DOWNLOADING = QT_TRANSLATE_NOOP("DownloadStatus", "다운로드 중")
+    MERGING     = QT_TRANSLATE_NOOP("DownloadStatus", "병합 중")
+    NORMALIZING = QT_TRANSLATE_NOOP("DownloadStatus", "음량 조정 중")
+    DONE        = QT_TRANSLATE_NOOP("DownloadStatus", "완료")
+    ERROR       = QT_TRANSLATE_NOOP("DownloadStatus", "오류")
+    CANCELLED   = QT_TRANSLATE_NOOP("DownloadStatus", "취소됨")
+
+    def label(self) -> str:
+        """화면에 보이는 상태 이름 (지금 언어)."""
+        return QCoreApplication.translate("DownloadStatus", self.value)
 
 
 @dataclass
@@ -23,7 +30,7 @@ class DownloadItem:
 
     # 기본 정보
     url         : str                          # 원본 URL
-    title       : str  = "제목 가져오는 중..."  # 영상 제목
+    title       : str  = field(default_factory=lambda: QCoreApplication.translate("DownloadItem", "제목 가져오는 중..."))  # 영상 제목
     thumbnail   : str  = ""                    # 썸네일 URL (후보 리스트의 첫 항목)
     duration    : int  = 0                     # 영상 길이 (초)
     uploader    : str  = ""                    # 업로더 이름

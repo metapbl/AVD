@@ -12,6 +12,7 @@ from pathlib import Path
 
 import requests
 import yt_dlp
+from PySide6.QtCore import QCoreApplication
 
 # 앱 현재 버전 (배포 시 이 값을 변경)
 APP_VERSION = "1.6.0"
@@ -45,17 +46,17 @@ def install_ytdlp_wheel(dest_dir: Path, on_line=print) -> bool:
             u for u in res.json()["urls"]
             if u["filename"].endswith("-py3-none-any.whl")
         )
-        on_line(f"받는 중: {wheel['filename']}")
+        on_line(QCoreApplication.translate("Updater", "받는 중: {0}").format(wheel["filename"]))
         res = requests.get(wheel["url"], timeout=60)
         res.raise_for_status()
         if hashlib.sha256(res.content).hexdigest() != wheel["digests"]["sha256"]:
-            on_line("받은 파일의 sha256 이 PyPI 값과 달라 버립니다.")
+            on_line(QCoreApplication.translate("Updater", "받은 파일의 sha256 이 PyPI 값과 달라 버립니다."))
             return False
 
         with tempfile.TemporaryDirectory(dir=dest_dir) as tmp:
             with zipfile.ZipFile(io.BytesIO(res.content)) as zf:
                 zf.extractall(tmp, [m for m in zf.namelist() if m.startswith("yt_dlp/")])
-            on_line("yt-dlp 폴더 교체 중")
+            on_line(QCoreApplication.translate("Updater", "yt-dlp 폴더 교체 중"))
             shutil.rmtree(old, ignore_errors=True)  # 지난번 실패의 찌꺼기
             target.rename(old)
             try:
@@ -66,7 +67,7 @@ def install_ytdlp_wheel(dest_dir: Path, on_line=print) -> bool:
         shutil.rmtree(old, ignore_errors=True)
         return True
     except Exception as e:
-        on_line(f"업데이트 실패: {e}")
+        on_line(QCoreApplication.translate("Updater", "업데이트 실패: {0}").format(e))
         return False
 
 

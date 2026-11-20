@@ -9,7 +9,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QThread, Signal
 
 from core.downloader import Downloader
 from gaindb.api import DB_PER_STEP, apply_file_track_gain
@@ -20,6 +20,8 @@ from utils.file_utils import (
     strip_ansi,
     terminate_pids,
 )
+
+translate = QCoreApplication.translate
 
 # ── MP3 음량 정규화 목표 기준값 ──────────────────────
 # GaindB(mp3gain 파생 Python 재구현, LGPL-2.1-or-later)의 ReplayGain 분석은
@@ -90,9 +92,9 @@ _PERMANENT_PATTERNS = (
 # 후처리 hook 이름(pp_key) → 단계 라벨. 표에 없는 후처리(Merger·MoveFiles 등)는
 # 보내지 않는다. 썸네일 변환(ThumbnailsConvertor)은 다운로드 전에 돌아서 뺀다.
 _PP_STAGE_LABELS = {
-    "ExtractAudio"  : "MP3 변환 중",
-    "Metadata"      : "태그 기록 중",
-    "EmbedThumbnail": "썸네일 넣는 중",
+    "ExtractAudio"  : QT_TRANSLATE_NOOP("DownloadWorker", "MP3 변환 중"),
+    "Metadata"      : QT_TRANSLATE_NOOP("DownloadWorker", "태그 기록 중"),
+    "EmbedThumbnail": QT_TRANSLATE_NOOP("DownloadWorker", "썸네일 넣는 중"),
 }
 
 
@@ -209,7 +211,7 @@ def _format_eta_secs(secs: int, is_estimate: bool) -> str:
         body = f"{secs // 3600}:{(secs % 3600) // 60:02d}:{secs % 60:02d}"
     else:
         body = f"{secs // 60}:{secs % 60:02d}"
-    return f"약 {body}" if is_estimate else body
+    return translate("DownloadWorker", "약 {0}").format(body) if is_estimate else body
 
 
 def _extract_codec_info(info_dict: dict) -> tuple[str, str, str, float, float] | None:
@@ -253,10 +255,10 @@ def _stream_label(info_dict: dict | None) -> str:
     has_video = (info_dict.get("vcodec") or "none") != "none"
     has_audio = (info_dict.get("acodec") or "none") != "none"
     if has_video and not has_audio:
-        return "영상 받는 중"
+        return translate("DownloadWorker", "영상 받는 중")
     if has_audio and not has_video:
-        return "음성 받는 중"
-    return "다운로드 중"
+        return translate("DownloadWorker", "음성 받는 중")
+    return translate("DownloadWorker", "다운로드 중")
 
 
 def _without_merge_part_ext(filename: str, info_dict: dict) -> dict:
@@ -502,7 +504,7 @@ class DownloadWorker(QThread):
                 raise FileNotFoundError("결과 파일을 찾지 못했습니다.")
             self._output_path = move_unique(self._output_path, self.save_dir)
         except OSError as e:
-            self.error.emit(f"저장 폴더로 옮기지 못했습니다: {e}\n작업 폴더: {self._temp_dir}")
+            self.error.emit(translate("DownloadWorker", "저장 폴더로 옮기지 못했습니다: {0}\n작업 폴더: {1}").format(e, self._temp_dir))
             return
         self.download_finished.emit(self._output_path)
         self._remove_temp_dir()
@@ -553,14 +555,14 @@ class DownloadWorker(QThread):
             # 1) 비파괴 분석 — steps·clip_state 확보.
             probe = analyze_file(path, target_db=target_db)
             if probe.get("status") == "not_enough_samples":
-                self.normalize_failed.emit("음량 분석에 필요한 샘플이 부족합니다.")
+                self.normalize_failed.emit(translate("DownloadWorker", "음량 분석에 필요한 샘플이 부족합니다."))
                 return
 
             # 2) 실제 적용 — 분석결과를 seed 로 재사용(이중 디코딩 방지).
             result = apply_file_track_gain(path, target_db=target_db, seed=probe)
             status = result.get("status")
             if status == "not_enough_samples":
-                self.normalize_failed.emit("음량 분석에 필요한 샘플이 부족합니다.")
+                self.normalize_failed.emit(translate("DownloadWorker", "음량 분석에 필요한 샘플이 부족합니다."))
                 return
 
             # 적용 dB = steps * DB_PER_STEP. no_change(steps 0) 면 0dB.
@@ -895,7 +897,7 @@ class DownloadWorker(QThread):
             self.merge_progress.emit(-1.0 if pct is None else pct, d.get("merge_secs", 0.0))
 
         if status == "started" and postprocessor in _PP_STAGE_LABELS:
-            self.postprocess_stage.emit(_PP_STAGE_LABELS[postprocessor])
+            self.postprocess_stage.emit(translate("DownloadWorker", _PP_STAGE_LABELS[postprocessor]))
 
         if status == "finished":
             info_dict = d.get("info_dict") or {}

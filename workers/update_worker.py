@@ -34,9 +34,9 @@ class UpdateWorker(QThread):
             # exe 의 sys.executable 은 AVD.exe — -m pip 이 앱을 다시 띄운다 (R§4 T17, D038)
             dest = Path(yt_dlp.__file__).parent.parent
             if install_ytdlp_wheel(dest, self.progress_text.emit):
-                self.done.emit(True, "yt-dlp를 새 버전으로 바꿨습니다.\n닫기를 누르면 앱을 다시 시작합니다.")
+                self.done.emit(True, self.tr("yt-dlp를 새 버전으로 바꿨습니다.\n닫기를 누르면 앱을 다시 시작합니다."))
             else:
-                self.done.emit(False, "업데이트에 실패했습니다. 위 기록의 마지막 줄을 확인해 주세요.")
+                self.done.emit(False, self.tr("업데이트에 실패했습니다. 위 기록의 마지막 줄을 확인해 주세요."))
             return
         try:
             proc = subprocess.Popen(
@@ -65,17 +65,17 @@ class UpdateWorker(QThread):
 
             code = proc.wait()
             if code == 0:
-                self.done.emit(True, "yt-dlp가 최신 버전으로 업데이트됐습니다.\n닫기를 누르면 앱을 다시 시작합니다.")
+                self.done.emit(True, self.tr("yt-dlp가 최신 버전으로 업데이트됐습니다.\n닫기를 누르면 앱을 다시 시작합니다."))
             else:
                 self.done.emit(
                     False,
-                    f"업데이트에 실패했습니다 (코드 {code}).\n"
-                    f"마지막 출력: {last_line}\n\n"
-                    "수동으로 pip install --upgrade yt-dlp 를 실행해 주세요.",
+                    self.tr("업데이트에 실패했습니다 (코드 {0}).\n"
+                            "마지막 출력: {1}\n\n"
+                            "수동으로 pip install --upgrade yt-dlp 를 실행해 주세요.").format(code, last_line),
                 )
         except Exception as e:
             self.done.emit(
                 False,
-                f"업데이트 중 오류가 발생했습니다: {e}\n\n"
-                "수동으로 pip install --upgrade yt-dlp 를 실행해 주세요.",
+                self.tr("업데이트 중 오류가 발생했습니다: {0}\n\n"
+                        "수동으로 pip install --upgrade yt-dlp 를 실행해 주세요.").format(e),
             )

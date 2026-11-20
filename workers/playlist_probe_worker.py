@@ -74,7 +74,7 @@ class PlaylistProbeWorker(QThread):
             return
 
         if not isinstance(info, dict):
-            self.error.emit("플레이리스트 정보를 해석할 수 없습니다.")
+            self.error.emit(self.tr("플레이리스트 정보를 해석할 수 없습니다."))
             return
 
         # flat 추출이라도 NFC 정규화는 적용 — 제목의 NFD 한글 방어.
@@ -83,7 +83,7 @@ class PlaylistProbeWorker(QThread):
         raw_entries = info.get("entries")
         if not raw_entries:
             # _type 이 playlist 가 아니거나(단일 영상) entries 가 빈 경우.
-            self.error.emit("플레이리스트 항목을 찾지 못했습니다.")
+            self.error.emit(self.tr("플레이리스트 항목을 찾지 못했습니다."))
             return
 
         # entries 는 제너레이터일 수 있어 list 로 적재 (상한까지만).
@@ -104,16 +104,16 @@ class PlaylistProbeWorker(QThread):
 
             collected.append(PlaylistEntry(
                 url      = entry_url,
-                title    = e.get("title") or "제목 없음",
+                title    = e.get("title") or self.tr("제목 없음"),
                 duration = int(e.get("duration") or 0),
             ))
 
         if not collected:
-            self.error.emit("재생 가능한 항목이 없습니다.")
+            self.error.emit(self.tr("재생 가능한 항목이 없습니다."))
             return
 
         result = PlaylistResult(
-            title       = info.get("title") or "플레이리스트",
+            title       = info.get("title") or self.tr("플레이리스트"),
             entries     = collected,
             total_found = max(total, len(collected)),
         )

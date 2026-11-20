@@ -123,7 +123,8 @@ def format_file_size(bytes_size: int) -> str:
     예: 1048576 → "1.00 MB"
     """
     if bytes_size <= 0:
-        return "알 수 없음"
+        from PySide6.QtCore import QCoreApplication
+        return QCoreApplication.translate("FileUtils", "알 수 없음")
 
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if bytes_size < 1024:
