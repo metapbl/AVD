@@ -12,6 +12,7 @@ a = Analysis(
         ("assets/icons/avd.png", "assets/icons"),
         ("assets/icons/avd.ico", "assets/icons"),
         ("assets/icons", "assets/icons"),  # 테마 아이콘 (D065)
+        ("i18n/*.qm", "i18n"),  # 화면 번역 (F17) — .ts 는 원본이라 넣지 않는다
     ],
     module_collection_mode={"gaindb": "py", "yt_dlp": "py"},
 )

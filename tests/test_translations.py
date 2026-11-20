@@ -86,3 +86,12 @@ def test_translation_complete(lang):
     missing = [m.findtext("source") for m in _messages(lang)
                if m.find("translation").get("type") == "unfinished" or not m.findtext("translation")]
     assert missing == []
+
+
+def test_exe_bundles_compiled_translations():
+    # 동결 빌드에서 utils/ 는 _internal\utils\ 라 I18N_DIR 은 _internal\i18n\ — datas 대상과 맞아야 한다
+    from utils import i18n
+
+    spec = (ut.ROOT / "AVD.spec").read_text(encoding="utf-8")
+    assert '("i18n/*.qm", "i18n")' in spec
+    assert i18n.I18N_DIR == ut.ROOT / "i18n"
