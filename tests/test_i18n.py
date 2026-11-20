@@ -104,3 +104,35 @@ def test_open_windows_switch_language_without_restart(tmp_path, monkeypatch):
         assert waiting.lbl_status.text() == "대기 중 (2번째)"
     finally:
         apply_language(app, "ko")
+
+
+def test_preferences_language_applies_on_save(tmp_path, monkeypatch):
+    import json
+
+    from PySide6.QtWidgets import QDialog
+
+    from ui import main_window as mw
+    from ui.main_window import MainWindow
+    from ui.preferences_dialog import PreferencesDialog
+    from utils import i18n
+
+    app = QApplication.instance() or QApplication([])
+    _fake_qm(tmp_path, [("MainWindow", "+ 링크 추가", "+ Add link")])
+    monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
+    config_path = tmp_path / "config.json"
+    monkeypatch.setattr(config_manager, "CONFIG_PATH", config_path)
+    window = MainWindow()
+
+    class Dialog(PreferencesDialog):
+        def exec(self):
+            names = [self.combo_language.itemText(i) for i in range(self.combo_language.count())]
+            assert names[1:] == ["English", "한국어", "简体中文", "日本語", "Español", "Русский"]
+            self.combo_language.setCurrentIndex(self.combo_language.findData("en"))
+            self._on_save()
+            return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(mw, "PreferencesDialog", Dialog)
+    window._on_preferences()
+    app.processEvents()
+    assert window.btn_add.text() == "+ Add link"
+    assert json.loads(config_path.read_text(encoding="utf-8"))["ui_language"] == "en"

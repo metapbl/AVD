@@ -5,6 +5,7 @@ from PySide6.QtCore import QCoreApplication, Qt, Signal
 from PySide6.QtGui import QColor, QDoubleValidator, QPainter
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFileDialog,
     QGroupBox,
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
 from ui import theme
 from ui.about_dialog import REPO_URL
 from utils.config_manager import ConfigManager
+from utils.i18n import LANGUAGES
 
 translate = QCoreApplication.translate
 
@@ -342,6 +344,18 @@ class PreferencesDialog(QDialog):
 
         root.addWidget(grp_update)
 
+        # ── 언어 그룹 (F17, D084) — 언어 이름은 그 언어로 쓰고 번역하지 않는다 ──
+        grp_lang = QGroupBox(translate("PreferencesDialog", "언어"))
+        grp_lang.setObjectName("settingsGroup")
+        lang_layout = QHBoxLayout(grp_lang)
+        self.combo_language = QComboBox()
+        self.combo_language.addItem(translate("PreferencesDialog", "시스템 설정 따르기"), "system")
+        for code, name in LANGUAGES.items():
+            self.combo_language.addItem(name, code)
+        lang_layout.addWidget(self.combo_language)
+        lang_layout.addStretch()
+        root.addWidget(grp_lang)
+
         # ── 화면 테마 그룹 (D065) ──
         grp_theme = QGroupBox(translate("PreferencesDialog", "화면 테마"))
         grp_theme.setObjectName("settingsGroup")
@@ -493,6 +507,9 @@ class PreferencesDialog(QDialog):
             self.config.get("auto_update_ytdlp", True)
         )
 
+        index = self.combo_language.findData(self.config.get("ui_language", "system"))
+        self.combo_language.setCurrentIndex(max(index, 0))  # 모르는 값은 시스템 설정 따르기
+
         mode = self.config.get("theme_mode", "system")
         self._theme_radios.get(mode, self._theme_radios["system"]).setChecked(True)
 
@@ -536,6 +553,7 @@ class PreferencesDialog(QDialog):
             "max_concurrent"    : self.slider_concurrent.value(),
             "auto_update_ytdlp" : self.chk_auto_update.isChecked(),
             "theme_mode"        : next(m for m, r in self._theme_radios.items() if r.isChecked()),
+            "ui_language"       : self.combo_language.currentData(),
             "mp3_gain_enabled"  : self.chk_gain.isChecked(),
             # 슬라이더는 GAIN_SCALE 배 정수 → 실제 dB(float, 0.5 단위)로 환산.
             "mp3_gain_db"       : self.slider_gain.value() / _GAIN_SCALE,

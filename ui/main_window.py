@@ -5,7 +5,14 @@ import subprocess
 from itertools import pairwise
 from pathlib import Path
 
-from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QEvent, Qt, QTimer
+from PySide6.QtCore import (
+    QT_TRANSLATE_NOOP,
+    QCoreApplication,
+    QEvent,
+    QLocale,
+    Qt,
+    QTimer,
+)
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -36,6 +43,7 @@ from ui.preferences_dialog import PreferencesDialog
 from ui.update_progress_dialog import UpdateProgressDialog
 from utils.config_manager import ConfigManager
 from utils.file_utils import open_file, open_folder
+from utils.i18n import apply_language, resolve_language
 from utils.updater import APP_VERSION, restart_command
 from workers.info_worker import InfoWorker
 from workers.thumbnail_worker import ThumbnailWorker
@@ -1204,6 +1212,9 @@ class MainWindow(QMainWindow):
         dialog.exec()
         self._refresh_save_path()
         theme.apply_theme(QApplication.instance(), self.config.get("theme_mode", "system"))
+        # 열린 창은 LanguageChange 로 문구를 다시 쓴다 — 재시작 없음 (D084)
+        apply_language(QApplication.instance(),
+                       resolve_language(self.config.get("ui_language", "system"), QLocale.system().name()))
 
     def _on_about(self):
         """정보 버튼 클릭 (D077)"""

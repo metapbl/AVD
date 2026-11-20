@@ -761,6 +761,14 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>언어</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>시스템 설정 따르기</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>화면 테마</source>
         <translation type="unfinished"></translation>
     </message>
