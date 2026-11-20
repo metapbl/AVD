@@ -3,7 +3,7 @@
 
 import html
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QEvent, Qt, Signal
 from PySide6.QtGui import QFontMetrics, QPixmap
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -19,6 +19,8 @@ from core.info_fetcher import AUTO_FORMAT_ID, COMPAT_FORMAT_ID
 from models.download_item import DownloadItem, DownloadStatus
 from ui import theme
 from utils.file_utils import format_duration
+
+translate = QCoreApplication.translate
 
 # 메타 라벨·다이얼로그가 AUTO_FORMAT_ID 를 보면 코덱/비트레이트 대신 "자동" 으로 표시.
 
@@ -210,13 +212,19 @@ class DownloadItemWidget(QWidget):
         self._gain_failed   : bool  = False   # 정규화 실패
 
         # 진행률 옆 문구. 워커가 받는 파일에 따라 "영상/음성 받는 중" 으로 바꾼다.
-        self._download_stage: str   = "다운로드 중"
+        # 워커가 보낸 원문(QT_TRANSLATE_NOOP) — 그릴 때 번역해 언어를 바꿔도 따라간다 (F17)
+        self._download_stage: str   = QT_TRANSLATE_NOOP("DownloadWorker", "다운로드 중")
+
+        # 언어를 바꿀 때 상태 라벨을 다시 그리기 위한 값 (F17)
+        self._waiting_pos   : int   = 0
+        self._error_summary : str   = ""
 
         # 상태 라벨 색 이름. 테마가 바뀌면 refresh_theme 이 다시 칠한다.
         self._status_color  : str | None = None
 
         self.setFixedHeight(96)  # 썸네일 80 + 상하 마진 8+8
         self._build_ui()
+        self._retranslate()
         self._apply_style()
 
     def _build_ui(self):
@@ -277,7 +285,7 @@ class DownloadItemWidget(QWidget):
         # 상태 + 속도 + 남은시간 + 크기
         status_row = QHBoxLayout()
         status_row.setContentsMargins(0, 0, 0, 0)
-        self.lbl_status = QLabel(self.item.status.value)
+        self.lbl_status = QLabel(self.item.status.label())
         self.lbl_status.setObjectName("itemStatus")
         self.lbl_status.setFixedHeight(16)
         self.lbl_speed  = QLabel("")
@@ -309,16 +317,15 @@ class DownloadItemWidget(QWidget):
         # 취소/재시도 버튼 — 같은 버튼을 상태에 따라 라벨·동작 전환.
         # 라우터 메서드(_on_cancel_or_retry) 가 item.status 를 보고
         # cancel_requested / retry_requested 중 하나를 발사한다.
-        self.btn_cancel = QPushButton("취소")
+        self.btn_cancel = QPushButton()
         self.btn_cancel.setObjectName("btnCancel")
         self.btn_cancel.setFixedWidth(60)
         self.btn_cancel.clicked.connect(self._on_cancel_or_retry)
         btn_layout.addWidget(self.btn_cancel)
 
         # 오류 내용 보기 버튼 (오류 상태에서만 표시, D061)
-        self.btn_detail = QPushButton("자세히")
+        self.btn_detail = QPushButton()
         self.btn_detail.setObjectName("btnDetail")
-        self.btn_detail.setToolTip("오류 원인과 원문 보기")
         self.btn_detail.setFixedWidth(60)
         self.btn_detail.setVisible(False)
         self.btn_detail.clicked.connect(
@@ -327,9 +334,8 @@ class DownloadItemWidget(QWidget):
         btn_layout.addWidget(self.btn_detail)
 
         # 폴더 열기 버튼 (완료 후 표시)
-        self.btn_open = QPushButton("📂 열기")
+        self.btn_open = QPushButton()
         self.btn_open.setObjectName("btnOpen")
-        self.btn_open.setToolTip("저장 폴더에서 파일 보기")
         self.btn_open.setFixedWidth(60)
         self.btn_open.setVisible(False)
         self.btn_open.clicked.connect(
@@ -338,9 +344,8 @@ class DownloadItemWidget(QWidget):
         btn_layout.addWidget(self.btn_open)
 
         # 재생 버튼 — 받은 파일을 기본 앱으로 (완료 후 표시, D049)
-        self.btn_play = QPushButton("▶ 재생")
+        self.btn_play = QPushButton()
         self.btn_play.setObjectName("btnPlay")
-        self.btn_play.setToolTip("기본 앱으로 재생")
         self.btn_play.setFixedWidth(60)
         self.btn_play.setVisible(False)
         self.btn_play.clicked.connect(
@@ -351,7 +356,6 @@ class DownloadItemWidget(QWidget):
         # 삭제 버튼
         self.btn_remove = QPushButton("✕")
         self.btn_remove.setObjectName("btnRemove")
-        self.btn_remove.setToolTip("목록에서 제거")
         self.btn_remove.setFixedWidth(60)
         self.btn_remove.clicked.connect(
             lambda: self.remove_requested.emit(self.item.item_id)
@@ -360,6 +364,38 @@ class DownloadItemWidget(QWidget):
 
         btn_layout.addStretch()
         root.addLayout(btn_layout)
+
+    def _retranslate(self):
+        """버튼 문구와 지금 상태의 라벨을 지금 언어로 다시 쓴다 (F17)."""
+        retry = self.item.status in (DownloadStatus.ERROR, DownloadStatus.CANCELLED)
+        self.btn_cancel.setText(translate("DownloadItemWidget", "재시도") if retry
+                                else translate("DownloadItemWidget", "취소"))
+        self.btn_detail.setText(translate("DownloadItemWidget", "자세히"))
+        self.btn_detail.setToolTip(translate("DownloadItemWidget", "오류 원인과 원문 보기"))
+        self.btn_open.setText(translate("DownloadItemWidget", "📂 열기"))
+        self.btn_open.setToolTip(translate("DownloadItemWidget", "저장 폴더에서 파일 보기"))
+        self.btn_play.setText(translate("DownloadItemWidget", "▶ 재생"))
+        self.btn_play.setToolTip(translate("DownloadItemWidget", "기본 앱으로 재생"))
+        self.btn_remove.setToolTip(translate("DownloadItemWidget", "목록에서 제거"))
+        self.lbl_status.setText(self._status_text())
+
+    def _status_text(self) -> str:
+        """상태 라벨. 진행률·병합 % 처럼 곧 다시 오는 값은 다음 신호가 채운다."""
+        status = self.item.status
+        if status == DownloadStatus.WAITING and self._waiting_pos:
+            return translate("DownloadItemWidget", "대기 중 ({0}번째)").format(self._waiting_pos)
+        if status == DownloadStatus.DONE:
+            return self._done_label_text()
+        if status == DownloadStatus.ERROR and self._error_summary:
+            return f"{status.label()} · {self._error_summary}"
+        return status.label()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self._retranslate()
+            self.lbl_meta.setText(self._build_meta_text())
+            self._apply_title_elide()
+        super().changeEvent(event)
 
     def _apply_thumb_style(self):
         self.lbl_thumb.setStyleSheet(theme.qss("background: @base; border-radius:4px;"))
@@ -465,7 +501,7 @@ class DownloadItemWidget(QWidget):
         # 사후 갱신(update_format_meta_resolved) 이 _fmt_format_id 를 비우면
         # 여기 분기를 빠져나가 아래 segment 가 그려진다.
         if self._fmt_format_id == AUTO_FORMAT_ID:
-            return f"{base}  •  자동"
+            return f"{base}  •  {translate('DownloadItemWidget', '자동')}"
 
         seg = format_codec_segment(
             vcodec   = self._fmt_vcodec,
@@ -477,7 +513,7 @@ class DownloadItemWidget(QWidget):
         )
         if not seg:
             # 코덱이 모두 비어 있는 비통합 포맷 — 거의 없겠지만 안전망.
-            seg = "자동"
+            seg = translate("DownloadItemWidget", "자동")
         return f"{base}  •  {seg}"
 
     # ── 제목 엘라이드 ─────────────────────────────────
@@ -602,7 +638,7 @@ class DownloadItemWidget(QWidget):
         self.progress_bar.setValue(int(pct))
 
         if self.item.status == DownloadStatus.DOWNLOADING:
-            self.lbl_status.setText(f"{pct:.1f}% {self._download_stage}")
+            self.lbl_status.setText(f"{pct:.1f}% {translate('DownloadWorker', self._download_stage)}")
 
     def update_download_stage(self, text: str):
         """받는 파일 문구를 바꾼다. 라벨은 다음 update_progress 가 그린다."""
@@ -637,7 +673,7 @@ class DownloadItemWidget(QWidget):
         if not eta:
             self.lbl_eta.setText("")
             return
-        self.lbl_eta.setText(f"남은시간 {eta}")
+        self.lbl_eta.setText(translate("DownloadItemWidget", "남은시간 {0}").format(eta))
 
     def update_file_size(self, size: str):
         """
@@ -670,8 +706,10 @@ class DownloadItemWidget(QWidget):
         """
         # 단일 출처 동기화 — 이후 update_progress 의 가드가 올바로 동작하도록
         self.item.status = status
+        self._waiting_pos = 0
+        self._error_summary = ""
 
-        self.lbl_status.setText(status.value)
+        self.lbl_status.setText(status.label())
         # 활성 상태로 (재)진입할 때 ERROR 시 적용된 빨간 색을 원복
         self._set_status_color(None)
 
@@ -720,7 +758,7 @@ class DownloadItemWidget(QWidget):
 
         elif status == DownloadStatus.ERROR:
             # 에러 — 버튼을 "재시도" 라벨로 전환 (숨기지 않음)
-            self.btn_cancel.setText("재시도")
+            self.btn_cancel.setText(translate("DownloadItemWidget", "재시도"))
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
             self._set_status_color("danger")
@@ -731,7 +769,7 @@ class DownloadItemWidget(QWidget):
 
         elif status == DownloadStatus.CANCELLED:
             # 사용자 취소 — 에러와 동일하게 재시도 가능
-            self.btn_cancel.setText("재시도")
+            self.btn_cancel.setText(translate("DownloadItemWidget", "재시도"))
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
             self._set_status_color("muted")
@@ -742,12 +780,12 @@ class DownloadItemWidget(QWidget):
 
         elif status == DownloadStatus.MERGING:
             # 병합 단계: 상태 자리에 "병합 중" 표기, 속도/ETA/크기 자리는 비움.
-            self.lbl_status.setText("병합 중")
+            self.lbl_status.setText(status.label())
             self.lbl_speed.setText("")
             self.lbl_eta.setText("")
             self.lbl_size.setText("")
             # 활성 상태이므로 라벨은 "취소" 로 복원
-            self.btn_cancel.setText("취소")
+            self.btn_cancel.setText(translate("DownloadItemWidget", "취소"))
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
 
@@ -755,7 +793,7 @@ class DownloadItemWidget(QWidget):
             # FETCHING / DOWNLOADING — 활성 상태.
             # 이전에 ERROR/CANCELLED 였다가 재시도로 돌아온 경우를 위해
             # "취소" 로 라벨 복원 + 열기 버튼 숨김.
-            self.btn_cancel.setText("취소")
+            self.btn_cancel.setText(translate("DownloadItemWidget", "취소"))
             self.btn_cancel.setVisible(True)
             self.btn_open.setVisible(False)
 
@@ -763,7 +801,8 @@ class DownloadItemWidget(QWidget):
 
     def update_error_summary(self, summary: str):
         """오류 상태 라벨에 사유 요약을 붙인다. 원문은 "자세히" 에서 본다 (D061)."""
-        self.lbl_status.setText(f"{DownloadStatus.ERROR.value} · {summary}")
+        self._error_summary = summary
+        self.lbl_status.setText(self._status_text())
 
     def update_merge_progress(self, pct: float, secs: float):
         """
@@ -775,9 +814,9 @@ class DownloadItemWidget(QWidget):
             return
         if pct >= 0:
             self.progress_bar.setValue(round(pct))  # 라벨의 반올림과 맞춘다
-            self.lbl_status.setText(f"병합 중 {pct:.0f}%")
+            self.lbl_status.setText(f"{DownloadStatus.MERGING.label()} {pct:.0f}%")
         else:
-            self.lbl_status.setText(f"병합 중 {format_duration(secs)}")
+            self.lbl_status.setText(f"{DownloadStatus.MERGING.label()} {format_duration(secs)}")
 
     def update_postprocess_stage(self, text: str):
         """
@@ -786,7 +825,7 @@ class DownloadItemWidget(QWidget):
         """
         if self.item.status not in (DownloadStatus.DOWNLOADING, DownloadStatus.MERGING):
             return
-        self.lbl_status.setText(text)
+        self.lbl_status.setText(translate("DownloadWorker", text))
 
     def update_normalize_done(self, applied_db: float, will_clip: bool):
         """
@@ -811,17 +850,17 @@ class DownloadItemWidget(QWidget):
 
     def _done_label_text(self) -> str:
         """완료 라벨 문자열. 음량 정규화 결과를 반영한다(D009)."""
-        base = DownloadStatus.DONE.value
+        base = DownloadStatus.DONE.label()
         if self._gain_failed:
-            return f"{base} (음량 조정 실패)"
+            return translate("DownloadItemWidget", "{0} (음량 조정 실패)").format(base)
         if self._gain_applied:
             # 0dB(변화 없음)는 표기 생략 — "완료" 로만 둔다.
             if abs(self._gain_db) < 0.05:
                 return base
             sign = "+" if self._gain_db >= 0 else "−"
-            txt = f"{base} · 음량 {sign}{abs(self._gain_db):.1f}dB"
+            txt = translate("DownloadItemWidget", "{0} · 음량 {1}").format(base, f"{sign}{abs(self._gain_db):.1f}dB")
             if self._gain_clip:
-                txt += " (클리핑)"
+                txt += translate("DownloadItemWidget", " (클리핑)")
             return txt
         return base
 
@@ -838,7 +877,8 @@ class DownloadItemWidget(QWidget):
         """
         if self.item.status != DownloadStatus.WAITING:
             return
-        self.lbl_status.setText(f"대기 중 ({n}번째)")
+        self._waiting_pos = n
+        self.lbl_status.setText(self._status_text())
 
     def update_retrying(self, current: int, maximum: int):
         """
@@ -849,7 +889,7 @@ class DownloadItemWidget(QWidget):
         라벨 텍스트만 "재시도 중 (N/M)" 으로 덧씌운다. 속도/ETA/크기 자리는
         다음 progress 콜백이 곧 다시 채운다.
         """
-        self.lbl_status.setText(f"재시도 중 ({current}/{maximum})")
+        self.lbl_status.setText(translate("DownloadItemWidget", "재시도 중 ({0}/{1})").format(current, maximum))
         self._set_status_color("warn")
 
     def update_title(self, title: str):

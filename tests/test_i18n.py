@@ -49,3 +49,58 @@ def test_switching_language_replaces_previous_translator():
         assert _ok_text() == "OK"
     finally:
         apply_language(app, "en")
+
+
+def _fake_qm(folder, pairs):
+    """(문맥, 원문, 번역) 몇 개만 담은 avd_en.qm 을 folder 에 만든다."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    from xml.sax.saxutils import escape
+
+    body = "".join(
+        f"<context><name>{c}</name><message><source>{escape(s)}</source>"
+        f"<translation>{escape(t)}</translation></message></context>"
+        for c, s, t in pairs
+    )
+    ts = folder / "avd_en.ts"
+    ts.write_text(f'<?xml version="1.0" encoding="utf-8"?><TS version="2.1" language="en">{body}</TS>',
+                  encoding="utf-8")
+    lrelease = Path(sys.executable).parent / "pyside6-lrelease"
+    subprocess.run([str(lrelease), str(ts), "-qm", str(folder / "avd_en.qm")], check=True, capture_output=True)
+
+
+def test_open_windows_switch_language_without_restart(tmp_path, monkeypatch):
+    from models.download_item import DownloadItem, DownloadStatus
+    from ui.download_item_widget import DownloadItemWidget
+    from ui.main_window import MainWindow
+    from utils import i18n
+
+    app = QApplication.instance() or QApplication([])
+    _fake_qm(tmp_path, [
+        ("MainWindow", "+ 링크 추가", "+ Add link"),
+        ("DownloadStatus", "다운로드 중", "Downloading"),
+        ("DownloadItemWidget", "취소", "Cancel"),
+        ("DownloadItemWidget", "대기 중 ({0}번째)", "Waiting (#{0})"),
+    ])
+    monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
+    window = MainWindow()
+    active = DownloadItemWidget(DownloadItem(url="u", title="t"))
+    active.update_status(DownloadStatus.DOWNLOADING)
+    waiting = DownloadItemWidget(DownloadItem(url="u2", title="t2"))
+    waiting.update_status(DownloadStatus.WAITING)
+    waiting.update_waiting_position(2)
+    try:
+        apply_language(app, "en")
+        app.processEvents()
+        assert window.btn_add.text() == "+ Add link"
+        assert active.lbl_status.text() == "Downloading"
+        assert active.btn_cancel.text() == "Cancel"
+        assert waiting.lbl_status.text() == "Waiting (#2)"
+
+        apply_language(app, "ko")
+        app.processEvents()
+        assert window.btn_add.text() == "+ 링크 추가"
+        assert waiting.lbl_status.text() == "대기 중 (2번째)"
+    finally:
+        apply_language(app, "ko")

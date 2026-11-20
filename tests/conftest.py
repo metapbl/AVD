@@ -1,5 +1,22 @@
-"""테스트 프로세스가 끝날 때 남은 Qt 위젯을 먼저 지운다 (T35)."""
+"""테스트 프로세스가 끝날 때 남은 Qt 위젯을 먼저 지운다 (T35). 테스트마다 번역기를 걷어 낸다 (F17)."""
 import gc
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _no_translator_left():
+    # 언어를 바꾼 테스트 뒤에 번역기가 남으면 다른 테스트의 한글 문구가 바뀐다
+    yield
+    from PySide6.QtWidgets import QApplication
+
+    from utils import i18n
+
+    app = QApplication.instance()
+    for translator in i18n._installed:
+        if app is not None:
+            app.removeTranslator(translator)
+    i18n._installed.clear()
 
 
 def pytest_unconfigure(config):

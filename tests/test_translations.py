@@ -11,6 +11,7 @@ from tools import update_translations as ut
 
 HANGUL = re.compile("[가-힣]")
 PLACEHOLDER = re.compile(r"\{[^{}]*\}|%\d+")
+QSS_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)  # 스타일시트 주석의 한글은 화면에 안 보인다
 TRANSLATE_CALLS = {"tr", "translate", "QT_TRANSLATE_NOOP"}
 LOG_METHODS = {"debug", "info", "warning", "error", "exception", "critical"}
 # 언어 이름은 번역하지 않는다 (D084)
@@ -21,13 +22,10 @@ PENDING = {
     "ui/about_dialog.py",
     "ui/add_link_dialog.py",
     "ui/confirm_remove_dialog.py",
-    "ui/download_item_widget.py",
     "ui/error_detail_dialog.py",
     "ui/format_select_dialog.py",
-    "ui/main_window.py",
     "ui/playlist_select_dialog.py",
     "ui/preferences_dialog.py",
-    "ui/theme.py",
     "ui/update_progress_dialog.py",
 }
 # 번역을 다 채운 언어 — 작업 7(en)·8(나머지) 에서 늘린다
@@ -46,7 +44,7 @@ def _untranslated_hangul(path: Path) -> list[str]:
         if isinstance(body, list) and body and isinstance(body[0], ast.Expr) \
                 and isinstance(body[0].value, ast.Constant):
             skip.add(id(body[0].value))  # docstring
-        if isinstance(node, ast.Raise):
+        if isinstance(node, (ast.Raise, ast.Assert)):
             skip.update(id(n) for n in ast.walk(node))  # 예외 원문은 "자세히" 원문이라 번역하지 않는다 (F17)
         if isinstance(node, ast.Call):
             name = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
@@ -55,7 +53,7 @@ def _untranslated_hangul(path: Path) -> list[str]:
                 skip.update(id(n) for n in ast.walk(node))
     return [f"{_rel(path)}:{n.lineno} {n.value!r}" for n in ast.walk(tree)
             if isinstance(n, ast.Constant) and isinstance(n.value, str)
-            and HANGUL.search(n.value) and id(n) not in skip]
+            and HANGUL.search(QSS_COMMENT.sub("", n.value)) and id(n) not in skip]
 
 
 def test_no_unwrapped_hangul_in_ui_code():

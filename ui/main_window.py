@@ -5,7 +5,7 @@ import subprocess
 from itertools import pairwise
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QT_TRANSLATE_NOOP, QCoreApplication, QEvent, Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -42,6 +42,8 @@ from workers.thumbnail_worker import ThumbnailWorker
 from workers.update_check_worker import UpdateCheckWorker
 from workers.update_worker import UpdateWorker
 
+translate = QCoreApplication.translate
+
 
 # ── 플레이리스트 URL 판정 ────────────────────────────
 # yt-dlp 풀 추출을 돌리기 전에 URL 문자열만으로 플레이리스트 여부를 가른다.
@@ -61,16 +63,17 @@ def _urls_from_mime(mime) -> list[str]:
 
 def _summary_text(items: dict) -> str:
     """상태 표시줄의 목록 요약. 0개인 묶음은 뺀다."""
-    counts = {"진행": 0, "대기": 0, "완료": 0, "오류": 0, "취소": 0}
+    active = QT_TRANSLATE_NOOP("MainWindow", "진행")
     group = {
-        DownloadStatus.WAITING: "대기",
-        DownloadStatus.DONE: "완료",
-        DownloadStatus.ERROR: "오류",
-        DownloadStatus.CANCELLED: "취소",
+        DownloadStatus.WAITING: QT_TRANSLATE_NOOP("MainWindow", "대기"),
+        DownloadStatus.DONE: QT_TRANSLATE_NOOP("MainWindow", "완료"),
+        DownloadStatus.ERROR: QT_TRANSLATE_NOOP("MainWindow", "오류"),
+        DownloadStatus.CANCELLED: QT_TRANSLATE_NOOP("MainWindow", "취소"),
     }
+    counts = dict.fromkeys([active, *group.values()], 0)
     for item in items.values():
-        counts[group.get(item.status, "진행")] += 1
-    return " · ".join(f"{name} {n}" for name, n in counts.items() if n)
+        counts[group.get(item.status, active)] += 1
+    return " · ".join(f"{translate('MainWindow', name)} {n}" for name, n in counts.items() if n)
 
 
 # ── 오류 메시지 → 사용자 친화 안내 ───────────────────
@@ -85,60 +88,60 @@ def _friendly_error(msg: str) -> tuple[str, str]:
     # 쿠키 읽기 실패 — open_ydl 이 원인(Firefox 프로필 없음·DB 잠김·파일 없음)과 상관없이 이 문구로 감싼다
     if "failed to load cookies" in low:
         return (
-            "로그인 쿠키를 읽지 못했습니다",
+            translate("MainWindow", "로그인 쿠키를 읽지 못했습니다"),
             (
-                "환경설정에서 고른 Firefox 나 cookies.txt 에서 쿠키를 읽지 못했습니다.\n\n대처 방법:\n"
+                translate("MainWindow", "환경설정에서 고른 Firefox 나 cookies.txt 에서 쿠키를 읽지 못했습니다.\n\n대처 방법:\n"
                 "  • Firefox: 설치돼 있고 YouTube 등에 로그인했는지 확인하고, "
                 "Firefox 를 닫은 뒤 다시 시도하세요.\n"
                 "  • cookies.txt: 파일이 그 자리에 있는지 확인하고, "
-                "브라우저 확장으로 다시 내보내 지정하세요."
+                "브라우저 확장으로 다시 내보내 지정하세요.")
             ),
         )
 
     # 연령 제한 — YouTube 원문 "Sign in to confirm your age" 가 아래 봇 감지에 먼저 걸리지 않게 앞에 둔다
     if "confirm your age" in low or ("age" in low and "restrict" in low):
         return (
-            "연령 제한 영상입니다",
+            translate("MainWindow", "연령 제한 영상입니다"),
             (
-                "연령 제한이 걸린 영상이라 로그인이 필요합니다. "
-                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요."
+                translate("MainWindow", "연령 제한이 걸린 영상이라 로그인이 필요합니다. "
+                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요.")
             ),
         )
 
     # YouTube 봇 감지 / 로그인 요구 — 가장 흔한 대량 실패 원인.
     if "sign in to confirm" in low or "not a bot" in low or "confirm you" in low:
         return (
-            "YouTube 봇 감지에 걸렸습니다",
+            translate("MainWindow", "YouTube 봇 감지에 걸렸습니다"),
             (
-                "짧은 시간에 많은 영상을 받으면 YouTube 가 자동 접근(봇)으로 의심해 "
+                translate("MainWindow", "짧은 시간에 많은 영상을 받으면 YouTube 가 자동 접근(봇)으로 의심해 "
                 "일시 차단합니다.\n\n대처 방법:\n"
                 "  • 몇 분~몇 시간 뒤 다시 시도하세요 (차단은 시간이 지나면 풀립니다).\n"
                 "  • 한 번에 받는 영상 수를 줄이고, 동시 다운로드 수도 낮춰 보세요.\n"
-                "  • 계속된다면 환경설정의 로그인 쿠키를 켜 보세요."
+                "  • 계속된다면 환경설정의 로그인 쿠키를 켜 보세요.")
             ),
         )
     if "private video" in low:
         return (
-            "비공개 영상입니다",
+            translate("MainWindow", "비공개 영상입니다"),
             (
-                "이 영상은 비공개로 설정되어 있습니다. 볼 권한이 있는 계정이라면 "
-                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요."
+                translate("MainWindow", "이 영상은 비공개로 설정되어 있습니다. 볼 권한이 있는 계정이라면 "
+                "환경설정의 로그인 쿠키를 켜고 다시 시도하세요.")
             ),
         )
     if "members-only" in low or "join this channel" in low:
         return (
-            "멤버십 전용 영상입니다",
-            "채널 멤버십 가입자만 볼 수 있는 영상이라 다운로드할 수 없습니다.",
+            translate("MainWindow", "멤버십 전용 영상입니다"),
+            translate("MainWindow", "채널 멤버십 가입자만 볼 수 있는 영상이라 다운로드할 수 없습니다."),
         )
     if "video unavailable" in low or "has been removed" in low or "was deleted" in low:
         return (
-            "영상을 찾을 수 없습니다",
-            "삭제되었거나 더 이상 제공되지 않는 영상입니다.",
+            translate("MainWindow", "영상을 찾을 수 없습니다"),
+            translate("MainWindow", "삭제되었거나 더 이상 제공되지 않는 영상입니다."),
         )
     if "not available in your country" in low or "blocked it in your country" in low:
         return (
-            "지역 차단된 영상입니다",
-            "현재 지역에서는 이 영상을 볼 수 없습니다.",
+            translate("MainWindow", "지역 차단된 영상입니다"),
+            translate("MainWindow", "현재 지역에서는 이 영상을 볼 수 없습니다."),
         )
     if (
         "looks truncated" in low
@@ -147,12 +150,12 @@ def _friendly_error(msg: str) -> tuple[str, str]:
         or "not a valid url" in low
     ):
         return (
-            "주소를 확인해 주세요",
-            "주소 일부가 잘렸거나 지원하지 않는 사이트일 수 있습니다. 전체 주소를 다시 복사해 붙여넣어 보세요.",
+            translate("MainWindow", "주소를 확인해 주세요"),
+            translate("MainWindow", "주소 일부가 잘렸거나 지원하지 않는 사이트일 수 있습니다. 전체 주소를 다시 복사해 붙여넣어 보세요."),
         )
     return (
-        "다운로드하지 못했습니다",
-        "일시적인 문제일 수 있습니다. 재시도 버튼으로 다시 시도해 보세요.",
+        translate("MainWindow", "다운로드하지 못했습니다"),
+        translate("MainWindow", "일시적인 문제일 수 있습니다. 재시도 버튼으로 다시 시도해 보세요."),
     )
 
 
@@ -251,6 +254,7 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
         QShortcut(QKeySequence(QKeySequence.StandardKey.Paste), self, self._on_paste_links)
         self._build_ui()
+        self._retranslate()
         self._apply_style()
         theme.notifier.changed.connect(self._on_theme_changed)
 
@@ -274,7 +278,7 @@ class MainWindow(QMainWindow):
         self.status_bar = QStatusBar()
         self.status_bar.setObjectName("mainStatusBar")
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("준비")
+        self.status_bar.showMessage(translate("MainWindow", "준비"))
 
         self.lbl_summary = QLabel("")
         self.lbl_summary.setObjectName("statusInfo")
@@ -292,9 +296,9 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 8, 16, 8)
         layout.setSpacing(12)
 
-        label = QLabel("플레이리스트 정보를 가져오는 중입니다...")
-        label.setObjectName("playlistBannerLabel")
-        layout.addWidget(label)
+        self.lbl_banner = QLabel()
+        self.lbl_banner.setObjectName("playlistBannerLabel")
+        layout.addWidget(self.lbl_banner)
 
         bar = QProgressBar()
         bar.setObjectName("playlistBannerBar")
@@ -303,10 +307,10 @@ class MainWindow(QMainWindow):
         bar.setTextVisible(False)
         layout.addWidget(bar, stretch=1)
 
-        btn_cancel = QPushButton("취소")
-        btn_cancel.setFixedSize(60, 26)
-        btn_cancel.clicked.connect(self._on_playlist_cancel)
-        layout.addWidget(btn_cancel)
+        self.btn_banner_cancel = QPushButton()
+        self.btn_banner_cancel.setFixedSize(60, 26)
+        self.btn_banner_cancel.clicked.connect(self._on_playlist_cancel)
+        layout.addWidget(self.btn_banner_cancel)
 
         self.playlist_banner.setVisible(False)
         return self.playlist_banner
@@ -325,33 +329,32 @@ class MainWindow(QMainWindow):
         layout.addWidget(lbl_title)
         layout.addStretch()
 
-        self.btn_add = QPushButton("+ 링크 추가")
+        self.btn_add = QPushButton()
         self.btn_add.setObjectName("btnAdd")
         self.btn_add.setProperty("role", "primary")
         self.btn_add.setFixedHeight(36)
         self.btn_add.clicked.connect(self._on_add_link)
         layout.addWidget(self.btn_add)
 
-        self.btn_clear_done = QPushButton("완료 지우기")
+        self.btn_clear_done = QPushButton()
         self.btn_clear_done.setObjectName("btnClearDone")
-        self.btn_clear_done.setToolTip("완료된 항목을 목록에서 지웁니다. 파일은 지우지 않습니다.")
         self.btn_clear_done.setFixedHeight(36)
         self.btn_clear_done.clicked.connect(self._on_clear_done)
         layout.addWidget(self.btn_clear_done)
 
-        self.btn_clear_list = QPushButton("목록 비우기")
+        self.btn_clear_list = QPushButton()
         self.btn_clear_list.setObjectName("btnClearList")
         self.btn_clear_list.setFixedHeight(36)
         self.btn_clear_list.clicked.connect(self._on_clear_list)
         layout.addWidget(self.btn_clear_list)
 
-        btn_prefs = QPushButton("⚙ 설정")
-        btn_prefs.setObjectName("btnPrefs")
-        btn_prefs.setFixedHeight(36)
-        btn_prefs.clicked.connect(self._on_preferences)
-        layout.addWidget(btn_prefs)
+        self.btn_prefs = QPushButton()
+        self.btn_prefs.setObjectName("btnPrefs")
+        self.btn_prefs.setFixedHeight(36)
+        self.btn_prefs.clicked.connect(self._on_preferences)
+        layout.addWidget(self.btn_prefs)
 
-        self.btn_about = QPushButton("ⓘ 정보")
+        self.btn_about = QPushButton()
         self.btn_about.setObjectName("btnAbout")
         self.btn_about.setFixedHeight(36)
         self.btn_about.clicked.connect(self._on_about)
@@ -374,11 +377,7 @@ class MainWindow(QMainWindow):
         self.list_layout.setSpacing(8)
         self.list_layout.addStretch()
 
-        self.lbl_empty = QLabel(
-            "다운로드할 링크를 추가하세요\n\n"
-            "+ 링크 추가 버튼을 클릭하거나\n"
-            "링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요"
-        )
+        self.lbl_empty = QLabel()
         self.lbl_empty.setObjectName("emptyLabel")
         self.lbl_empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.list_layout.insertWidget(0, self.lbl_empty)
@@ -398,7 +397,7 @@ class MainWindow(QMainWindow):
         """Ctrl+V — 클립보드의 링크를 바로 추가한다."""
         urls = extract_urls(QApplication.clipboard().text())
         if not urls:
-            self.status_bar.showMessage("클립보드에 링크가 없습니다.")
+            self.status_bar.showMessage(translate("MainWindow", "클립보드에 링크가 없습니다."))
             return
         for url in urls:
             self._on_link_submitted(url)
@@ -424,7 +423,7 @@ class MainWindow(QMainWindow):
         if _is_playlist_url(url):
             if self.playlist_flow.is_busy:
                 self.status_bar.showMessage(
-                    "이미 플레이리스트를 처리 중입니다. 잠시 후 다시 시도해 주세요."
+                    translate("MainWindow", "이미 플레이리스트를 처리 중입니다. 잠시 후 다시 시도해 주세요.")
                 )
                 return
             self.playlist_flow.start(url, cookies=cookie_opts(self.config))
@@ -593,7 +592,7 @@ class MainWindow(QMainWindow):
 
         # ── 단일 항목 경로 — 화질 선택 다이얼로그 ──
         widget.update_status(DownloadStatus.WAITING)
-        self.status_bar.showMessage("화질을 선택해 주세요.")
+        self.status_bar.showMessage(translate("MainWindow", "화질을 선택해 주세요."))
 
         # 창을 띄우기 전에 슬롯을 회수 — 사용자가 오래 열어둬도 다음 추출이
         # 막히지 않게 한다. (정보 추출은 이미 끝났다.)
@@ -664,7 +663,7 @@ class MainWindow(QMainWindow):
             )
 
         widget.update_status(DownloadStatus.WAITING)
-        self.status_bar.showMessage(f"대기열에 추가: {item.title}")
+        self.status_bar.showMessage(translate("MainWindow", "대기열에 추가: {0}").format(item.title))
         self.download_manager.enqueue(item_id)
 
     # ── ThumbnailWorker 동시성 게이트 ─────────────────
@@ -820,7 +819,7 @@ class MainWindow(QMainWindow):
             widget.update_title(item.url)
 
         self._release_info_slot(item_id)
-        self.status_bar.showMessage("영상 정보를 가져오지 못했습니다.")
+        self.status_bar.showMessage(translate("MainWindow", "영상 정보를 가져오지 못했습니다."))
 
     def _on_error_detail(self, item_id: str):
         """"자세히" 버튼 — 원인·대처법과 오류 원문을 보여 준다."""
@@ -847,7 +846,7 @@ class MainWindow(QMainWindow):
         """플레이리스트 확인 띠의 '취소'. 잃을 작업이 없어 확인을 묻지 않는다."""
         self.playlist_flow.cancel()
         self.playlist_banner.setVisible(False)
-        self.status_bar.showMessage("플레이리스트 가져오기를 취소했습니다.")
+        self.status_bar.showMessage(translate("MainWindow", "플레이리스트 가져오기를 취소했습니다."))
 
     def _on_playlist_finished(self):
         """PlaylistFlow 종료 — 항목들은 이미 게이트에 올라갔다."""
@@ -879,7 +878,7 @@ class MainWindow(QMainWindow):
         )
 
         widget.update_status(DownloadStatus.WAITING)
-        self.status_bar.showMessage(f"대기열에 추가: {item.title}")
+        self.status_bar.showMessage(translate("MainWindow", "대기열에 추가: {0}").format(item.title))
 
         self.download_manager.enqueue(item_id)
 
@@ -902,13 +901,13 @@ class MainWindow(QMainWindow):
             if spec is not None:
                 self._predetermined[item_id] = spec
             widget.update_status(DownloadStatus.FETCHING)
-            self.status_bar.showMessage(f"정보 재요청: {item.url}")
+            self.status_bar.showMessage(translate("MainWindow", "정보 재요청: {0}").format(item.url))
             self._enqueue_info(item_id)
             return
 
         item.status = DownloadStatus.WAITING
         widget.update_status(DownloadStatus.WAITING)
-        self.status_bar.showMessage(f"재시도 대기열: {item.title}")
+        self.status_bar.showMessage(translate("MainWindow", "재시도 대기열: {0}").format(item.title))
 
         self.download_manager.retry(item_id)
 
@@ -920,8 +919,8 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self,
-            "다운로드 취소",
-            "이 다운로드를 취소하시겠습니까?",
+            translate("MainWindow", "다운로드 취소"),
+            translate("MainWindow", "이 다운로드를 취소하시겠습니까?"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -953,7 +952,7 @@ class MainWindow(QMainWindow):
         if widget:
             widget.update_status(DownloadStatus.CANCELLED)
         self._release_info_slot(item_id)
-        self.status_bar.showMessage("취소됨")
+        self.status_bar.showMessage(translate("MainWindow", "취소됨"))
 
     # ── 매니저 시그널 핸들러 ─────────────────────────
 
@@ -973,7 +972,7 @@ class MainWindow(QMainWindow):
             widget.update_ext(actual_ext)
 
         widget.update_status(DownloadStatus.DONE)
-        self.status_bar.showMessage(f"완료: {item.title}")
+        self.status_bar.showMessage(translate("MainWindow", "완료: {0}").format(item.title))
         # 다른 창을 보고 있어도 끝난 것을 알 수 있게 작업 표시줄을 깜빡인다.
         QApplication.alert(self)
 
@@ -983,10 +982,10 @@ class MainWindow(QMainWindow):
 
         if _is_bot_block_error(err):
             self.status_bar.showMessage(
-                "YouTube 봇 감지로 일부 다운로드가 차단되었습니다. 잠시 후 다시 시도하세요."
+                translate("MainWindow", "YouTube 봇 감지로 일부 다운로드가 차단되었습니다. 잠시 후 다시 시도하세요.")
             )
         else:
-            self.status_bar.showMessage("다운로드하지 못한 항목이 있습니다.")
+            self.status_bar.showMessage(translate("MainWindow", "다운로드하지 못한 항목이 있습니다."))
         QApplication.alert(self)
 
     def _on_download_cancelled(self, item_id: str):
@@ -994,14 +993,14 @@ class MainWindow(QMainWindow):
         widget = self.widgets.get(item_id)
         if widget:
             widget.update_status(DownloadStatus.CANCELLED)
-        self.status_bar.showMessage("취소됨")
+        self.status_bar.showMessage(translate("MainWindow", "취소됨"))
 
     # ── 항목 제거 ────────────────────────────────────
 
     def _on_clear_list(self):
         """'목록 비우기' 버튼 클릭."""
         if not self.items:
-            self.status_bar.showMessage("목록이 비어 있습니다.")
+            self.status_bar.showMessage(translate("MainWindow", "목록이 비어 있습니다."))
             return
 
         active_count = self.download_manager.active_count()
@@ -1012,19 +1011,19 @@ class MainWindow(QMainWindow):
             and Path(it.save_path).is_file()
         )
 
-        message = "목록의 모든 항목을 제거하시겠습니까?"
+        message = translate("MainWindow", "목록의 모든 항목을 제거하시겠습니까?")
         if active_count > 0:
-            message += f"\n\n진행 중인 다운로드 {active_count}개는 취소됩니다."
+            message += translate("MainWindow", "\n\n진행 중인 다운로드 {0}개는 취소됩니다.").format(active_count)
 
         checkbox_text = (
-            "다운로드된 파일들 일괄 삭제"
+            translate("MainWindow", "다운로드된 파일들 일괄 삭제")
             if done_with_file_count > 0
             else None
         )
 
         dlg = ConfirmRemoveDialog(
             self,
-            title         = "목록 비우기",
+            title         = translate("MainWindow", "목록 비우기"),
             message       = message,
             checkbox_text = checkbox_text,
         )
@@ -1048,19 +1047,19 @@ class MainWindow(QMainWindow):
             self._remove_item_quiet(item_id)
 
         self.lbl_empty.setVisible(True)
-        self.status_bar.showMessage("목록을 비웠습니다.")
+        self.status_bar.showMessage(translate("MainWindow", "목록을 비웠습니다."))
 
     def _on_clear_done(self):
         """'완료 지우기' 버튼 — 목록에서만 지우고 파일은 그대로 둔다 (D063)."""
         done = [i for i, it in self.items.items() if it.status == DownloadStatus.DONE]
         if not done:
-            self.status_bar.showMessage("완료된 항목이 없습니다.")
+            self.status_bar.showMessage(translate("MainWindow", "완료된 항목이 없습니다."))
             return
         for item_id in done:
             self._remove_item_quiet(item_id)
         if not self.widgets:
             self.lbl_empty.setVisible(True)
-        self.status_bar.showMessage(f"완료 항목 {len(done)}개를 목록에서 지웠습니다.")
+        self.status_bar.showMessage(translate("MainWindow", "완료 항목 {0}개를 목록에서 지웠습니다.").format(len(done)))
 
     def _refresh_summary(self):
         """상태 표시줄의 목록 요약을 다시 쓴다."""
@@ -1072,7 +1071,7 @@ class MainWindow(QMainWindow):
         elided = self.lbl_save_path.fontMetrics().elidedText(
             path, Qt.TextElideMode.ElideMiddle, 320
         )
-        self.lbl_save_path.setText(f"저장: {elided}")
+        self.lbl_save_path.setText(translate("MainWindow", "저장: {0}").format(elided))
         self.lbl_save_path.setToolTip(path)
 
     def _remove_item_quiet(self, item_id: str):
@@ -1165,19 +1164,19 @@ class MainWindow(QMainWindow):
         if not skip_confirm:
             if is_active:
                 message       = (
-                    "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?"
+                    translate("MainWindow", "진행 중인 다운로드를 취소하고 목록에서 제거하시겠습니까?")
                 )
                 checkbox_text = None
             elif is_done_with_file:
-                message       = "이 항목을 목록에서 제거하시겠습니까?"
-                checkbox_text = "다운로드된 파일 삭제"
+                message       = translate("MainWindow", "이 항목을 목록에서 제거하시겠습니까?")
+                checkbox_text = translate("MainWindow", "다운로드된 파일 삭제")
             else:
-                message       = "이 항목을 목록에서 제거하시겠습니까?"
+                message       = translate("MainWindow", "이 항목을 목록에서 제거하시겠습니까?")
                 checkbox_text = None
 
             dlg = ConfirmRemoveDialog(
                 self,
-                title         = "항목 제거",
+                title         = translate("MainWindow", "항목 제거"),
                 message       = message,
                 checkbox_text = checkbox_text,
             )
@@ -1239,11 +1238,11 @@ class MainWindow(QMainWindow):
             return
         reply = QMessageBox.question(
             self,
-            "yt-dlp 업데이트",
-            f"yt-dlp 새 버전이 있습니다.\n\n"
-            f"현재: {current}\n"
-            f"최신: {latest}\n\n"
-            f"지금 업데이트 하시겠습니까?",
+            translate("MainWindow", "yt-dlp 업데이트"),
+            translate("MainWindow", "yt-dlp 새 버전이 있습니다.\n\n"
+                      "현재: {0}\n"
+                      "최신: {1}\n\n"
+                      "지금 업데이트 하시겠습니까?").format(current, latest),
         )
         if reply == QMessageBox.StandardButton.Yes:
             self._run_ytdlp_update(current, latest)
@@ -1289,9 +1288,9 @@ class MainWindow(QMainWindow):
         if any(item.status not in finished for item in self.items.values()):
             QMessageBox.information(
                 self,
-                "yt-dlp 업데이트",
-                "진행 중인 다운로드가 있어 지금은 다시 시작하지 않습니다.\n"
-                "다운로드가 끝난 뒤 앱을 다시 시작하면 새 버전이 적용됩니다.",
+                translate("MainWindow", "yt-dlp 업데이트"),
+                translate("MainWindow", "진행 중인 다운로드가 있어 지금은 다시 시작하지 않습니다.\n"
+                "다운로드가 끝난 뒤 앱을 다시 시작하면 새 버전이 적용됩니다."),
             )
             return
         subprocess.Popen(restart_command())
@@ -1303,8 +1302,8 @@ class MainWindow(QMainWindow):
         if count:
             reply = QMessageBox.question(
                 self,
-                "앱 종료",
-                f"끝나지 않은 다운로드 {count}개를 취소하고 종료하시겠습니까?",
+                translate("MainWindow", "앱 종료"),
+                translate("MainWindow", "끝나지 않은 다운로드 {0}개를 취소하고 종료하시겠습니까?").format(count),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )
@@ -1321,6 +1320,30 @@ class MainWindow(QMainWindow):
         event.accept()
 
     # ── 스타일 ───────────────────────────────────────
+
+    def _retranslate(self):
+        """고정 문구를 지금 언어로 쓴다. 언어를 바꾸면 changeEvent 가 다시 부른다 (F17)."""
+        self.btn_add.setText(translate("MainWindow", "+ 링크 추가"))
+        self.btn_clear_done.setText(translate("MainWindow", "완료 지우기"))
+        self.btn_clear_done.setToolTip(translate("MainWindow", "완료된 항목을 목록에서 지웁니다. 파일은 지우지 않습니다."))
+        self.btn_clear_list.setText(translate("MainWindow", "목록 비우기"))
+        self.btn_prefs.setText(translate("MainWindow", "⚙ 설정"))
+        self.btn_about.setText(translate("MainWindow", "ⓘ 정보"))
+        self.lbl_banner.setText(translate("MainWindow", "플레이리스트 정보를 가져오는 중입니다..."))
+        self.btn_banner_cancel.setText(translate("MainWindow", "취소"))
+        self.lbl_empty.setText(translate(
+            "MainWindow",
+            "다운로드할 링크를 추가하세요\n\n"
+            "+ 링크 추가 버튼을 클릭하거나\n"
+            "링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요",
+        ))
+        self._refresh_summary()
+        self._refresh_save_path()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange:
+            self._retranslate()
+        super().changeEvent(event)
 
     def _apply_style(self):
         """전체 앱 스타일 적용"""

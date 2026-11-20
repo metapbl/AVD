@@ -250,15 +250,15 @@ def _extract_codec_info(info_dict: dict) -> tuple[str, str, str, float, float] |
 
 
 def _stream_label(info_dict: dict | None) -> str:
-    """지금 받는 파일의 상태 문구. 영상·음성을 따로 받으면 진행률이 두 번 돌기 때문이다."""
+    """지금 받는 파일의 상태 문구(번역 전 원문). 영상·음성을 따로 받으면 진행률이 두 번 돌기 때문이다."""
     info_dict = info_dict or {}
     has_video = (info_dict.get("vcodec") or "none") != "none"
     has_audio = (info_dict.get("acodec") or "none") != "none"
     if has_video and not has_audio:
-        return translate("DownloadWorker", "영상 받는 중")
+        return QT_TRANSLATE_NOOP("DownloadWorker", "영상 받는 중")
     if has_audio and not has_video:
-        return translate("DownloadWorker", "음성 받는 중")
-    return translate("DownloadWorker", "다운로드 중")
+        return QT_TRANSLATE_NOOP("DownloadWorker", "음성 받는 중")
+    return QT_TRANSLATE_NOOP("DownloadWorker", "다운로드 중")
 
 
 def _without_merge_part_ext(filename: str, info_dict: dict) -> dict:
@@ -897,7 +897,7 @@ class DownloadWorker(QThread):
             self.merge_progress.emit(-1.0 if pct is None else pct, d.get("merge_secs", 0.0))
 
         if status == "started" and postprocessor in _PP_STAGE_LABELS:
-            self.postprocess_stage.emit(translate("DownloadWorker", _PP_STAGE_LABELS[postprocessor]))
+            self.postprocess_stage.emit(_PP_STAGE_LABELS[postprocessor])  # 원문 — 위젯이 그릴 때 번역
 
         if status == "finished":
             info_dict = d.get("info_dict") or {}
