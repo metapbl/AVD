@@ -822,6 +822,18 @@
         <translation>浅色</translation>
     </message>
     <message>
+        <source>일반</source>
+        <translation>常规</translation>
+    </message>
+    <message>
+        <source>다운로드</source>
+        <translation>下载</translation>
+    </message>
+    <message>
+        <source>MP3 음량</source>
+        <translation>MP3 音量</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>取消</translation>
     </message>

@@ -12,9 +12,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
     QPushButton,
     QRadioButton,
     QSlider,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -108,14 +110,17 @@ class PreferencesDialog(QDialog):
         self.config = config
 
         self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
-        # 게인 그룹이 체크 상태에 따라 접혔다 펴지므로 고정 높이 대신 폭만
-        # 고정하고 높이는 내용에 맞춰 자동 조정한다(adjustSize).
-        self.setFixedWidth(480)
         self.setModal(True)
         self._build_ui()
         self._load_values()
         self._apply_style()
-        self.adjustSize()
+        # 창 크기는 가장 긴 페이지(접히는 칸까지 펼친 상태)에 맞춰 고정한다 — 페이지를 바꾸거나
+        # 칸을 접고 펴도 창이 흔들리지 않게 (D090)
+        self.gain_detail.setVisible(True)
+        self.cookie_file_row.setVisible(True)
+        self.setFixedSize(680, self.sizeHint().height())
+        self._on_gain_toggled(self.chk_gain.isChecked())
+        self._on_cookie_source_changed()
 
     def _build_ui(self):
         """UI 구성"""
@@ -123,6 +128,12 @@ class PreferencesDialog(QDialog):
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
         root.setSpacing(16)
+        # 페이지 위젯은 목록에 넣을 때까지 붙잡아 둔다 — 부모 없는 임시 위젯은 바로 지워진다
+        self._page_widgets = [QWidget() for _ in range(4)]
+        general, downloads, gain, cookies = (QVBoxLayout(w) for w in self._page_widgets)
+        for page in (general, downloads, gain, cookies):
+            page.setContentsMargins(0, 0, 0, 0)
+            page.setSpacing(16)
 
         # ── 저장 경로 그룹 ──
         grp_path = QGroupBox(translate("PreferencesDialog", "저장 경로"))
@@ -142,7 +153,7 @@ class PreferencesDialog(QDialog):
         btn_browse.clicked.connect(self._browse_path)
         path_layout.addWidget(btn_browse)
 
-        root.addWidget(grp_path)
+        general.addWidget(grp_path)
 
         # ── 다운로드 설정 그룹 ──
         grp_dl = QGroupBox(translate("PreferencesDialog", "다운로드 설정"))
@@ -217,7 +228,7 @@ class PreferencesDialog(QDialog):
         self.slider_concurrent.valueChanged.connect(self._on_concurrent_changed)
         dl_layout.addWidget(self.slider_concurrent)
 
-        root.addWidget(grp_dl)
+        downloads.addWidget(grp_dl)
 
         # ── 로그인 쿠키 그룹 (F15, D079·D080) — 출처만 저장, 쿠키 값은 다루지 않는다 ──
         grp_cookie = QGroupBox(translate("PreferencesDialog", "로그인 쿠키"))
@@ -261,7 +272,7 @@ class PreferencesDialog(QDialog):
         self.lbl_cookie_note.setOpenExternalLinks(True)
         cookie_layout.addWidget(self.lbl_cookie_note)
 
-        root.addWidget(grp_cookie)
+        cookies.addWidget(grp_cookie)
 
         # ── MP3 음량 정규화 그룹 ──
         # 체크박스를 켜면 접혀 있던 게인 컨트롤(슬라이더+입력창)이 펼쳐진다.
@@ -335,7 +346,7 @@ class PreferencesDialog(QDialog):
         detail_layout.addWidget(lbl_clip)
 
         gain_layout.addWidget(self.gain_detail)
-        root.addWidget(grp_gain)
+        gain.addWidget(grp_gain)
 
         # ── 업데이트 설정 그룹 ──
         grp_update = QGroupBox(translate("PreferencesDialog", "업데이트 설정"))
@@ -347,7 +358,6 @@ class PreferencesDialog(QDialog):
         )
         update_layout.addWidget(self.chk_auto_update)
 
-        root.addWidget(grp_update)
 
         # ── 언어 그룹 (F17, D084) — 언어 이름은 그 언어로 쓰고 번역하지 않는다 ──
         grp_lang = QGroupBox(translate("PreferencesDialog", "언어"))
@@ -359,7 +369,7 @@ class PreferencesDialog(QDialog):
             self.combo_language.addItem(name, code)
         lang_layout.addWidget(self.combo_language)
         lang_layout.addStretch()
-        root.addWidget(grp_lang)
+        general.addWidget(grp_lang)
 
         # ── 화면 테마 그룹 (D065) ──
         grp_theme = QGroupBox(translate("PreferencesDialog", "화면 테마"))
@@ -374,9 +384,31 @@ class PreferencesDialog(QDialog):
         for radio in self._theme_radios.values():
             theme_layout.addWidget(radio)
         theme_layout.addStretch()
-        root.addWidget(grp_theme)
+        general.addWidget(grp_theme)
+        general.addWidget(grp_update)
 
-        root.addStretch()
+        # ── 왼쪽 목록 + 오른쪽 페이지 (D090) ──
+        self.nav = QListWidget()
+        self.nav.setObjectName("prefsNav")
+        self.pages = QStackedWidget()
+        for name, page in (
+            (translate("PreferencesDialog", "일반"), general),
+            (translate("PreferencesDialog", "다운로드"), downloads),
+            (translate("PreferencesDialog", "MP3 음량"), gain),
+            (translate("PreferencesDialog", "로그인 쿠키"), cookies),
+        ):
+            page.addStretch()
+            self.nav.addItem(name)
+            self.pages.addWidget(page.parentWidget())
+        # 목록 폭은 가장 긴 이름에 맞춘다 (언어마다 길이가 다르다, 최소 150)
+        self.nav.setFixedWidth(max(150, self.nav.sizeHintForColumn(0) + 2 * self.nav.frameWidth() + 24))
+        self.nav.currentRowChanged.connect(self.pages.setCurrentIndex)
+        self.nav.setCurrentRow(0)
+        body = QHBoxLayout()
+        body.setSpacing(16)
+        body.addWidget(self.nav)
+        body.addWidget(self.pages, 1)
+        root.addLayout(body, 1)
 
         # ── 버튼 행 ──
         btn_row = QHBoxLayout()
@@ -450,8 +482,6 @@ class PreferencesDialog(QDialog):
         else:
             note = translate("PreferencesDialog", "연령 제한처럼 로그인해야 볼 수 있는 영상을 받을 때 켜세요.")
         self.lbl_cookie_note.setText(note)
-        # 높이가 바뀌므로 다시 맞춘다
-        self.adjustSize()
 
     def _browse_cookie_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -465,11 +495,9 @@ class PreferencesDialog(QDialog):
     def _on_gain_toggled(self, checked: bool):
         """
         체크 상태에 따라 게인 상세(슬라이더+입력창)를 펼치거나 접는다.
-        접힘/펼침으로 다이얼로그 높이가 달라지므로 adjustSize 로 재조정한다.
+        창 크기는 고정이라 페이지 안에서만 접히고 펴진다 (D090).
         """
         self.gain_detail.setVisible(checked)
-        # 레이아웃이 즉시 반영되도록 다음 이벤트 루프가 아니라 지금 재계산.
-        self.adjustSize()
 
     def _on_gain_slider_changed(self, raw: int):
         """

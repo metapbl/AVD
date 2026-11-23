@@ -822,6 +822,18 @@
         <translation>Светлая</translation>
     </message>
     <message>
+        <source>일반</source>
+        <translation>Общие</translation>
+    </message>
+    <message>
+        <source>다운로드</source>
+        <translation>Загрузки</translation>
+    </message>
+    <message>
+        <source>MP3 음량</source>
+        <translation>Громкость MP3</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>Отмена</translation>
     </message>

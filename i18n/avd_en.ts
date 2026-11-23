@@ -822,6 +822,18 @@ Evening out the volume across tracks means less adjusting the volume during play
         <translation>Light</translation>
     </message>
     <message>
+        <source>일반</source>
+        <translation>General</translation>
+    </message>
+    <message>
+        <source>다운로드</source>
+        <translation>Downloads</translation>
+    </message>
+    <message>
+        <source>MP3 음량</source>
+        <translation>MP3 volume</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>Cancel</translation>
     </message>

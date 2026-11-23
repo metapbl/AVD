@@ -822,6 +822,18 @@
         <translation>ライト</translation>
     </message>
     <message>
+        <source>일반</source>
+        <translation>一般</translation>
+    </message>
+    <message>
+        <source>다운로드</source>
+        <translation>ダウンロード</translation>
+    </message>
+    <message>
+        <source>MP3 음량</source>
+        <translation>MP3 音量</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>キャンセル</translation>
     </message>

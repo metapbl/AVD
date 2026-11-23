@@ -822,6 +822,18 @@ Al igualar el volumen entre pistas, tendrás que tocar menos el volumen al repro
         <translation>Claro</translation>
     </message>
     <message>
+        <source>일반</source>
+        <translation>General</translation>
+    </message>
+    <message>
+        <source>다운로드</source>
+        <translation>Descargas</translation>
+    </message>
+    <message>
+        <source>MP3 음량</source>
+        <translation>Volumen MP3</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>Cancelar</translation>
     </message>
