@@ -1,6 +1,6 @@
 # PRD — AV_Downloader (AVD)
 
-Status: approved (2026-11-20) | 단계: 8 구현 | 갱신: 2026-11-20
+Status: approved (2026-11-23) | 단계: 8 구현 | 갱신: 2026-11-23
 
 <!-- 상태가 approved (YYYY-MM-DD)가 되기 전에는 코드·뼈대·의존성 설치를 하지 않는다. -->
 <!-- 모든 항목 끝에 출처를 단다: [U] 사용자 · [X] 기존 코드·문서 · [AI] AI 기본값. 근거 결정은 (D###). -->
@@ -177,6 +177,7 @@ Status: approved (2026-11-20) | 단계: 8 구현 | 갱신: 2026-11-20
 - 실행 환경 (OS, 언어 버전, 네트워크): Windows 11 정식, macOS 는 소스 실행(`python main.py`)만 지원하고 .app 배포 없음 (F16, D081), Python ≥3.12 (개발 3.15), 인터넷 필수 (D028) [X]
 - 성능 (시작 시간, 반응 속도, 자원): 별도 목표 없음. 참고 — yt-dlp 단일 프로세스 병렬은 1~3개가 경험상 안정 (기본 2) [X] LESSONS
 - README 언어: 영어 `README.md` 기본 + `README.ko.md`·`README.zh-CN.md`·`README.ja.md`·`README.es.md`·`README.ru.md` (번역은 AI 번역, 영어판 우선 안내). 바꿀 때는 여섯 개를 한 커밋에 (D085) [U]
+- 사용자 화면: 데스크톱 GUI — README 에 스크린샷 절을 둔다. 저장소의 스크립트가 표본 데이터로 메인 창·화질 선택 창을 라이트·다크로 그려 `docs/images/` 에 PNG 로 쓴다 (metarche readme.md §7, D089) [U]
 - 배포 형태: PyInstaller onedir exe (Windows x64) — GitHub Release 에 exe zip + 같은 커밋의 소스 zip, exe 옆 `config.json`, 절차는 `docs/RELEASE.md` (D011, D039, D040) [X]
 - 앱 아이콘: `assets/icons/avd.png`·`avd.ico` 하나로 창·작업표시줄·`AVD.exe` 에 통일 (D042) [X]
 - 로그 (위치, 형식, 상세 모드): 앱 로그 체계 없음, 지금은 도입 안 함 [U] (D030)
@@ -226,3 +227,4 @@ Status: approved (2026-11-20) | 단계: 8 구현 | 갱신: 2026-11-20
 | 2026-11-18 | §2.2·§5·F16 macOS 정식화를 소스 실행으로 좁힘, .app 배포는 로드맵 | D081, Q092 |
 | 2026-11-20 | §6 턴 끝 검사(pytest)·에이전트(Claude Code 만) — metarche upgrade U6·U9 | 사용자 답 (2026-11-20) |
 | 2026-11-20 | §2.2·§5·F17 다국어 화면(6개 언어, Qt tr, 즉시 전환), README 6개 언어 | D082~D085, Q093~Q096 |
+| 2026-11-23 | §5 사용자 화면(README 스크린샷, 생성 스크립트) | D089, Q100 |

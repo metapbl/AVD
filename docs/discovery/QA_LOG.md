@@ -509,3 +509,8 @@ A: "GitHub 비공개 취약점 제보 (추천)"
 Q: README 의 디렉터리 구조·내부 문서 목록 절 — docs/ 로 옮기고 링크(추천) / README 에 그대로
 A: "docs/ 로 옮기고 링크 (추천)"
 → D088
+
+### Q100 · 2026-11-23 · 8 PRD 변경 · [U]
+Q: (사용자 요청) 개정된 metarche readme.md §7 — README 스크린샷을 넣을까
+A: "metarche readme 기준(§7 스크린샷 포함)으로 README 갱신 작업을 계획에 넣어 줘"
+→ D089, PRD §5
