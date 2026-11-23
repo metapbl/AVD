@@ -168,6 +168,6 @@ Este software se ofrece "tal cual", **sin ninguna garantía**, incluidas las gar
 AVD usa una licencia por carpeta.
 
 - **AVD en sí** — `MIT`. Consulta [LICENSE](LICENSE) para el texto y [NOTICE](NOTICE) para los avisos de copyright y de terceros.
-- **El paquete incluido `gaindb/`** — `LGPL-2.1-or-later`. Contiene código adaptado de mp3gain (LGPL-2.1-or-later), así que se distribuye en las mismas condiciones. Consulta [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE) y [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES). Original: <https://github.com/metapbl/GainDB> (versión incluida 1.1.2).
+- **El paquete incluido `gaindb/`** — `LGPL-2.1-or-later`. Contiene código adaptado de mp3gain (LGPL-2.1-or-later), así que se distribuye en las mismas condiciones. Consulta [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE) y [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES). Original: <https://github.com/metapbl/GainDB> (versión incluida 1.2.0).
 
 AVD solo llama a las funciones públicas de `gaindb.api`, así que es una "obra que usa la biblioteca" según la §5 de la LGPL-2.1 y su licencia MIT no se ve afectada — igual que al usar PySide6 (LGPLv3) mediante enlace dinámico. Dónde obtener el código fuente de PySide6 y Qt está en la sección de PySide6 de [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES). Para cumplir la LGPL, la versión publicada mantiene `gaindb/` como archivos `.py` normales que puedes sustituir por tu propia versión, y cada versión en GitHub incluye el archivo de código fuente de su etiqueta.

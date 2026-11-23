@@ -168,6 +168,6 @@ cookies.txt 만드는 법 (Chrome, Edge):
 AVD 는 폴더마다 라이선스가 다릅니다.
 
 - **AVD 본체** — `MIT`. 전문은 [LICENSE](LICENSE), 저작권과 서드파티 고지는 [NOTICE](NOTICE) 를 보세요.
-- **함께 들어 있는 `gaindb/` 패키지** — `LGPL-2.1-or-later`. mp3gain(LGPL-2.1-or-later) 에서 가져와 고친 코드가 있어 같은 조건으로 배포합니다. [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE), [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES) 를 보세요. 상류: <https://github.com/metapbl/GainDB> (번들 버전 1.1.2).
+- **함께 들어 있는 `gaindb/` 패키지** — `LGPL-2.1-or-later`. mp3gain(LGPL-2.1-or-later) 에서 가져와 고친 코드가 있어 같은 조건으로 배포합니다. [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE), [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES) 를 보세요. 상류: <https://github.com/metapbl/GainDB> (번들 버전 1.2.0).
 
 AVD 는 `gaindb.api` 의 공개 함수만 부르므로 LGPL-2.1 §5 의 "라이브러리를 사용하는 저작물"이며, MIT 라이선싱은 영향을 받지 않습니다 — PySide6(LGPLv3)를 동적 링크로 쓰는 것과 같습니다. PySide6·Qt 소스를 받는 곳은 [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) 의 PySide6 절에 있습니다. LGPL 을 지키기 위해 배포본의 `gaindb/` 는 자기 수정본으로 바꿀 수 있는 평문 `.py` 로 두고, 각 GitHub 릴리스에 그 태그의 소스 아카이브를 함께 올립니다.

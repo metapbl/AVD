@@ -168,6 +168,6 @@ venv\Scripts\python main.py
 У AVD своя лицензия для каждой папки.
 
 - **Сам AVD** — `MIT`. Текст — в [LICENSE](LICENSE), уведомления об авторских правах и сторонних компонентах — в [NOTICE](NOTICE).
-- **Встроенный пакет `gaindb/`** — `LGPL-2.1-or-later`. Он содержит код, переработанный из mp3gain (LGPL-2.1-or-later), поэтому распространяется на тех же условиях. См. [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE) и [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES). Исходный проект: <https://github.com/metapbl/GainDB> (встроенная версия 1.1.2).
+- **Встроенный пакет `gaindb/`** — `LGPL-2.1-or-later`. Он содержит код, переработанный из mp3gain (LGPL-2.1-or-later), поэтому распространяется на тех же условиях. См. [gaindb/LICENSE](gaindb/LICENSE), [gaindb/NOTICE](gaindb/NOTICE) и [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES). Исходный проект: <https://github.com/metapbl/GainDB> (встроенная версия 1.2.0).
 
 AVD вызывает только публичные функции из `gaindb.api`, поэтому является «произведением, использующим библиотеку» по §5 LGPL-2.1, и его лицензия MIT не затрагивается — так же, как при использовании PySide6 (LGPLv3) через динамическую компоновку. Где взять исходный код PySide6 и Qt, указано в разделе PySide6 файла [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES). Для соблюдения LGPL релизная сборка хранит `gaindb/` в виде обычных файлов `.py`, которые можно заменить своей версией, а к каждому релизу на GitHub прикладывается архив исходного кода соответствующего тега.

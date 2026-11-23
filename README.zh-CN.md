@@ -168,6 +168,6 @@ venv\Scripts\python main.py
 AVD 按文件夹使用不同的许可证。
 
 - **AVD 本体**——`MIT`。全文见 [LICENSE](LICENSE)，版权和第三方声明见 [NOTICE](NOTICE)。
-- **随附的 `gaindb/` 包**——`LGPL-2.1-or-later`。其中包含改编自 mp3gain（LGPL-2.1-or-later）的代码，因此按相同条款发布。见 [gaindb/LICENSE](gaindb/LICENSE)、[gaindb/NOTICE](gaindb/NOTICE) 和 [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES)。上游：<https://github.com/metapbl/GainDB>（随附版本 1.1.2）。
+- **随附的 `gaindb/` 包**——`LGPL-2.1-or-later`。其中包含改编自 mp3gain（LGPL-2.1-or-later）的代码，因此按相同条款发布。见 [gaindb/LICENSE](gaindb/LICENSE)、[gaindb/NOTICE](gaindb/NOTICE) 和 [gaindb/THIRD_PARTY_LICENSES](gaindb/THIRD_PARTY_LICENSES)。上游：<https://github.com/metapbl/GainDB>（随附版本 1.2.0）。
 
 AVD 只调用 `gaindb.api` 中的公开函数，因此属于 LGPL-2.1 §5 所说的"使用该库的作品"，其 MIT 许可不受影响——与通过动态链接使用 PySide6（LGPLv3）相同。PySide6 和 Qt 源码的获取位置见 [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) 的 PySide6 部分。为遵守 LGPL，发布版把 `gaindb/` 保留为可替换为你自己版本的普通 `.py` 文件，每个 GitHub 发布版都附带对应标签的源码压缩包。
