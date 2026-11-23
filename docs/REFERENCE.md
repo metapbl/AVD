@@ -112,6 +112,7 @@
 | T34 | 전체 테스트가 가끔 `test_concurrent_moves_do_not_overwrite` 에서 PermissionError(WinError 5) | Windows 는 한 스레드가 자리표시 파일 위로 `os.replace` 하는 동안 다른 스레드가 같은 이름을 `open(..., "x")` 하면 replace 를 거부한다 (2,400회 중 4회 재현, 2026-11-18) | `move_unique` 를 모듈 잠금으로 직렬화. 다른 프로세스와는 여전히 "x" 선점만 막는다 | 2026-11-18 fix |
 | T35 | pytest 가 "337 passed" 를 찍고도 종료 코드가 0 이 아님(bash 127, pwsh -1073740791 = 0xC0000409). 파일마다 몇 번에 한 번 | 테스트가 지역 변수로 만든 Qt 위젯이 프로세스 종료 때 QApplication 보다 늦게 파괴된다. 터미널 출력만 보면 통과로 보여 몰랐고, 턴 끝 검사 훅(종료 코드로 판정)이 처음 잡았다 (2026-11-20) | `tests/conftest.py > pytest_unconfigure` 가 남은 최상위 위젯을 닫고 `deleteLater` → `processEvents` → `gc.collect`. `QCoreApplication.shutdown()` 은 오히려 segfault | 2026-11-20 upgrade |
 | T36 | 환경설정에서 "적용" 을 누르면 창이 제목 표시줄만 남고 납작해짐(680×40) | 이미 떠 있는 창에 새로 붙인 자식 위젯은 `show()` 하기 전까지 숨은 상태라 레이아웃 `sizeHint` 에서 빠진다. 다시 그리기(`_rebuild`) 뒤 그 값으로 `setFixedSize` 를 했다. 오프스크린 테스트는 위젯 존재만 보고 크기를 안 봐서 놓쳤다 (2026-11-23 실기) | 다시 만든 뒤 직접 자식을 `show()` 하고 크기를 잰다. 테스트는 다시 그린 뒤 창 크기가 같은지 본다 | D091 |
+| T37 | 환경설정에서 라이트로 "적용" 했다가 다크로 "적용" 하면 환경설정 창 제목 표시줄만 흰색으로 남음 | `QStyleHints.setColorScheme` 이 바뀔 때 Qt 는 메인 창의 DWM 다크 제목 표시줄은 되돌리지만, 열려 있는 모달 대화 상자는 라이트→다크에서 되돌리지 못한다(DwmGetWindowAttribute 20 이 0 으로 남음, 2026-11-23 실제 창으로 확인). 오프스크린 테스트로는 보이지 않는다 | 환경설정이 테마 때문에 다시 그릴 때 `DwmSetWindowAttribute(hwnd, 20, 1/0)` 로 직접 맞춘다(`_sync_title_bar`). Windows 테스트가 실제 창의 값을 읽는다. 테마 템플릿(designarche)에도 같은 문제가 있을 수 있음 | D091 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)

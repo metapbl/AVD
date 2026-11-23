@@ -1,6 +1,8 @@
 # ui/preferences_dialog.py
 # 환경설정 팝업 다이얼로그
 
+import sys
+
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QDoubleValidator, QPainter
 from PySide6.QtWidgets import (
@@ -145,6 +147,17 @@ class PreferencesDialog(QDialog):
         QWidget().setLayout(self.layout())  # 옛 배치와 위젯을 임시 위젯으로 넘겨 함께 지운다
         self._build()
         self.nav.setCurrentRow(row)
+        self._sync_title_bar()
+
+    def _sync_title_bar(self):
+        """Qt 는 색 모드가 바뀔 때 열린 모달 창의 제목 표시줄을 다크로 되돌리지 못한다 — 직접 맞춘다 (Windows, T37)."""
+        if sys.platform != "win32" or not self.isVisible():
+            return
+        import ctypes
+
+        dark = ctypes.c_int(1 if theme.current() == "dark" else 0)
+        # 20 = DWMWA_USE_IMMERSIVE_DARK_MODE
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(int(self.winId()), 20, ctypes.byref(dark), ctypes.sizeof(dark))
 
     def changeEvent(self, event):
         if event.type() == QEvent.Type.LanguageChange and self.layout() is not None:

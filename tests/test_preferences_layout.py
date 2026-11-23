@@ -1,4 +1,6 @@
 """환경설정 창 — 왼쪽 목록 + 오른쪽 페이지 (D090)."""
+import sys
+
 import pytest
 from PySide6.QtWidgets import QApplication
 
@@ -136,5 +138,29 @@ def test_theme_change_redraws_open_window_on_same_page(app):
             app.processEvents()
         assert dlg.nav is not old_nav and dlg.nav.currentRow() == 3 and dlg.isVisible()
         assert dlg.size() == size  # 다시 그린 뒤에도 창이 납작해지지 않는다 (실기에서 발견)
+    finally:
+        theme.apply_theme(app, "light")
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows DWM 제목 표시줄")
+def test_title_bar_follows_theme_applied_while_open(app):
+    # 라이트로 적용했다가 다크로 적용하면 열린 환경설정 창의 제목 표시줄이 흰색으로 남았다 (실기, T37)
+    import ctypes
+
+    from ui import theme
+
+    def dark_title_bar(widget):
+        value = ctypes.c_int(-1)
+        ctypes.windll.dwmapi.DwmGetWindowAttribute(int(widget.winId()), 20, ctypes.byref(value), 4)
+        return value.value
+
+    theme.apply_theme(app, "dark")
+    dlg = _shown(app)
+    try:
+        for mode, expected in (("light", 0), ("dark", 1)):
+            theme.apply_theme(app, mode)
+            for _ in range(5):
+                app.processEvents()
+            assert dark_title_bar(dlg) == expected, mode
     finally:
         theme.apply_theme(app, "light")
