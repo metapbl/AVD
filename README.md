@@ -33,6 +33,22 @@ AV Downloader is a desktop app (PySide6) that puts [yt-dlp](https://github.com/y
 - Dark and light themes; six languages (English, 한국어, 简体中文, 日本語, Español, Русский)
 - Keeps yt-dlp up to date by itself, and never overwrites a file with the same name
 
+## Screenshots
+
+<table>
+  <tr><th>Light</th><th>Dark</th></tr>
+  <tr>
+    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Light)" src="docs/images/main-light-v1.png"></td>
+    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Dark)" src="docs/images/main-dark-v1.png"></td>
+  </tr>
+  <tr>
+    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Light)" src="docs/images/format-light-v1.png"></td>
+    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Dark)" src="docs/images/format-dark-v1.png"></td>
+  </tr>
+</table>
+
+Rendered from sample data by `tools/make_screenshots.py`; the screens show the English interface.
+
 ## Requirements
 
 - **Windows 11** (the release build is Windows x64). **macOS** works when run from source. Linux is not supported: opening the download folder does not work there.

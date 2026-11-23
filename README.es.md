@@ -35,6 +35,22 @@ AV Downloader es una aplicación de escritorio (PySide6) que pone [yt-dlp](https
 - Temas oscuro y claro; seis idiomas (English, 한국어, 简体中文, 日本語, Español, Русский)
 - Mantiene yt-dlp actualizado por sí misma y nunca sobrescribe un archivo con el mismo nombre
 
+## Capturas de pantalla
+
+<table>
+  <tr><th>Claro</th><th>Oscuro</th></tr>
+  <tr>
+    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Claro)" src="docs/images/main-light-v1.png"></td>
+    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Oscuro)" src="docs/images/main-dark-v1.png"></td>
+  </tr>
+  <tr>
+    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Claro)" src="docs/images/format-light-v1.png"></td>
+    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Oscuro)" src="docs/images/format-dark-v1.png"></td>
+  </tr>
+</table>
+
+Generadas con datos de ejemplo por `tools/make_screenshots.py`; las pantallas muestran la interfaz en inglés.
+
 ## Requisitos
 
 - **Windows 11** (la versión publicada es para Windows x64). **macOS** funciona ejecutándolo desde el código fuente. Linux no es compatible: allí no funciona abrir la carpeta de descargas.

@@ -35,6 +35,22 @@ AV Downloader 는 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 를 창 하나로 �
 - 다크·라이트 테마, 6개 언어 (English, 한국어, 简体中文, 日本語, Español, Русский)
 - yt-dlp 를 스스로 최신으로 유지하고, 같은 이름의 파일을 덮어쓰지 않습니다
 
+## 스크린샷
+
+<table>
+  <tr><th>라이트</th><th>다크</th></tr>
+  <tr>
+    <td><img alt="메인 창: 다운로드 네 개 — 42% 받는 중, 열기·재생 버튼이 있는 완료, 재시도·자세히가 있는 오류, 대기열에서 기다리는 항목 (라이트)" src="docs/images/main-light-v1.png"></td>
+    <td><img alt="메인 창: 다운로드 네 개 — 42% 받는 중, 열기·재생 버튼이 있는 완료, 재시도·자세히가 있는 오류, 대기열에서 기다리는 항목 (다크)" src="docs/images/main-dark-v1.png"></td>
+  </tr>
+  <tr>
+    <td><img alt="화질 선택 창: 최고 화질, 최고 호환, 해상도별, MP3·M4A 행과 해상도·코덱·크기 (라이트)" src="docs/images/format-light-v1.png"></td>
+    <td><img alt="화질 선택 창: 최고 화질, 최고 호환, 해상도별, MP3·M4A 행과 해상도·코덱·크기 (다크)" src="docs/images/format-dark-v1.png"></td>
+  </tr>
+</table>
+
+`tools/make_screenshots.py` 가 표본 데이터로 그린 화면입니다. 화면은 영어로 보입니다.
+
 ## 요구 사항
 
 - **Windows 11** (배포본은 Windows x64). **macOS** 는 소스에서 실행하면 동작합니다. Linux 는 지원하지 않습니다: 다운로드 폴더 열기가 동작하지 않습니다.

@@ -1,12 +1,12 @@
 # PROGRESS — AV_Downloader (AVD)
 
 ## 상태
-- 단계: 8 구현 · 서른 번째 계획 `docs/plans/2026-11-20-i18n-readme.md` active (F17 다국어·README 6개 언어)
-- 갱신: 2026-11-18 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경: 동시 옮기기 간헐 실패 수정, macOS 소스 실행(F16, D081). OPEN 미결 0
+- 단계: 7 계획 대기 · 서른 번째 계획 `docs/plans/2026-11-20-i18n-readme.md` done (F17 다국어 6개 언어·README 6개 언어·스크린샷)
+- 갱신: 2026-11-23 · v1.6.0 게시(태그 `745db86`, Latest): 로그인 쿠키(F15, D078~D080 — Firefox·cookies.txt). 미릴리스 변경: 다국어(F17, D082~D085)·README 6개 언어(D085~D089), 동시 옮기기 간헐 실패 수정, macOS 소스 실행(F16, D081), pytest 종료 크래시 수정. OPEN 미결 0
 
 ## 다음 할 일
-1. 서른 번째 계획 작업 1 — 언어 결정·번역기 교체 (`utils/i18n.py`)
-2. 미릴리스 변경: 간헐 실패 수정, macOS 소스 실행(F16), pytest 종료 크래시 수정 — 다국어 끝난 뒤 함께 릴리스할지 결정
+1. 릴리스 결정 — 미릴리스 변경을 v1.7.0 으로 (exe 빌드에서 번역 `.qm`·`qtbase_*` 포함 확인은 릴리스 실기에서). README 와 앱의 언어별 쿠키 도움말 링크는 push 뒤에 GitHub 에서 열린다
+2. push 여부 결정 (로컬 main 이 원격보다 앞섬)
 3. (후보) PRD §2.2 로드맵 — macOS .app 배포
 
 ## 미해결

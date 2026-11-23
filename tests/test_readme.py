@@ -80,3 +80,20 @@ def test_app_cookie_help_link_opens_that_language_readme_section(lang):
     file, _, anchor = cookie_help_url().removeprefix(REPO_URL + "/blob/main/").partition("#")
     assert file == {"ko": "README.ko.md", "en": "README.md"}.get(lang, f"README.{lang.replace('_', '-')}.md")
     assert anchor in anchors(file)
+
+
+SHOTS = [f"docs/images/{screen}-{theme}-v1.png" for screen in ("main", "format") for theme in ("light", "dark")]
+
+
+@pytest.mark.parametrize("name", FILES)
+def test_screenshots_are_shared_and_described(name):
+    # readme.md §7 — 모든 언어가 같은 이미지, 이미지마다 alt 글, 라이트가 왼쪽
+    imgs = re.findall(r'<img alt="([^"]+)" src="(docs/images/[^"]+)"', _text(name))
+    assert [src for _, src in imgs] == SHOTS
+    assert all(alt.strip() for alt, _ in imgs)
+
+
+@pytest.mark.parametrize("path", SHOTS)
+def test_screenshot_files_exist_and_are_small(path):
+    file = ROOT / path
+    assert file.is_file() and file.stat().st_size <= 2 * 1024 * 1024

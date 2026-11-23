@@ -35,6 +35,22 @@ AV Downloader 是一个桌面应用（PySide6），把 [yt-dlp](https://github.c
 - 深色和浅色主题；六种语言（English、한국어、简体中文、日本語、Español、Русский）
 - 自动保持 yt-dlp 为最新版本，且从不覆盖同名文件
 
+## 截图
+
+<table>
+  <tr><th>浅色</th><th>深色</th></tr>
+  <tr>
+    <td><img alt="主窗口：四个下载——正在下载 42%、带“打开”和“播放”按钮的已完成项、带“重试”和“详情”的错误项，以及一个排队等待的项目 (浅色)" src="docs/images/main-light-v1.png"></td>
+    <td><img alt="主窗口：四个下载——正在下载 42%、带“打开”和“播放”按钮的已完成项、带“重试”和“详情”的错误项，以及一个排队等待的项目 (深色)" src="docs/images/main-dark-v1.png"></td>
+  </tr>
+  <tr>
+    <td><img alt="画质选择窗口：最佳画质、最佳兼容、各分辨率、MP3 和 M4A 行，以及分辨率、编码和大小 (浅色)" src="docs/images/format-light-v1.png"></td>
+    <td><img alt="画质选择窗口：最佳画质、最佳兼容、各分辨率、MP3 和 M4A 行，以及分辨率、编码和大小 (深色)" src="docs/images/format-dark-v1.png"></td>
+  </tr>
+</table>
+
+由 `tools/make_screenshots.py` 用示例数据生成；界面显示为英文。
+
 ## 系统要求
 
 - **Windows 11**（发布版为 Windows x64）。**macOS** 从源码运行即可使用。不支持 Linux：在 Linux 上无法打开下载文件夹。

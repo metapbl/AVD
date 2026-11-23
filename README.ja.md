@@ -35,6 +35,22 @@ AV Downloader は [yt-dlp](https://github.com/yt-dlp/yt-dlp) をウィンドウ�
 - ダーク・ライトテーマ、6 言語（English、한국어、简体中文、日本語、Español、Русский）
 - yt-dlp を自動で最新に保ち、同じ名前のファイルを上書きしません
 
+## スクリーンショット
+
+<table>
+  <tr><th>ライト</th><th>ダーク</th></tr>
+  <tr>
+    <td><img alt="メインウィンドウ：4 件のダウンロード — 42% ダウンロード中、「開く」「再生」ボタンのある完了、「再試行」「詳細」のあるエラー、キューで待機中の項目 (ライト)" src="docs/images/main-light-v1.png"></td>
+    <td><img alt="メインウィンドウ：4 件のダウンロード — 42% ダウンロード中、「開く」「再生」ボタンのある完了、「再試行」「詳細」のあるエラー、キューで待機中の項目 (ダーク)" src="docs/images/main-dark-v1.png"></td>
+  </tr>
+  <tr>
+    <td><img alt="画質選択ウィンドウ：最高画質、最高互換、解像度ごと、MP3・M4A の行と解像度・コーデック・サイズ (ライト)" src="docs/images/format-light-v1.png"></td>
+    <td><img alt="画質選択ウィンドウ：最高画質、最高互換、解像度ごと、MP3・M4A の行と解像度・コーデック・サイズ (ダーク)" src="docs/images/format-dark-v1.png"></td>
+  </tr>
+</table>
+
+`tools/make_screenshots.py` がサンプルデータで描いた画面です。画面は英語で表示されています。
+
 ## 必要環境
 
 - **Windows 11**（リリース版は Windows x64）。**macOS** はソースから実行すれば動作します。Linux はサポートしていません：ダウンロードフォルダーを開く機能が動作しません。

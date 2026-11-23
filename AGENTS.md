@@ -18,6 +18,7 @@ yt-dlp 기반 영상·오디오 다운로더 (PySide6 다크·라이트 테마 G
 - 전체 테스트: `venv\Scripts\python -m pytest` (F9 이후, 작업마다 실행)
 - 편집 때 자동 검사: `.metarche/hooks/check.ps1`이 실행 (`venv\Scripts\ruff.exe check --force-exclude`)
 - 번역 갱신: `venv\Scripts\python tools/update_translations.py` (화면 문구를 바꾼 뒤. `i18n/*.ts`·`.qm` 을 함께 커밋, F17)
+- README 스크린샷: `venv\Scripts\python tools/make_screenshots.py` (화면이 바뀌면 다시 돌리고, 그림이 바뀌면 파일 이름의 `-v` 숫자와 README 6개 링크를 올린다, D089)
 - 턴 끝 검사: 파일을 고친 턴이 끝나면 `.metarche/hooks/finish.ps1`이 실행 (`venv\Scripts\python -m pytest -q`)
 - 외부 도구: ffmpeg/ffprobe·Node.js 가 PATH 에 있어야 한다 (R§2)
 
