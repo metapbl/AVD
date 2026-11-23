@@ -15,7 +15,7 @@ import yt_dlp
 from PySide6.QtCore import QCoreApplication
 
 # 앱 현재 버전 (배포 시 이 값을 변경)
-APP_VERSION = "1.7.1"
+APP_VERSION = "1.7.2"
 
 # yt-dlp GitHub API 주소
 YTDLP_API_URL = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest"
