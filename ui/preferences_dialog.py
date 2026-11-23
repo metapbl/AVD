@@ -1,7 +1,7 @@
 # ui/preferences_dialog.py
 # 환경설정 팝업 다이얼로그
 
-from PySide6.QtCore import QCoreApplication, Qt, Signal
+from PySide6.QtCore import QCoreApplication, QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QDoubleValidator, QPainter
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -108,9 +108,14 @@ class PreferencesDialog(QDialog):
     def __init__(self, config: ConfigManager, parent=None):
         super().__init__(parent)
         self.config = config
-
-        self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
         self.setModal(True)
+        self._rebuild_pending = False
+        self._build()
+        # 적용으로 테마가 바뀌면 열린 창도 새 색으로 다시 그린다 (D091)
+        theme.notifier.changed.connect(self._schedule_rebuild)
+
+    def _build(self):
+        self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
         self._build_ui()
         self._load_values()
         self._apply_style()
@@ -121,6 +126,40 @@ class PreferencesDialog(QDialog):
         self.setFixedSize(680, self.sizeHint().height())
         self._on_gain_toggled(self.chk_gain.isChecked())
         self._on_cookie_source_changed()
+        self._watch_changes()
+
+    def _schedule_rebuild(self):
+        # 신호가 버튼을 누르는 도중에 오므로 그 버튼을 지우지 않게 다음 차례로 미룬다
+        if not self._rebuild_pending:
+            self._rebuild_pending = True
+            QTimer.singleShot(0, self._rebuild)
+
+    def _rebuild(self):
+        """언어·테마가 바뀌면 저장된 값으로 창을 다시 그린다. 보던 페이지는 그대로 (D091)."""
+        self._rebuild_pending = False
+        row = self.nav.currentRow()
+        QWidget().setLayout(self.layout())  # 옛 배치와 위젯을 임시 위젯으로 넘겨 함께 지운다
+        self._build()
+        self.nav.setCurrentRow(row)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.Type.LanguageChange and self.layout() is not None:
+            self._schedule_rebuild()
+        super().changeEvent(event)
+
+    def _watch_changes(self):
+        """값이 저장된 것과 달라질 때만 "적용" 을 누를 수 있게 한다 (D091)."""
+        for w in self.findChildren(QLineEdit):
+            w.textChanged.connect(self._update_apply)
+        for w in self.findChildren(QCheckBox) + self.findChildren(QRadioButton):
+            w.toggled.connect(self._update_apply)
+        for w in self.findChildren(QSlider):
+            w.valueChanged.connect(self._update_apply)
+        self.combo_language.currentIndexChanged.connect(self._update_apply)
+        self._update_apply()
+
+    def _update_apply(self):
+        self.btn_apply.setEnabled(any(self.config.get(k) != v for k, v in self._collect().items()))
 
     def _build_ui(self):
         """UI 구성"""
@@ -415,22 +454,26 @@ class PreferencesDialog(QDialog):
         btn_row.setSpacing(8)
         btn_row.addStretch()
 
-        btn_cancel = QPushButton(translate("PreferencesDialog", "취소"))
-        btn_cancel.setObjectName("btnCancel")
-        btn_cancel.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
-        btn_cancel.setFixedHeight(32)
-        btn_cancel.clicked.connect(self.reject)
-        btn_row.addWidget(btn_cancel)
-
-        btn_save = QPushButton(translate("PreferencesDialog", "저장"))
-        btn_save.setObjectName("btnConfirm")
-        btn_save.setProperty("role", "primary")
-        btn_save.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
-        btn_save.setFixedHeight(32)
-        btn_save.clicked.connect(self._on_save)
+        # Windows 관례 "확인 · 취소 · 적용" (D091)
+        self.btn_ok = QPushButton(translate("PreferencesDialog", "확인"))
+        self.btn_ok.setObjectName("btnConfirm")
+        self.btn_ok.setProperty("role", "primary")
+        self.btn_ok.clicked.connect(self._on_save)
         # 정하지 않으면 Qt 가 첫 버튼을 기본으로 삼아 Enter 가 엉뚱한 버튼을 누른다 (D060).
-        btn_save.setDefault(True)
-        btn_row.addWidget(btn_save)
+        self.btn_ok.setDefault(True)
+
+        self.btn_cancel = QPushButton(translate("PreferencesDialog", "취소"))
+        self.btn_cancel.setObjectName("btnCancel")
+        self.btn_cancel.clicked.connect(self.reject)
+
+        self.btn_apply = QPushButton(translate("PreferencesDialog", "적용"))
+        self.btn_apply.setObjectName("btnApply")
+        self.btn_apply.clicked.connect(self._on_apply)
+
+        for button in (self.btn_ok, self.btn_cancel, self.btn_apply):
+            button.setMinimumWidth(80)  # 긴 번역문이면 늘어난다 (F17)
+            button.setFixedHeight(32)
+            btn_row.addWidget(button)
 
         root.addLayout(btn_row)
 
@@ -575,15 +618,9 @@ class PreferencesDialog(QDialog):
         if folder:
             self.input_path.setText(folder)
 
-    def _on_save(self):
-        """
-        저장 버튼 처리.
-
-        주의: max_concurrent 는 본 단계에선 placebo — 값은 저장되지만
-        실제 동시 다운로드 제어는 후속 "동시성 제어 구현 (큐 매니저)"
-        항목에서 도입된다.
-        """
-        new_settings = {
+    def _collect(self) -> dict:
+        """화면의 값을 설정 키로 모은다."""
+        return {
             "save_path"         : self.input_path.text(),
             "max_concurrent"    : self.slider_concurrent.value(),
             "auto_update_ytdlp" : self.chk_auto_update.isChecked(),
@@ -596,11 +633,17 @@ class PreferencesDialog(QDialog):
             "cookie_file"       : self.input_cookie_file.text(),
         }
 
-        # ConfigManager 에 저장
+    def _on_apply(self):
+        """적용 — 저장하고 바로 반영한다. 창은 그대로 (D091). 반영은 settings_saved 를 받은 메인 창이 한다."""
+        new_settings = self._collect()
         for key, value in new_settings.items():
             self.config.set(key, value)
-
+        self.btn_apply.setEnabled(False)
         self.settings_saved.emit(new_settings)
+
+    def _on_save(self):
+        """확인 — 적용하고 닫는다."""
+        self._on_apply()
         self.accept()
 
     def _apply_style(self):

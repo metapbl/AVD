@@ -212,3 +212,37 @@ def test_confirm_dialog_default_title_follows_language(tmp_path, monkeypatch):
     monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
     apply_language(app, "en")
     assert ConfirmRemoveDialog().windowTitle() == "Confirm"
+
+
+def test_apply_changes_language_with_settings_still_open(tmp_path, monkeypatch):
+    # 적용(D091) — 메인 창과 열린 환경설정 창이 함께 바뀌고, 보던 페이지가 그대로
+    from ui import main_window as mw
+    from ui.main_window import MainWindow
+    from ui.preferences_dialog import PreferencesDialog
+    from utils import i18n
+
+    app = QApplication.instance() or QApplication([])
+    _fake_qm(tmp_path, [
+        ("MainWindow", "+ 링크 추가", "+ Add link"),
+        ("PreferencesDialog", "일반", "General"),
+        ("PreferencesDialog", "적용", "Apply"),
+    ])
+    monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
+    monkeypatch.setattr(config_manager, "CONFIG_PATH", tmp_path / "config.json")
+    window = MainWindow()
+    seen = {}
+
+    class Dialog(PreferencesDialog):
+        def exec(self):
+            self.nav.setCurrentRow(2)
+            self.combo_language.setCurrentIndex(self.combo_language.findData("en"))
+            self.btn_apply.click()
+            for _ in range(3):  # 다시 그리기는 다음 차례로 미뤄져 있다
+                app.processEvents()
+            seen.update(nav=self.nav.item(0).text(), row=self.nav.currentRow(), apply=self.btn_apply.text(),
+                        main=window.btn_add.text())
+            return 0
+
+    monkeypatch.setattr(mw, "PreferencesDialog", Dialog)
+    window._on_preferences()
+    assert seen == {"nav": "General", "row": 2, "apply": "Apply", "main": "+ Add link"}

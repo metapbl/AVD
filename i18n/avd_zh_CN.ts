@@ -834,12 +834,16 @@
         <translation>MP3 音量</translation>
     </message>
     <message>
+        <source>확인</source>
+        <translation>确定</translation>
+    </message>
+    <message>
         <source>취소</source>
         <translation>取消</translation>
     </message>
     <message>
-        <source>저장</source>
-        <translation>保存</translation>
+        <source>적용</source>
+        <translation>应用</translation>
     </message>
     <message>
         <source>Chrome, Edge 등에서 확장으로 내보낸 cookies.txt 를 지정하세요. &lt;a href=&quot;{0}&quot; style=&quot;color:{1};&quot;&gt;만드는 법 ↗&lt;/a&gt;</source>

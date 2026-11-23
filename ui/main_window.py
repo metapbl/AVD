@@ -1210,7 +1210,12 @@ class MainWindow(QMainWindow):
     def _on_preferences(self):
         """환경설정 버튼 클릭"""
         dialog = PreferencesDialog(self.config, self)
+        # 확인·적용 때마다 바로 반영한다 — 적용은 창이 열린 채 (D091)
+        dialog.settings_saved.connect(self._apply_settings)
         dialog.exec()
+
+    def _apply_settings(self, _settings: dict):
+        """저장된 설정을 반영한다: 저장 경로 표시, 테마, 언어."""
         self._refresh_save_path()
         theme.apply_theme(QApplication.instance(), self.config.get("theme_mode", "system"))
         # 열린 창은 LanguageChange 로 문구를 다시 쓴다 — 재시작 없음 (D084)

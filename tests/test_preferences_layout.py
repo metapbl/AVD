@@ -73,3 +73,66 @@ def test_every_language_fits(app, lang):
     for i in range(dlg.nav.count()):
         text = dlg.nav.item(i).text()
         assert dlg.nav.fontMetrics().horizontalAdvance(text) + 16 <= room, text  # 16: 항목 좌우 여백
+
+
+# ── 세 버튼 "확인 · 취소 · 적용" (D091) ──
+
+def _buttons_left_to_right(dlg):
+    from PySide6.QtWidgets import QPushButton
+
+    buttons = [b for b in dlg.findChildren(QPushButton) if b.objectName() in ("btnConfirm", "btnCancel", "btnApply")]
+    return [b.text() for b in sorted(buttons, key=lambda b: b.mapTo(dlg, b.rect().topLeft()).x())]
+
+
+def test_buttons_are_ok_cancel_apply_and_enter_is_ok(app):
+    dlg = _shown(app)
+    assert _buttons_left_to_right(dlg) == ["확인", "취소", "적용"]
+    assert dlg.btn_ok.isDefault()
+
+
+def test_apply_is_enabled_only_while_something_changed(app):
+    dlg = _shown(app)
+    assert not dlg.btn_apply.isEnabled()
+    dlg.chk_auto_update.toggle()
+    assert dlg.btn_apply.isEnabled()
+    dlg.chk_auto_update.toggle()  # 원래대로 되돌리면 다시 꺼진다
+    assert not dlg.btn_apply.isEnabled()
+
+
+def test_apply_saves_and_keeps_the_window_open(app):
+    config = _Config(DEFAULT_CONFIG)
+    dlg = PreferencesDialog(config)
+    dlg.show()
+    saved = []
+    dlg.settings_saved.connect(saved.append)
+    before = config["auto_update_ytdlp"]
+    dlg.chk_auto_update.toggle()
+    dlg.btn_apply.click()
+    assert config["auto_update_ytdlp"] is (not before)
+    assert saved and dlg.isVisible() and not dlg.btn_apply.isEnabled()
+
+
+def test_cancel_after_apply_keeps_what_was_applied(app):
+    config = _Config(DEFAULT_CONFIG)
+    dlg = PreferencesDialog(config)
+    dlg.show()
+    dlg.slider_concurrent.setValue(3)
+    dlg.btn_apply.click()
+    dlg.btn_cancel.click()
+    assert config["max_concurrent"] == 3 and not dlg.isVisible()
+
+
+def test_theme_change_redraws_open_window_on_same_page(app):
+    from ui import theme
+
+    theme.apply_theme(app, "light")  # 다른 테스트가 남긴 테마와 상관없이 실제로 바뀌게
+    dlg = _shown(app)
+    dlg.nav.setCurrentRow(3)
+    old_nav = dlg.nav
+    try:
+        theme.apply_theme(app, "dark")
+        for _ in range(3):
+            app.processEvents()
+        assert dlg.nav is not old_nav and dlg.nav.currentRow() == 3 and dlg.isVisible()
+    finally:
+        theme.apply_theme(app, "light")
