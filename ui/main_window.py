@@ -1215,7 +1215,7 @@ class MainWindow(QMainWindow):
         theme.apply_theme(QApplication.instance(), self.config.get("theme_mode", "system"))
         # 열린 창은 LanguageChange 로 문구를 다시 쓴다 — 재시작 없음 (D084)
         apply_language(QApplication.instance(),
-                       resolve_language(self.config.get("ui_language", "system"), QLocale.system().name()))
+                       resolve_language(self.config.get("ui_language", "system"), QLocale.system().uiLanguages()[0]))
 
     def _on_about(self):
         """정보 버튼 클릭 (D077)"""

@@ -175,3 +175,40 @@ def test_apply_language_switches_app_font():
     assert app.font().family() == font_family("ja")
     apply_language(app, "en")
     assert app.font().family() == font_family("en")
+
+
+@pytest.mark.parametrize("ui_language, expected", [
+    # QLocale.system().uiLanguages()[0] — Windows "표시 언어" 의 BCP 47 이름 (검토 지적 1)
+    ("ko-Kore-KR", "ko"),
+    ("ja-JP", "ja"),
+    ("zh-Hans-CN", "zh_CN"),
+    ("zh-Hans-SG", "zh_CN"),
+    ("zh-Hant-TW", "en"),
+    ("zh-Hant-HK", "en"),
+    ("en-US", "en"),
+    ("es-419", "es"),
+    ("ru", "ru"),
+    ("de-DE", "en"),
+])
+def test_resolve_language_from_os_display_language(ui_language, expected):
+    assert resolve_language("system", ui_language) == expected
+
+
+def test_startup_and_settings_read_os_display_language():
+    from pathlib import Path
+
+    # 형식(지역) 설정이 아니라 표시 언어를 쓴다 — 두 호출 자리 모두
+    for path in ("main.py", "ui/main_window.py"):
+        source = (Path(__file__).parent.parent / path).read_text(encoding="utf-8")
+        assert "QLocale.system().uiLanguages()" in source and "QLocale.system().name()" not in source, path
+
+
+def test_confirm_dialog_default_title_follows_language(tmp_path, monkeypatch):
+    from ui.confirm_remove_dialog import ConfirmRemoveDialog
+    from utils import i18n
+
+    app = QApplication.instance() or QApplication([])
+    _fake_qm(tmp_path, [("ConfirmRemoveDialog", "확인", "Confirm")])
+    monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
+    apply_language(app, "en")
+    assert ConfirmRemoveDialog().windowTitle() == "Confirm"

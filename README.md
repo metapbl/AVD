@@ -101,7 +101,7 @@ Good to know:
 
 - Developed and tested on **Windows 11**, both from source and as the release build. Every change runs an automated test suite (pytest).
 - **macOS** from source is supported but has not yet been checked on a real Mac. There is no macOS app bundle.
-- The interface languages other than English and Korean are AI translations. Corrections are welcome (see below).
+- The Korean interface is the original. English is an AI translation reviewed by the developer; 简体中文, 日本語, Español and Русский are AI translations. Corrections are welcome (see below).
 - One developer, working with AI assistants. Features still change between releases; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Help and contributing

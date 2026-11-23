@@ -103,7 +103,7 @@ Conviene saber:
 
 - Desarrollado y probado en **Windows 11**, tanto desde el código fuente como con la versión publicada. Cada cambio ejecuta una batería de pruebas automáticas (pytest).
 - **macOS** desde el código fuente es compatible, pero aún no se ha comprobado en un Mac real. No hay paquete de aplicación para macOS.
-- Los idiomas de la interfaz distintos del inglés y el coreano son traducciones automáticas con IA. Las correcciones son bienvenidas (ver abajo).
+- La interfaz en coreano es la original. El inglés es una traducción con IA revisada por el desarrollador; 简体中文, 日本語, Español y Русский son traducciones automáticas con IA. Las correcciones son bienvenidas (ver abajo).
 - Lo desarrolla una sola persona con asistentes de IA. Las funciones aún cambian entre versiones; consulta [CHANGELOG.md](CHANGELOG.md).
 
 ## Ayuda y contribuciones

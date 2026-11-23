@@ -52,7 +52,7 @@ def main():
     # 테마가 Fusion 스타일·팔레트·공통 위젯 스타일을 함께 건다 (ui/theme.py, D065)
     config = ConfigManager()
     apply_theme(app, config.get("theme_mode", "system"))
-    apply_language(app, resolve_language(config.get("ui_language", "system"), QLocale.system().name()))
+    apply_language(app, resolve_language(config.get("ui_language", "system"), QLocale.system().uiLanguages()[0]))
 
     # 앱 기본 정보 설정
     app.setApplicationName("AV Downloader")

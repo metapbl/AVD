@@ -35,14 +35,16 @@ def font_family(code: str, platform: str = sys.platform) -> str:
 
 
 def resolve_language(setting: str, locale_name: str) -> str:
-    """설정값과 OS 로캘 이름(QLocale.name(), 예: "ja_JP")으로 화면 언어 코드를 정한다.
-    system 이나 모르는 값이면 OS 언어, 지원하지 않으면 English."""
+    """설정값과 OS 표시 언어 이름(QLocale.uiLanguages()[0], 예: "ja-JP"·"zh-Hans-CN", 또는 "ja_JP")으로
+    화면 언어 코드를 정한다. system 이나 모르는 값이면 OS 언어, 지원하지 않으면 English."""
     if setting in LANGUAGES:
         return setting
-    if locale_name in ("zh_CN", "zh_SG"):  # 간체 지역만 (D084)
-        return "zh_CN"
-    lang = locale_name.split("_")[0]
-    return lang if lang in LANGUAGES and lang != "zh" else "en"
+    parts = locale_name.replace("-", "_").split("_")
+    lang = parts[0]
+    if lang == "zh":  # 간체(Hans 또는 CN·SG 지역)만 (D084)
+        simplified = "Hans" in parts or ("Hant" not in parts and {"CN", "SG"} & set(parts))
+        return "zh_CN" if simplified else "en"
+    return lang if lang in LANGUAGES else "en"
 
 
 def apply_language(app, code: str) -> None:

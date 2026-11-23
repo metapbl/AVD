@@ -46,12 +46,13 @@ class ConfirmRemoveDialog(QDialog):
     def __init__(
         self,
         parent          = None,
-        title           : str       = translate("ConfirmRemoveDialog", "확인"),
+        title           : str | None = None,
         message         : str       = "",
         checkbox_text   : str | None = None,
     ):
         super().__init__(parent)
-        self.setWindowTitle(title)
+        # 기본 제목은 만들 때 번역한다 — 기본 인자에 두면 import 때 한 번만 번역된다
+        self.setWindowTitle(title or translate("ConfirmRemoveDialog", "확인"))
         self.setModal(True)
 
         # 결과 보관 — exec() 종료 후 호출자가 읽음
