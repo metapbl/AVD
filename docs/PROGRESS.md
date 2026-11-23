@@ -5,8 +5,8 @@
 - 갱신: 2026-11-23 · v1.7.2 게시(태그 `da45531`, Latest): 환경설정 왼쪽 목록+오른쪽 페이지·확인/취소/적용(D090·D091, v1.7.1), 닫은 환경설정 창 누수 수정(v1.7.2). v1.7.0: 화면 6개 언어·README 6개 언어·GaindB 1.2.0. 미릴리스 변경 없음. OPEN 미결 0
 
 ## 다음 할 일
-1. (후보) PRD §2.2 로드맵 — macOS .app 배포. 고르면 계획부터
-3. (후보) PRD §2.2 로드맵 — macOS .app 배포
+1. (후보) PRD §2.2 로드맵 — macOS .app 배포. 고르면 계획부터 (`/metarche plan`)
+2. (사람) 저장소 비공개 취약점 제보 켜기 — 아래 확인 대기
 
 ## 미해결
 - (정보) 환경설정: 테마가 "시스템" 일 때 창을 연 채 Windows 밝기 모드가 바뀌면 다시 그리기로 입력 중 값이 사라질 수 있음(추론, 재현 안 함). 옛 설정 파일에 범위 밖 값이 있으면 열자마자 "적용" 이 켜짐(누르면 고친 값 저장, 해 없음) — 단서: `ui/preferences_dialog.py > _rebuild`·`_update_apply`
@@ -17,7 +17,7 @@
 - (정보) mp3 에 yt-dlp 가 UTF-8 ID3v1 을 붙인다(`FFmpegMetadataPP`·`EmbedThumbnail` 의 `-write_id3v1 1`). 탐색기는 ID3v2 를 읽어 한글 정상 (2026-10-28 눈 확인) — 구형 플레이어에서만 문제 가능
 - (정보) 화질 선택 창의 해상도 행은 같은 높이의 형식 중 목록에서 먼저 나온 것의 코덱을 적는다 — "최고 화질" 행(yt-dlp 선택기로 계산, D076)과 같은 높이인데 코덱이 다르게 보일 수 있다. 단서: `core/info_fetcher.py > _parse_formats`
 - (정보) `default_format` 설정 키도 기본값만 있고 쓰이지 않음 (2026-11-11 확인)
-- (정보) `language` 설정 키는 기본값만 있고 쓰이지 않음. 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
+- (정보) `language` 설정 키는 쓰지 않는다 — 화면 언어는 `ui_language`(D084). 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
 - GitHub 저장소 Settings → Code security → Private vulnerability reporting 켜기 (D087, README Security 절이 안내함). 2026-11-21 확인 때 꺼져 있음
@@ -26,22 +26,7 @@
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
 
 ## 완료 기록
-<!-- 한 줄씩: YYYY-MM-DD 무엇을 (커밋 hash). 50줄을 넘으면 docs/history/로 옮긴다. -->
-- 2026-10-28 metarche 이관 착수 — 기존 문서 legacy 이동, PRD 초안 (8e494a2)
-- 2026-10-28 PRD 승인 (3a6f5f8)
-- 2026-10-28 문서 체계 승인 — CLAUDE.md·PROGRESS·REFERENCE·settings·훅 (301d5b3)
-- 2026-10-28 Python 3.15 대응 의존성 상향 (b57ba9f), pytest·ruff 개발 도구 (1d0d6d5)
-- 2026-10-28 본체 라이선스 MIT 전환 (79ff953), README 현행화 (932f8ef)
-- 2026-10-28 특성 테스트 — 다운로드 워커 파싱 54개 (c361f58), 파일 유틸 23개 (f42d487)
-- 2026-10-28 2026-07-09 작업분 실기 검증 대리 판정 기록 (f0abd36)
-- 2026-10-28 첫 계획(기반 다지기) 완료 — 인수 확인 통과 (2d292bb)
-- 2026-10-29 두 번째 계획: PlaylistProbeWorker 시그널 `probe_ready` 개명·정리 연결 교체 (596dcc9), 인수 확인 (961d0fe)
-- 2026-10-29 세 번째 계획: ruff 0.17 기본 규칙 채택 — import 정리 (133f01b), 자동 수정 (3c61718), 수동 정리 (4555bbb), 규칙 고정 해제 D037 (04d130b), 인수 확인 (1492bc8)
-- 2026-10-29 네 번째 계획 승인 D038~D040 (8f4ac46)
-- 2026-10-29 PyInstaller onedir 빌드 `AVD.spec` (3caf25d), exe 옆 config.json D039 (391ec31)
-- 2026-10-29 exe 용 yt-dlp wheel 교체 (f0adf1b), UpdateWorker frozen 분기·T17 (0ac4c9b)
-- 2026-10-29 루트 THIRD_PARTY_LICENSES·NOTICE (9579289), `build.ps1` (b1066c8, a4ce4b0)
-- 2026-10-29 exe 실기기 확인 통과 (3922d92), 업데이트 뒤 자동 재시작 D041 (cb15588, c59b48e)
+<!-- 한 줄씩: YYYY-MM-DD 무엇을 (커밋 hash). 50줄을 넘으면 docs/history/로 옮긴다. 이전: docs/history/2026-10.md -->
 - 2026-11-02 다섯 번째 계획(보안 정책 후속): AppUpdater 삭제 D046 (fe68393), 제목·채널명 PlainText (fd67868), pip-audit D045·OPEN O19 (6cd8bac), 업데이트 시그널 QueuedConnection D013 (45d99f7), 인수 확인 (747f214)
 - 2026-11-02 여섯 번째 계획: 완료 항목 "▶ 재생" 버튼 D049 (de9bbcd), 인수 확인 (732d62e)
 - 2026-11-02 일곱 번째 계획: certifi·urllib3 핀 상향 D050·O19 해결 (3391c06), `chore(release): v1.0.2` (26a52c8), **v1.0.2 게시** 태그 26a52c8, 인수 확인 (b912bc3)
@@ -72,3 +57,11 @@
 - 2026-11-12 v1.5.0 릴리스 (b13aae1), 게시 완료 기록 (de7dad3)
 - 2026-11-16 F15 로그인 쿠키 — PRD 변경 D078·D079 (e471a4c), 구현 Firefox·cookies.txt D080·T32·T33·연령 제한 안내 수정 (71e4b74)
 - 2026-11-18 v1.6.0 릴리스 (745db86, 태그 745db86), 게시 완료 기록 (dbb334d)
+- 2026-11-18 동시 옮기기 간헐 PermissionError 수정 T34 (92c3965), macOS 소스 실행 F16 D081 (e319021, 16c46b8 — 실기 보류)
+- 2026-11-20 pytest 종료 크래시 수정 T35 (878c87f), metarche upgrade U8·U1·U6·U7 (6014c2b)
+- 2026-11-20~21 F17 다국어 화면 6개 언어 — PRD 변경 D082~D085 (eea53a5), 작업 1~9 (1e9c6fa~a6d543f), 즉시 전환·언어별 글꼴, 실기 통과 (ce32575)
+- 2026-11-21 README 6개 언어 재구성 D085~D088 (95bf466)
+- 2026-11-23 명세 검토 지적 수정 — 표시 언어 판정·확인 창 제목·README 문장 (6c344cb), README 스크린샷 D089 (b869477), 서른 번째 계획 done
+- 2026-11-23 GaindB 1.2.0 벤더링 (35ecaa5), v1.7.0 릴리스 (3b5efd0, 태그 3b5efd0)
+- 2026-11-23 환경설정 왼쪽 목록+페이지 D090 (36f65f3), 확인·취소·적용 D091 (8955a1a), 실기 수정 T36·T37 (c0595ec, b4ffb41), v1.7.1 (a6f32ae)
+- 2026-11-23 닫은 환경설정 창 누수 수정 (22db40c), v1.7.2 (da45531), 서른두 번째 계획 done
