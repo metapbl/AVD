@@ -44,6 +44,11 @@ Test seam: `PreferencesDialog` 를 만들고 목록에서 페이지를 고른 �
 - [x] 4. 릴리스 v1.7.1 — RELEASE §1~§6 (버전·CHANGELOG·pip-audit·빌드·exe 실기 RELEASE §4 5항목 + 환경설정 1항목·태그·push·Release) (after: 3)
   - 확인: Release `AVD v1.7.1` Latest, 자산 2개 크기가 로컬과 같음
   - 빌드: 2026-11-23 — `chore(release): v1.7.1` a6f32ae. pip-audit yt-dlp 핀 9건만(기록, D002), venv yt-dlp 2026.10.26 = PyPI 최신. win64 107,898,245 B·src 1,025,391 B, 번역 .qm 5개·번들 yt-dlp 2026.10.26·gaindb 1.2.0. exe 를 `%USERPROFILE%\AVD-test-1.7.1` 에 풂. exe 실기 통과(2026-11-23 사용자 "모두 예", 6항목). 태그 `v1.7.1` = `a6f32ae`, main push(1acb7a8), Qt 링크 200, Release Latest·자산 크기 로컬과 같음 — https://github.com/metapbl/AVD/releases/tag/v1.7.1
+- [ ] 4-1. 닫은 환경설정 창 누수 수정·v1.7.2 — `ui/main_window.py > _on_preferences` (after: 4) — 2026-11-23 명세 검토 지적 1, 사용자 "고쳐서 v1.7.2"
+  - 문제: 환경설정을 열 때마다 메인 창을 부모로 새 창을 만들고 닫아도 지우지 않는다(3번 열면 3개 남음, 재현). D091 로 각 창이 테마·언어 신호를 받아, 바뀔 때마다 숨은 옛 창이 모두 다시 그려진다
+  - 테스트 먼저: 세 번 열고 닫은 뒤 남은 환경설정 창 0개. 수정: `exec()` 뒤 `deleteLater()`
+  - 릴리스: RELEASE §1~§6 (exe 실기 RELEASE §4 5항목 + 환경설정 열고 닫기·테마 적용)
+  - 기록만(검토 지적 2·3): 테마 "시스템" 에서 창을 연 채 Windows 밝기가 바뀌면 입력 중 값이 다시 그리기로 사라질 수 있음(추론), 옛 설정 파일의 범위 밖 값이면 열자마자 적용이 켜짐(해 없음)
 - [ ] 5. 인수 — 목표(높이 500px 이하, 기존 동작 그대로) + 명세 검토(대화 맥락 없는 서브에이전트에 이 계획·D090·`git diff` 를 주고 빠진 것·더한 것·잘못된 것)
 
 ## Self-review
