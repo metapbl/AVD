@@ -41,9 +41,9 @@ Test seam: `PreferencesDialog` 를 만들고 목록에서 페이지를 고른 �
   - 실기 1차: 2026-11-23 실패 — 사용자: "적용을 누르면 옵션창이 이렇게 좁아짐"(제목 표시줄만 남음). 원인 T36(다시 그린 위젯이 숨은 상태로 크기 계산). 수정: 직접 자식을 show 한 뒤 크기 계산, 테스트에 다시 그린 뒤 창 크기 같음 추가(먼저 빨강 680×40). 같은 항목으로 다시 확인
   - 실기 2차: 2026-11-23 — 1~5 정상, 단 "라이트로 적용했다가 다크로 적용하면 상단바가 흰색에서 돌아오지 않네요". 실제 창으로 재현: 환경설정 창의 DWM 다크 제목 표시줄 값이 0 으로 남음(메인 창은 1). 원인 T37. 수정: 테마로 다시 그릴 때 직접 맞춤, Windows 테스트가 실제 값을 읽음(먼저 빨강). 다시 확인
   - 결과: 2026-11-23 통과 — 1~5 정상(2차), 제목 표시줄 "예, 돌아옴"(3차)
-- [ ] 4. 릴리스 v1.7.1 — RELEASE §1~§6 (버전·CHANGELOG·pip-audit·빌드·exe 실기 RELEASE §4 5항목 + 환경설정 1항목·태그·push·Release) (after: 3)
+- [x] 4. 릴리스 v1.7.1 — RELEASE §1~§6 (버전·CHANGELOG·pip-audit·빌드·exe 실기 RELEASE §4 5항목 + 환경설정 1항목·태그·push·Release) (after: 3)
   - 확인: Release `AVD v1.7.1` Latest, 자산 2개 크기가 로컬과 같음
-  - 빌드: 2026-11-23 — `chore(release): v1.7.1` a6f32ae. pip-audit yt-dlp 핀 9건만(기록, D002), venv yt-dlp 2026.10.26 = PyPI 최신. win64 107,898,245 B·src 1,025,391 B, 번역 .qm 5개·번들 yt-dlp 2026.10.26·gaindb 1.2.0. exe 를 `%USERPROFILE%\AVD-test-1.7.1` 에 풂. exe 실기 통과(2026-11-23 사용자 "모두 예", 6항목)
+  - 빌드: 2026-11-23 — `chore(release): v1.7.1` a6f32ae. pip-audit yt-dlp 핀 9건만(기록, D002), venv yt-dlp 2026.10.26 = PyPI 최신. win64 107,898,245 B·src 1,025,391 B, 번역 .qm 5개·번들 yt-dlp 2026.10.26·gaindb 1.2.0. exe 를 `%USERPROFILE%\AVD-test-1.7.1` 에 풂. exe 실기 통과(2026-11-23 사용자 "모두 예", 6항목). 태그 `v1.7.1` = `a6f32ae`, main push(1acb7a8), Qt 링크 200, Release Latest·자산 크기 로컬과 같음 — https://github.com/metapbl/AVD/releases/tag/v1.7.1
 - [ ] 5. 인수 — 목표(높이 500px 이하, 기존 동작 그대로) + 명세 검토(대화 맥락 없는 서브에이전트에 이 계획·D090·`git diff` 를 주고 빠진 것·더한 것·잘못된 것)
 
 ## Self-review
