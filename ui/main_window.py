@@ -1213,6 +1213,7 @@ class MainWindow(QMainWindow):
         # 확인·적용 때마다 바로 반영한다 — 적용은 창이 열린 채 (D091)
         dialog.settings_saved.connect(self._apply_settings)
         dialog.exec()
+        dialog.deleteLater()  # 닫은 창이 남으면 테마·언어가 바뀔 때마다 다시 그려진다
 
     def _apply_settings(self, _settings: dict):
         """저장된 설정을 반영한다: 저장 경로 표시, 테마, 언어."""

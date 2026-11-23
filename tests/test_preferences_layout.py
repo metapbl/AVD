@@ -164,3 +164,24 @@ def test_title_bar_follows_theme_applied_while_open(app):
             assert dark_title_bar(dlg) == expected, mode
     finally:
         theme.apply_theme(app, "light")
+
+
+def test_closed_preferences_windows_do_not_pile_up(app, tmp_path, monkeypatch):
+    # 닫은 창이 메인 창 밑에 남아 테마·언어가 바뀔 때마다 다시 그려졌다 (명세 검토 지적)
+    from PySide6.QtCore import QCoreApplication, QEvent
+
+    from ui import main_window as mw
+    from utils import config_manager
+
+    monkeypatch.setattr(config_manager, "CONFIG_PATH", tmp_path / "config.json")
+    window = mw.MainWindow()
+
+    class Dialog(PreferencesDialog):
+        def exec(self):
+            return 0
+
+    monkeypatch.setattr(mw, "PreferencesDialog", Dialog)
+    for _ in range(3):
+        window._on_preferences()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert window.findChildren(PreferencesDialog) == []
