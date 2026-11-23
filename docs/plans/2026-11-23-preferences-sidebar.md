@@ -43,7 +43,7 @@ Test seam: `PreferencesDialog` 를 만들고 목록에서 페이지를 고른 �
   - 결과: 2026-11-23 통과 — 1~5 정상(2차), 제목 표시줄 "예, 돌아옴"(3차)
 - [ ] 4. 릴리스 v1.7.1 — RELEASE §1~§6 (버전·CHANGELOG·pip-audit·빌드·exe 실기 RELEASE §4 5항목 + 환경설정 1항목·태그·push·Release) (after: 3)
   - 확인: Release `AVD v1.7.1` Latest, 자산 2개 크기가 로컬과 같음
-  - 빌드: 2026-11-23 — `chore(release): v1.7.1` a6f32ae. pip-audit yt-dlp 핀 9건만(기록, D002), venv yt-dlp 2026.10.26 = PyPI 최신. win64 107,898,245 B·src 1,025,391 B, 번역 .qm 5개·번들 yt-dlp 2026.10.26·gaindb 1.2.0. exe 를 `%USERPROFILE%\AVD-test-1.7.1` 에 풂. exe 실기 대기
+  - 빌드: 2026-11-23 — `chore(release): v1.7.1` a6f32ae. pip-audit yt-dlp 핀 9건만(기록, D002), venv yt-dlp 2026.10.26 = PyPI 최신. win64 107,898,245 B·src 1,025,391 B, 번역 .qm 5개·번들 yt-dlp 2026.10.26·gaindb 1.2.0. exe 를 `%USERPROFILE%\AVD-test-1.7.1` 에 풂. exe 실기 통과(2026-11-23 사용자 "모두 예", 6항목)
 - [ ] 5. 인수 — 목표(높이 500px 이하, 기존 동작 그대로) + 명세 검토(대화 맥락 없는 서브에이전트에 이 계획·D090·`git diff` 를 주고 빠진 것·더한 것·잘못된 것)
 
 ## Self-review
