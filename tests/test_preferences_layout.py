@@ -129,10 +129,12 @@ def test_theme_change_redraws_open_window_on_same_page(app):
     dlg = _shown(app)
     dlg.nav.setCurrentRow(3)
     old_nav = dlg.nav
+    size = dlg.size()
     try:
         theme.apply_theme(app, "dark")
         for _ in range(3):
             app.processEvents()
         assert dlg.nav is not old_nav and dlg.nav.currentRow() == 3 and dlg.isVisible()
+        assert dlg.size() == size  # 다시 그린 뒤에도 창이 납작해지지 않는다 (실기에서 발견)
     finally:
         theme.apply_theme(app, "light")

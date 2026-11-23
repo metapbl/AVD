@@ -117,6 +117,10 @@ class PreferencesDialog(QDialog):
     def _build(self):
         self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
         self._build_ui()
+        # 이미 떠 있는 창에 새로 붙인 위젯은 직접 보이게 하기 전까지 숨은 상태라 크기 계산에서 빠진다
+        # — 다시 그린 뒤 창이 제목 표시줄만큼 납작해지던 원인 (실기에서 발견, R§4 T36)
+        for child in self.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly):
+            child.show()
         self._load_values()
         self._apply_style()
         # 창 크기는 가장 긴 페이지(접히는 칸까지 펼친 상태)에 맞춰 고정한다 — 페이지를 바꾸거나

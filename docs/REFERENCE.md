@@ -111,6 +111,7 @@
 | T33 | 쿠키를 못 읽었는데 항목에 일반 문구 "다운로드하지 못했습니다" | yt-dlp 의 `cookiejar` 는 원인 문구(`could not find … cookies database`, DPAPI 등)만 담은 `DownloadError` 를 던진다. `failed to load cookies` 는 그 안의 `CookieLoadError` 에만 있다 | `open_ydl` 이 불러오기 예외를 `CookieLoadError("failed to load cookies: …")` 로 감싼다. 오류 판별 테스트는 yt-dlp 가 실제로 던지는 예외로 쓴다 | 스물일곱 번째 계획 작업 4 |
 | T34 | 전체 테스트가 가끔 `test_concurrent_moves_do_not_overwrite` 에서 PermissionError(WinError 5) | Windows 는 한 스레드가 자리표시 파일 위로 `os.replace` 하는 동안 다른 스레드가 같은 이름을 `open(..., "x")` 하면 replace 를 거부한다 (2,400회 중 4회 재현, 2026-11-18) | `move_unique` 를 모듈 잠금으로 직렬화. 다른 프로세스와는 여전히 "x" 선점만 막는다 | 2026-11-18 fix |
 | T35 | pytest 가 "337 passed" 를 찍고도 종료 코드가 0 이 아님(bash 127, pwsh -1073740791 = 0xC0000409). 파일마다 몇 번에 한 번 | 테스트가 지역 변수로 만든 Qt 위젯이 프로세스 종료 때 QApplication 보다 늦게 파괴된다. 터미널 출력만 보면 통과로 보여 몰랐고, 턴 끝 검사 훅(종료 코드로 판정)이 처음 잡았다 (2026-11-20) | `tests/conftest.py > pytest_unconfigure` 가 남은 최상위 위젯을 닫고 `deleteLater` → `processEvents` → `gc.collect`. `QCoreApplication.shutdown()` 은 오히려 segfault | 2026-11-20 upgrade |
+| T36 | 환경설정에서 "적용" 을 누르면 창이 제목 표시줄만 남고 납작해짐(680×40) | 이미 떠 있는 창에 새로 붙인 자식 위젯은 `show()` 하기 전까지 숨은 상태라 레이아웃 `sizeHint` 에서 빠진다. 다시 그리기(`_rebuild`) 뒤 그 값으로 `setFixedSize` 를 했다. 오프스크린 테스트는 위젯 존재만 보고 크기를 안 봐서 놓쳤다 (2026-11-23 실기) | 다시 만든 뒤 직접 자식을 `show()` 하고 크기를 잰다. 테스트는 다시 그린 뒤 창 크기가 같은지 본다 | D091 |
 
 ## R§5 환경·도구
 - Windows 11, PowerShell 7 (`pwsh`), VS Code (Ruff 저장 시 fixAll, `.vscode/settings.json`)
