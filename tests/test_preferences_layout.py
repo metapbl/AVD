@@ -142,6 +142,25 @@ def test_theme_change_redraws_open_window_on_same_page(app):
         theme.apply_theme(app, "light")
 
 
+def test_redraw_keeps_values_being_edited(app):
+    # 테마 "시스템" 에서 창을 연 채 Windows 밝기 모드가 바뀌면 다시 그려진다 — 입력 중인 값이 남아야 한다
+    from ui import theme
+
+    theme.apply_theme(app, "light")
+    dlg = _shown(app)
+    dlg.input_path.setText("D:/edited")
+    dlg.chk_gain.setChecked(True)
+    try:
+        theme.apply_theme(app, "dark")
+        for _ in range(3):
+            app.processEvents()
+        assert dlg.input_path.text() == "D:/edited"
+        assert dlg.chk_gain.isChecked()
+        assert dlg.btn_apply.isEnabled()  # 아직 저장 안 한 값이니 적용할 수 있다
+    finally:
+        theme.apply_theme(app, "light")
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows DWM 제목 표시줄")
 def test_title_bar_follows_theme_applied_while_open(app):
     # 라이트로 적용했다가 다크로 적용하면 열린 환경설정 창의 제목 표시줄이 흰색으로 남았다 (실기, T37)

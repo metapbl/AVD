@@ -116,14 +116,14 @@ class PreferencesDialog(QDialog):
         # 적용으로 테마가 바뀌면 열린 창도 새 색으로 다시 그린다 (D091)
         theme.notifier.changed.connect(self._schedule_rebuild)
 
-    def _build(self):
+    def _build(self, values: dict | None = None):
         self.setWindowTitle(translate("PreferencesDialog", "환경설정"))
         self._build_ui()
         # 이미 떠 있는 창에 새로 붙인 위젯은 직접 보이게 하기 전까지 숨은 상태라 크기 계산에서 빠진다
         # — 다시 그린 뒤 창이 제목 표시줄만큼 납작해지던 원인 (실기에서 발견, R§4 T36)
         for child in self.findChildren(QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly):
             child.show()
-        self._load_values()
+        self._load_values(values)
         self._apply_style()
         # 창 크기는 가장 긴 페이지(접히는 칸까지 펼친 상태)에 맞춰 고정한다 — 페이지를 바꾸거나
         # 칸을 접고 펴도 창이 흔들리지 않게 (D090)
@@ -141,11 +141,12 @@ class PreferencesDialog(QDialog):
             QTimer.singleShot(0, self._rebuild)
 
     def _rebuild(self):
-        """언어·테마가 바뀌면 저장된 값으로 창을 다시 그린다. 보던 페이지는 그대로 (D091)."""
+        """언어·테마가 바뀌면 창을 다시 그린다. 보던 페이지와 입력 중인 값은 그대로 (D091)."""
         self._rebuild_pending = False
         row = self.nav.currentRow()
+        values = self._collect()  # 시스템 밝기 모드가 바뀌어 다시 그릴 때 저장 안 한 입력을 잃지 않게
         QWidget().setLayout(self.layout())  # 옛 배치와 위젯을 임시 위젯으로 넘겨 함께 지운다
-        self._build()
+        self._build(values)
         self.nav.setCurrentRow(row)
         self._sync_title_bar()
 
@@ -585,43 +586,46 @@ class PreferencesDialog(QDialog):
         self.slider_gain.setValue(raw)          # valueChanged → 입력창 정규화
         self._on_gain_slider_changed(raw)       # 동일 값일 때도 표시 갱신 보장
 
-    def _load_values(self):
-        """현재 설정값을 UI 에 반영"""
+    def _load_values(self, values: dict | None = None):
+        """설정값을 UI 에 반영. values 가 있으면 그 값이 저장된 값보다 먼저다."""
+        def get(key, default=None):
+            return values[key] if values and key in values else self.config.get(key, default)
+
         self.input_path.setText(
-            self.config.get("save_path", "")
+            get("save_path", "")
         )
 
         # max_concurrent — 슬라이더에 반영, 변경 핸들러로 라벨·색까지 동기화
-        current = int(self.config.get("max_concurrent", 2) or 2)
+        current = int(get("max_concurrent", 2) or 2)
         current = max(1, min(10, current))   # 클램프 (구버전 설정 방어)
         self.slider_concurrent.setValue(current)
         # setValue 가 valueChanged 를 쏘지 않는 경계(동일 값) 케이스 방어
         self._on_concurrent_changed(current)
 
         self.chk_auto_update.setChecked(
-            self.config.get("auto_update_ytdlp", True)
+            get("auto_update_ytdlp", True)
         )
 
-        index = self.combo_language.findData(self.config.get("ui_language", "system"))
+        index = self.combo_language.findData(get("ui_language", "system"))
         self.combo_language.setCurrentIndex(max(index, 0))  # 모르는 값은 시스템 설정 따르기
 
-        mode = self.config.get("theme_mode", "system")
+        mode = get("theme_mode", "system")
         self._theme_radios.get(mode, self._theme_radios["system"]).setChecked(True)
 
-        source = self.config.get("cookie_source", "none")
+        source = get("cookie_source", "none")
         self._cookie_radios.get(source, self._cookie_radios["none"]).setChecked(True)
-        self.input_cookie_file.setText(self.config.get("cookie_file", ""))
+        self.input_cookie_file.setText(get("cookie_file", ""))
         self._on_cookie_source_changed()   # 같은 값이라 toggled 가 안 올 때도 맞춘다
 
         # MP3 음량 정규화 — 목표 dB 를 슬라이더(정수 스텝)로 환산해 반영,
         # 슬라이더 핸들러가 입력창까지 동기화한다. 체크 상태로 상세 펼침 결정.
-        gain_db = float(self.config.get("mp3_gain_db", _GAIN_DB_DEFAULT) or _GAIN_DB_DEFAULT)
+        gain_db = float(get("mp3_gain_db", _GAIN_DB_DEFAULT) or _GAIN_DB_DEFAULT)
         gain_db = max(_GAIN_DB_MIN, min(_GAIN_DB_MAX, gain_db))   # 구설정 방어
         raw = round(gain_db * _GAIN_SCALE)
         self.slider_gain.setValue(raw)
         self._on_gain_slider_changed(raw)   # 동일 값 경계에서도 입력창 채움
 
-        gain_on = bool(self.config.get("mp3_gain_enabled", False))
+        gain_on = bool(get("mp3_gain_enabled", False))
         self.chk_gain.setChecked(gain_on)
         self.gain_detail.setVisible(gain_on)   # 초기 접힘/펼침
 
