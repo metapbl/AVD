@@ -2,14 +2,13 @@
 
 ## 상태
 - 단계: 7 계획 대기 · 서른두 번째 계획 `docs/plans/2026-11-23-preferences-sidebar.md` done
-- 갱신: 2026-11-23 · v1.7.2 게시(태그 `da45531`, Latest): 환경설정 왼쪽 목록+오른쪽 페이지·확인/취소/적용(D090·D091, v1.7.1), 닫은 환경설정 창 누수 수정(v1.7.2). v1.7.0: 화면 6개 언어·README 6개 언어·GaindB 1.2.0. 미릴리스 변경 없음. OPEN 미결 0
+- 갱신: 2026-11-24 · 미릴리스: 주 화면 디자인 감사 7건 반영(대비·기호·창 위치 기억 등), 환경설정을 다시 그릴 때 입력 중 값 유지. 비공개 취약점 제보 켬. 직전: v1.7.2 게시(태그 `da45531`, Latest): 환경설정 왼쪽 목록+오른쪽 페이지·확인/취소/적용(D090·D091, v1.7.1), 닫은 환경설정 창 누수 수정(v1.7.2). v1.7.0: 화면 6개 언어·README 6개 언어·GaindB 1.2.0. OPEN 미결 0
 
 ## 다음 할 일
 1. (후보) PRD §2.2 로드맵 — macOS .app 배포. 고르면 계획부터 (`/metarche plan`)
-2. (사람) 저장소 비공개 취약점 제보 켜기 — 아래 확인 대기
 
 ## 미해결
-- (정보) 환경설정: 테마가 "시스템" 일 때 창을 연 채 Windows 밝기 모드가 바뀌면 다시 그리기로 입력 중 값이 사라질 수 있음(추론, 재현 안 함). 옛 설정 파일에 범위 밖 값이 있으면 열자마자 "적용" 이 켜짐(누르면 고친 값 저장, 해 없음) — 단서: `ui/preferences_dialog.py > _rebuild`·`_update_apply`
+- (정보) 환경설정: 옛 설정 파일에 범위 밖 값이 있으면 열자마자 "적용" 이 켜짐(누르면 고친 값 저장, 해 없음) — 단서: `ui/preferences_dialog.py > _update_apply`
 - (실기 미확인) D041 "끝나지 않은 항목이 있으면 재시작 대신 안내" 분기 — `ui/main_window.py > _restart_after_update`
 - (기록) Qt/PySide6 LGPL 소스는 공식 서버 링크로 제공 (D064) — 법률 검토는 받지 않음. v1.1.0 노트에 소스 위치 추가 완료
 - (기록) Vimeo: F12 로 공개·비DRM 영상 지원. 영상마다 DRM 형식만 주기도 함(76979871) — 받지 않음 (T30)
@@ -20,7 +19,6 @@
 - (정보) `language` 설정 키는 쓰지 않는다 — 화면 언어는 `ui_language`(D084). 예전 설정 파일의 `theme` 키는 무시된다 (D065) — 단서: `utils/config_manager.py > DEFAULT_CONFIG`
 
 ## 확인 대기 (사람만 확인 가능)
-- GitHub 저장소 Settings → Code security → Private vulnerability reporting 켜기 (D087, README Security 절이 안내함). 2026-11-21 확인 때 꺼져 있음
 - macOS 소스 실행 (F16) — `docs/plans/2026-11-18-macos-source-run.md` 작업 4 (2026-11-18 실기기 없어 보류). 기대 결과: 📂 → Finder 에서 파일 선택된 채 열림, 한글 UI 가 Apple SD Gothic Neo
 - `docs/VERIFY_2026-07-09.md` 미확인 번호: 1-C(선택), 2-C 수동 재시도 버튼, 2-D 비공개 영상 — 기대 결과: 절차서대로
 <!-- head:end — 이 줄 위(40줄 이내)만 자동 주입된다. 갱신은 이 위만 고친다. -->
