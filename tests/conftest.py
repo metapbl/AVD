@@ -23,6 +23,14 @@ def _no_translator_left():
     i18n._installed.clear()
 
 
+@pytest.fixture(autouse=True)
+def _no_ytdlp_update_check(monkeypatch):
+    # 주 창이 실제로 새 버전을 확인하면 "업데이트할까요?" 창이 떠 테스트가 멈춘다
+    from ui.main_window import MainWindow
+
+    monkeypatch.setattr(MainWindow, "_check_ytdlp_update", lambda self: None)
+
+
 def pytest_unconfigure(config):
     # 위젯이 QApplication 보다 늦게 파괴되면 종료 때 0xC0000409 로 죽는다 (테스트는 모두 통과한 뒤)
     from PySide6.QtWidgets import QApplication
