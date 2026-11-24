@@ -114,7 +114,8 @@ class PlaylistFlow(QObject):
         self._worker = None
         self.probe_finished.emit()
         # 원칙 3: 워커 스레드 정리가 이벤트 큐에서 끝난 뒤 모달을 띄운다.
-        QTimer.singleShot(0, lambda r=result: self._show_dialog(r))
+        # self 를 맥락 객체로 넘겨, 그 사이 이 객체가 지워지면 타이머도 취소되게 한다
+        QTimer.singleShot(0, self, lambda r=result: self._show_dialog(r))
 
     def _on_probe_error(self, message: str):
         self._worker = None

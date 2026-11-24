@@ -138,7 +138,7 @@ class PreferencesDialog(QDialog):
         # 신호가 버튼을 누르는 도중에 오므로 그 버튼을 지우지 않게 다음 차례로 미룬다
         if not self._rebuild_pending:
             self._rebuild_pending = True
-            QTimer.singleShot(0, self._rebuild)
+            QTimer.singleShot(0, self, self._rebuild)  # 그 사이 창이 지워지면 취소된다
 
     def _rebuild(self):
         """언어·테마가 바뀌면 창을 다시 그린다. 보던 페이지와 입력 중인 값은 그대로 (D091)."""

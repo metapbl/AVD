@@ -204,3 +204,16 @@ def test_closed_preferences_windows_do_not_pile_up(app, tmp_path, monkeypatch):
         window._on_preferences()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     assert window.findChildren(PreferencesDialog) == []
+
+
+def test_rebuild_scheduled_then_window_deleted_does_nothing(app, monkeypatch):
+    # 다시 그리기를 예약한 뒤 창이 지워지면 예약도 취소된다 (지워진 위젯을 건드려 RuntimeError 가 나던 것)
+    import shiboken6
+
+    errors = []
+    monkeypatch.setattr(sys, "excepthook", lambda *exc: errors.append(exc))
+    dlg = _shown(app)
+    dlg._schedule_rebuild()
+    shiboken6.delete(dlg)
+    app.processEvents()
+    assert errors == []
