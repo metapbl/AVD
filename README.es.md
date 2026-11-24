@@ -40,12 +40,12 @@ AV Downloader es una aplicación de escritorio (PySide6) que pone [yt-dlp](https
 <table>
   <tr><th>Claro</th><th>Oscuro</th></tr>
   <tr>
-    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Claro)" src="docs/images/main-light-v1.png"></td>
-    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Oscuro)" src="docs/images/main-dark-v1.png"></td>
+    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Claro)" src="docs/images/main-light-v2.png"></td>
+    <td><img alt="Ventana principal: cuatro descargas — una al 42 %, una completada con los botones Abrir y Reproducir, un error con Reintentar y Detalles, y una en espera en la cola (Oscuro)" src="docs/images/main-dark-v2.png"></td>
   </tr>
   <tr>
-    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Claro)" src="docs/images/format-light-v1.png"></td>
-    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Oscuro)" src="docs/images/format-dark-v1.png"></td>
+    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Claro)" src="docs/images/format-light-v2.png"></td>
+    <td><img alt="Ventana de calidad: filas de mejor calidad, máxima compatibilidad, cada resolución, MP3 y M4A con resolución, códec y tamaño (Oscuro)" src="docs/images/format-dark-v2.png"></td>
   </tr>
 </table>
 
@@ -85,18 +85,18 @@ Esto crea un entorno virtual e instala en él los paquetes de la aplicación. En
 venv\Scripts\python main.py
 ```
 
-Se abre una ventana titulada **AV Downloader** con su versión, en el idioma de tu sistema, con una lista vacía y una indicación para añadir enlaces. Copia el enlace de un vídeo, pulsa **Ctrl+V** en la ventana, elige una calidad y pulsa **Descargar**. El archivo se guarda en tu carpeta `Downloads`; cuando termina, **📂 Abrir** lo muestra.
+Se abre una ventana titulada **AV Downloader** con su versión, en el idioma de tu sistema, con una lista vacía y una indicación para añadir enlaces. Copia el enlace de un vídeo, pulsa **Ctrl+V** en la ventana, elige una calidad y pulsa **Descargar**. El archivo se guarda en tu carpeta `Downloads`; cuando termina, **Abrir** lo muestra.
 
 ## Uso
 
-- **Añadir enlaces** — el botón **+ Añadir enlaces**, Ctrl+V, o arrastra los enlaces a la ventana. Cada enlace abre la ventana de calidad por turnos; un enlace de lista de reproducción abre una lista para elegir.
+- **Añadir enlaces** — el botón **Añadir enlaces**, Ctrl+V, o arrastra los enlaces a la ventana. Cada enlace abre la ventana de calidad por turnos; un enlace de lista de reproducción abre una lista para elegir.
 - **Calidad** — *Mejor calidad (automática)* deja elegir a yt-dlp; *Máxima compatibilidad* elige un MP4 H.264 + AAC que se reproduce casi en cualquier sitio; MP3 y M4A guardan solo el audio.
-- **Ajustes (⚙)** — carpeta de destino, número de descargas simultáneas (se recomienda 1–3), cookies de inicio de sesión, normalización del volumen MP3, comprobación automática de actualizaciones de yt-dlp, idioma y tema. Los cambios se aplican al pulsar **Guardar**, sin reiniciar.
+- **Ajustes** — carpeta de destino, número de descargas simultáneas (se recomienda 1–3), cookies de inicio de sesión, normalización del volumen MP3, comprobación automática de actualizaciones de yt-dlp, idioma y tema. Los cambios se aplican al pulsar **Guardar**, sin reiniciar.
 - **Archivos** — nunca se sobrescribe un archivo con el mismo nombre; el nuevo se guarda como `Title (1).mp4`. Durante la descarga aparece una carpeta de trabajo `.avd_*` en la carpeta de destino, que desaparece cuando termina el elemento. Las carpetas de trabajo que quedan tras un cierre inesperado se eliminan un día después, al iniciar la aplicación.
 
 ## Cookies de inicio de sesión
 
-Los vídeos que requieren una cuenta con sesión iniciada, como los que tienen restricción de edad, se pueden descargar con las cookies de tu propia cuenta. Actívalo en **⚙ Ajustes > Cookies de inicio de sesión**; está desactivado por defecto.
+Los vídeos que requieren una cuenta con sesión iniciada, como los que tienen restricción de edad, se pueden descargar con las cookies de tu propia cuenta. Actívalo en **Ajustes > Cookies de inicio de sesión**; está desactivado por defecto.
 
 - **Leer de Firefox** — inicia sesión en el sitio (YouTube u otros) en Firefox y elige esta opción. Es la forma más sencilla.
 - **Archivo cookies.txt** — para Chrome, Edge y otros navegadores, exporta las cookies a un archivo y elígelo. En Windows, Chrome y Edge cifran las cookies para su propio uso, así que no se pueden leer directamente.

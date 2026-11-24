@@ -21,7 +21,7 @@ from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication
 
 OUT = ROOT / "docs" / "images"
-VERSION = "v1"
+VERSION = "v2"
 
 
 def _thumbnail(top: str, bottom: str) -> bytes:

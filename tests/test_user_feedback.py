@@ -90,7 +90,6 @@ def _widget():
 
 
 @pytest.mark.parametrize("status, color", [
-    (DownloadStatus.DONE, "#57b884"),
     (DownloadStatus.WAITING, "#9a9a9a"),
     (DownloadStatus.CANCELLED, "#9a9a9a"),
     (DownloadStatus.ERROR, "#e5636b"),
@@ -112,7 +111,20 @@ def test_done_with_gain_failure_uses_warning_color():
     w = _widget()
     w.update_normalize_failed("실패")
     w.update_status(DownloadStatus.DONE)
-    assert "#e0b050" in w.lbl_status.styleSheet()
+    assert "#e0b050" in w.lbl_status_mark.styleSheet()
+    assert w.lbl_status_mark.text() == "⚠"
+    assert "#e0b050" not in w.lbl_status.styleSheet()
+
+
+def test_done_color_only_on_mark():
+    """success2 는 라이트 테마에서 글자 대비가 모자라 기호에만 칠한다."""
+    w = _widget()
+    w.update_status(DownloadStatus.DONE)
+    assert w.lbl_status_mark.text() == "✓"
+    assert "#57b884" in w.lbl_status_mark.styleSheet()
+    assert "#57b884" not in w.lbl_status.styleSheet()
+    w.update_status(DownloadStatus.ERROR)
+    assert w.lbl_status_mark.isHidden()
 
 
 def test_item_buttons_have_tooltips():
@@ -133,3 +145,28 @@ def test_download_done_alerts_taskbar(monkeypatch):
     )
     MainWindow._on_download_done(fake, item.item_id, "")
     assert alerts == [fake]
+
+
+def test_meta_without_uploader_starts_with_duration():
+    w = _widget()
+    w.update_meta("", 245)
+    assert w.lbl_meta.text() == "4:05"
+    w.update_meta("Channel", 245)
+    assert w.lbl_meta.text() == "Channel  •  4:05"
+
+
+def test_window_geometry_restored(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from ui.main_window import MainWindow
+    from utils import config_manager
+
+    monkeypatch.setattr(config_manager, "CONFIG_PATH", tmp_path / "config.json")
+    first = MainWindow()
+    first.setGeometry(120, 140, 1000, 700)
+    MainWindow.closeEvent(first, SimpleNamespace(accept=lambda: None))
+    second = MainWindow()
+    assert (second.width(), second.height()) == (1000, 700)
+    for w in (first, second):
+        w.download_manager.shutdown()
+        w.deleteLater()

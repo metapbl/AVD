@@ -38,12 +38,12 @@ AV Downloader is a desktop app (PySide6) that puts [yt-dlp](https://github.com/y
 <table>
   <tr><th>Light</th><th>Dark</th></tr>
   <tr>
-    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Light)" src="docs/images/main-light-v1.png"></td>
-    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Dark)" src="docs/images/main-dark-v1.png"></td>
+    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Light)" src="docs/images/main-light-v2.png"></td>
+    <td><img alt="Main window: four downloads — downloading at 42%, done with Open and Play buttons, an error with Retry and Details, and one waiting in the queue (Dark)" src="docs/images/main-dark-v2.png"></td>
   </tr>
   <tr>
-    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Light)" src="docs/images/format-light-v1.png"></td>
-    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Dark)" src="docs/images/format-dark-v1.png"></td>
+    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Light)" src="docs/images/format-light-v2.png"></td>
+    <td><img alt="Quality dialog: best quality, most compatible, each resolution, MP3 and M4A rows with resolution, codec and size (Dark)" src="docs/images/format-dark-v2.png"></td>
   </tr>
 </table>
 
@@ -83,18 +83,18 @@ This creates a virtual environment and installs the app's packages into it. On m
 venv\Scripts\python main.py
 ```
 
-A window titled **AV Downloader** and its version opens, in your system language, with an empty list and a hint for adding links. Copy a video link, press **Ctrl+V** in the window, choose a quality and press **Download**. The file goes to your `Downloads` folder; **📂 Open** shows it when it is done.
+A window titled **AV Downloader** and its version opens, in your system language, with an empty list and a hint for adding links. Copy a video link, press **Ctrl+V** in the window, choose a quality and press **Download**. The file goes to your `Downloads` folder; **Open** shows it when it is done.
 
 ## Usage
 
-- **Add links** — the **+ Add links** button, Ctrl+V, or drag links onto the window. Each link opens the quality dialog in turn; a playlist link opens a list to pick from.
+- **Add links** — the **Add links** button, Ctrl+V, or drag links onto the window. Each link opens the quality dialog in turn; a playlist link opens a list to pick from.
 - **Quality** — *Best quality (auto)* lets yt-dlp choose; *Most compatible* picks H.264 + AAC MP4 that plays almost anywhere; MP3 and M4A save audio only.
-- **Settings (⚙)** — save folder, number of simultaneous downloads (1–3 recommended), login cookies, MP3 volume normalization, automatic yt-dlp update check, language and theme. Changes apply when you press **Save**, without a restart.
+- **Settings** — save folder, number of simultaneous downloads (1–3 recommended), login cookies, MP3 volume normalization, automatic yt-dlp update check, language and theme. Changes apply when you press **Save**, without a restart.
 - **Files** — a file with the same name is never overwritten; the new one is saved as `Title (1).mp4`. While downloading, a `.avd_*` work folder appears in the save folder and disappears when the item finishes. Work folders left behind by a crash are removed a day later, when the app starts.
 
 ## Login cookies
 
-Videos that need a signed-in account, such as age-restricted ones, can be downloaded with your own account's cookies. Turn it on in **⚙ Settings > Login cookies**; it is off by default.
+Videos that need a signed-in account, such as age-restricted ones, can be downloaded with your own account's cookies. Turn it on in **Settings > Login cookies**; it is off by default.
 
 - **Read from Firefox** — sign in to the site (YouTube or others) in Firefox and choose this. This is the simplest way.
 - **cookies.txt file** — for Chrome, Edge and other browsers, export the cookies to a file and choose it. On Windows, Chrome and Edge encrypt cookies for their own use, so they cannot be read directly.

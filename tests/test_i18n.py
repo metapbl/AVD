@@ -78,7 +78,7 @@ def test_open_windows_switch_language_without_restart(tmp_path, monkeypatch):
 
     app = QApplication.instance() or QApplication([])
     _fake_qm(tmp_path, [
-        ("MainWindow", "+ 링크 추가", "+ Add link"),
+        ("MainWindow", "링크 추가", "Add link"),
         ("DownloadStatus", "다운로드 중", "Downloading"),
         ("DownloadItemWidget", "취소", "Cancel"),
         ("DownloadItemWidget", "대기 중 ({0}번째)", "Waiting (#{0})"),
@@ -93,14 +93,14 @@ def test_open_windows_switch_language_without_restart(tmp_path, monkeypatch):
     try:
         apply_language(app, "en")
         app.processEvents()
-        assert window.btn_add.text() == "+ Add link"
+        assert window.btn_add.text() == "Add link"
         assert active.lbl_status.text() == "Downloading"
         assert active.btn_cancel.text() == "Cancel"
         assert waiting.lbl_status.text() == "Waiting (#2)"
 
         apply_language(app, "ko")
         app.processEvents()
-        assert window.btn_add.text() == "+ 링크 추가"
+        assert window.btn_add.text() == "링크 추가"
         assert waiting.lbl_status.text() == "대기 중 (2번째)"
     finally:
         apply_language(app, "ko")
@@ -117,7 +117,7 @@ def test_preferences_language_applies_on_save(tmp_path, monkeypatch):
     from utils import i18n
 
     app = QApplication.instance() or QApplication([])
-    _fake_qm(tmp_path, [("MainWindow", "+ 링크 추가", "+ Add link")])
+    _fake_qm(tmp_path, [("MainWindow", "링크 추가", "Add link")])
     monkeypatch.setattr(i18n, "I18N_DIR", tmp_path)
     config_path = tmp_path / "config.json"
     monkeypatch.setattr(config_manager, "CONFIG_PATH", config_path)
@@ -134,7 +134,7 @@ def test_preferences_language_applies_on_save(tmp_path, monkeypatch):
     monkeypatch.setattr(mw, "PreferencesDialog", Dialog)
     window._on_preferences()
     app.processEvents()
-    assert window.btn_add.text() == "+ Add link"
+    assert window.btn_add.text() == "Add link"
     assert json.loads(config_path.read_text(encoding="utf-8"))["ui_language"] == "en"
 
 
@@ -223,7 +223,7 @@ def test_apply_changes_language_with_settings_still_open(tmp_path, monkeypatch):
 
     app = QApplication.instance() or QApplication([])
     _fake_qm(tmp_path, [
-        ("MainWindow", "+ 링크 추가", "+ Add link"),
+        ("MainWindow", "링크 추가", "Add link"),
         ("PreferencesDialog", "일반", "General"),
         ("PreferencesDialog", "적용", "Apply"),
     ])
@@ -245,4 +245,4 @@ def test_apply_changes_language_with_settings_still_open(tmp_path, monkeypatch):
 
     monkeypatch.setattr(mw, "PreferencesDialog", Dialog)
     window._on_preferences()
-    assert seen == {"nav": "General", "row": 2, "apply": "Apply", "main": "+ Add link"}
+    assert seen == {"nav": "General", "row": 2, "apply": "Apply", "main": "Add link"}

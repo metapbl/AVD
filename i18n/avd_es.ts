@@ -86,16 +86,16 @@ Los avisos de los componentes incluidos están en el archivo THIRD_PARTY_LICENSE
         <translation>Ver la causa y el error original</translation>
     </message>
     <message>
-        <source>📂 열기</source>
-        <translation>📂 Abrir</translation>
+        <source>열기</source>
+        <translation>Abrir</translation>
     </message>
     <message>
         <source>저장 폴더에서 파일 보기</source>
         <translation>Mostrar el archivo en su carpeta</translation>
     </message>
     <message>
-        <source>▶ 재생</source>
-        <translation>▶ Reproducir</translation>
+        <source>재생</source>
+        <translation>Reproducir</translation>
     </message>
     <message>
         <source>기본 앱으로 재생</source>
@@ -572,8 +572,8 @@ Reiníciala cuando terminen para usar la nueva versión.</translation>
         <translation>¿Cancelar {0} descarga(s) sin terminar y salir?</translation>
     </message>
     <message>
-        <source>+ 링크 추가</source>
-        <translation>+ Añadir enlaces</translation>
+        <source>링크 추가</source>
+        <translation>Añadir enlaces</translation>
     </message>
     <message>
         <source>완료 지우기</source>
@@ -584,12 +584,12 @@ Reiníciala cuando terminen para usar la nueva versión.</translation>
         <translation>Quita de la lista los elementos completados. No elimina los archivos.</translation>
     </message>
     <message>
-        <source>⚙ 설정</source>
-        <translation>⚙ Ajustes</translation>
+        <source>설정</source>
+        <translation>Ajustes</translation>
     </message>
     <message>
-        <source>ⓘ 정보</source>
-        <translation>ⓘ Acerca de</translation>
+        <source>정보</source>
+        <translation>Acerca de</translation>
     </message>
     <message>
         <source>플레이리스트 정보를 가져오는 중입니다...</source>
@@ -598,11 +598,11 @@ Reiníciala cuando terminen para usar la nueva versión.</translation>
     <message>
         <source>다운로드할 링크를 추가하세요
 
-+ 링크 추가 버튼을 클릭하거나
+링크 추가 버튼을 클릭하거나
 링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요</source>
         <translation>Añade enlaces para descargar
 
-Haz clic en + Añadir enlaces,
+Haz clic en Añadir enlaces,
 o copia un enlace y pulsa Ctrl+V, o arrástralo a la ventana</translation>
     </message>
 </context>

@@ -86,16 +86,16 @@
         <translation>エラーの原因と原文を表示</translation>
     </message>
     <message>
-        <source>📂 열기</source>
-        <translation>📂 開く</translation>
+        <source>열기</source>
+        <translation>開く</translation>
     </message>
     <message>
         <source>저장 폴더에서 파일 보기</source>
         <translation>フォルダーでファイルを表示</translation>
     </message>
     <message>
-        <source>▶ 재생</source>
-        <translation>▶ 再生</translation>
+        <source>재생</source>
+        <translation>再生</translation>
     </message>
     <message>
         <source>기본 앱으로 재생</source>
@@ -572,8 +572,8 @@
         <translation>未完了のダウンロード {0} 件をキャンセルして終了しますか？</translation>
     </message>
     <message>
-        <source>+ 링크 추가</source>
-        <translation>+ リンクを追加</translation>
+        <source>링크 추가</source>
+        <translation>リンクを追加</translation>
     </message>
     <message>
         <source>완료 지우기</source>
@@ -584,12 +584,12 @@
         <translation>完了した項目をリストから消します。ファイルは削除しません。</translation>
     </message>
     <message>
-        <source>⚙ 설정</source>
-        <translation>⚙ 設定</translation>
+        <source>설정</source>
+        <translation>設定</translation>
     </message>
     <message>
-        <source>ⓘ 정보</source>
-        <translation>ⓘ 情報</translation>
+        <source>정보</source>
+        <translation>情報</translation>
     </message>
     <message>
         <source>플레이리스트 정보를 가져오는 중입니다...</source>
@@ -598,11 +598,11 @@
     <message>
         <source>다운로드할 링크를 추가하세요
 
-+ 링크 추가 버튼을 클릭하거나
+링크 추가 버튼을 클릭하거나
 링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요</source>
         <translation>ダウンロードするリンクを追加してください
 
-「+ リンクを追加」ボタンをクリックするか、
+「リンクを追加」ボタンをクリックするか、
 リンクをコピーして Ctrl+V を押すか、ウィンドウにドラッグしてください</translation>
     </message>
 </context>

@@ -83,10 +83,10 @@ def test_item_recolors_status_on_switch(app):
     theme.apply_theme(app, "dark")
     w = DownloadItemWidget(DownloadItem(url="u", title="t"))
     w.update_status(DownloadStatus.DONE)
-    assert theme.TOKENS["dark"]["success2"] in w.lbl_status.styleSheet()
+    assert theme.TOKENS["dark"]["success2"] in w.lbl_status_mark.styleSheet()
     theme.apply_theme(app, "light")
     w.refresh_theme()
-    assert theme.TOKENS["light"]["success2"] in w.lbl_status.styleSheet()
+    assert theme.TOKENS["light"]["success2"] in w.lbl_status_mark.styleSheet()
     assert theme.TOKENS["light"]["surface"] in w.styleSheet()
 
 

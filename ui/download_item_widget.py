@@ -149,6 +149,10 @@ def format_codec_segment(
     return video_seg or audio_seg
 
 
+# 글자색으로 쓰면 라이트 테마 대비가 4.5:1 에 못 미치는 상태색 → 앞에 붙이는 기호
+_STATUS_MARKS = {"success2": "✓", "warn": "⚠"}
+
+
 class DownloadItemWidget(QWidget):
     """
     다운로드 항목 하나를 표시하는 위젯
@@ -288,6 +292,11 @@ class DownloadItemWidget(QWidget):
         self.lbl_status = QLabel(self.item.status.label())
         self.lbl_status.setObjectName("itemStatus")
         self.lbl_status.setFixedHeight(16)
+        # 라이트 테마에서 글자로 못 쓰는 색(success2·warn)은 이 기호에만 칠한다
+        self.lbl_status_mark = QLabel("")
+        self.lbl_status_mark.setObjectName("itemStatus")
+        self.lbl_status_mark.setFixedHeight(16)
+        self.lbl_status_mark.setVisible(False)
         self.lbl_speed  = QLabel("")
         self.lbl_speed.setObjectName("itemMeta")
         self.lbl_speed.setFixedHeight(16)
@@ -299,6 +308,7 @@ class DownloadItemWidget(QWidget):
         self.lbl_size   = QLabel("")
         self.lbl_size.setObjectName("itemMeta")
         self.lbl_size.setFixedHeight(16)
+        status_row.addWidget(self.lbl_status_mark)
         status_row.addWidget(self.lbl_status)
         status_row.addStretch()
         status_row.addWidget(self.lbl_speed)
@@ -372,9 +382,9 @@ class DownloadItemWidget(QWidget):
                                 else translate("DownloadItemWidget", "취소"))
         self.btn_detail.setText(translate("DownloadItemWidget", "자세히"))
         self.btn_detail.setToolTip(translate("DownloadItemWidget", "오류 원인과 원문 보기"))
-        self.btn_open.setText(translate("DownloadItemWidget", "📂 열기"))
+        self.btn_open.setText(translate("DownloadItemWidget", "열기"))
         self.btn_open.setToolTip(translate("DownloadItemWidget", "저장 폴더에서 파일 보기"))
-        self.btn_play.setText(translate("DownloadItemWidget", "▶ 재생"))
+        self.btn_play.setText(translate("DownloadItemWidget", "재생"))
         self.btn_play.setToolTip(translate("DownloadItemWidget", "기본 앱으로 재생"))
         self.btn_remove.setToolTip(translate("DownloadItemWidget", "목록에서 제거"))
         self.lbl_status.setText(self._status_text())
@@ -403,6 +413,12 @@ class DownloadItemWidget(QWidget):
     def _set_status_color(self, name: str | None):
         """상태 라벨 색을 테마 색 이름으로 정한다. None 이면 기본(강조색)."""
         self._status_color = name
+        mark = _STATUS_MARKS.get(name or "")
+        self.lbl_status_mark.setVisible(mark is not None)
+        if mark:
+            self.lbl_status_mark.setText(mark)
+            self.lbl_status_mark.setStyleSheet(f"color: {theme.color(name)};")
+            name = "text"
         self.lbl_status.setStyleSheet(f"color: {theme.color(name)};" if name else "")
 
     def refresh_theme(self):
@@ -424,16 +440,16 @@ class DownloadItemWidget(QWidget):
             }
             QLabel#itemTitle {
                 color: @text;
-                font-size: 13px;
+                font-size: 9.75pt;
                 font-weight: bold;
             }
             QLabel#itemMeta {
                 color: @muted;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
             QLabel#itemStatus {
                 color: @accent;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
             QProgressBar {
                 margin: 5px 0;
@@ -447,26 +463,24 @@ class DownloadItemWidget(QWidget):
             QPushButton#btnCancel {
                 border-radius: 4px;
                 padding: 4px;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
-            QPushButton#btnCancel:hover { background: @danger; }
             /* 열기·재생은 공통 윤곽형 — 항목마다 채운 색 버튼이 둘씩 붙으면 목록이 색으로 덮인다 */
             QPushButton#btnOpen, QPushButton#btnPlay {
                 border-radius: 4px;
                 padding: 4px;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
             QPushButton#btnDetail {
                 border-radius: 4px;
                 padding: 4px;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
             QPushButton#btnRemove {
                 border-radius: 4px;
                 padding: 4px;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
-            QPushButton#btnRemove:hover { background: @danger; color: @on_strong; }
         """))
 
     # ── 사적 포맷 헬퍼 ───────────────────────────────
@@ -486,8 +500,9 @@ class DownloadItemWidget(QWidget):
         단일 출처 (self.item.uploader/duration, self._fmt_*) 를 갱신한 뒤
         이 헬퍼를 호출해 라벨을 다시 박는다.
         """
-        base = (
-            f"{self.item.uploader}  •  {format_duration(self.item.duration)}"
+        # 업로더가 비면 "  •  4:05" 처럼 점으로 시작하지 않게 빈 값은 건너뛴다
+        base = "  •  ".join(
+            p for p in (self.item.uploader, format_duration(self.item.duration)) if p
         )
 
         # 화질 선택 전 — 코덱 세그먼트 없음

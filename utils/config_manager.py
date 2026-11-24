@@ -31,6 +31,7 @@ DEFAULT_CONFIG = {
     # 로그인 쿠키 출처 (F15, D079·D080) — 출처·경로만 저장하고 쿠키 값은 저장하지 않는다
     "cookie_source"     : "none",     # none / firefox / file
     "cookie_file"       : "",         # 사용자가 내보낸 cookies.txt 경로
+    "window_geometry"   : "",      # 주 창 크기·위치 (QMainWindow.saveGeometry 의 base64)
 }
 
 

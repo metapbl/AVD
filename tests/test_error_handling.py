@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 
 import pytest
+from PySide6.QtCore import QByteArray
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from models.download_item import DownloadItem, DownloadStatus
@@ -127,6 +128,8 @@ def test_close_waits_for_update_check():
         download_manager=SimpleNamespace(unfinished_count=lambda: 0, shutdown=lambda: None),
         _update_check_worker=SimpleNamespace(wait=lambda ms: waited.append(ms)),
         hide=lambda: None,
+        config=SimpleNamespace(set=lambda k, v: None),
+        saveGeometry=QByteArray,
     )
     MainWindow.closeEvent(fake, SimpleNamespace(accept=lambda: None))
     assert waited

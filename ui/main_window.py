@@ -6,6 +6,7 @@ from itertools import pairwise
 from pathlib import Path
 
 from PySide6.QtCore import (
+    QByteArray,
     QCoreApplication,
     QEvent,
     QLocale,
@@ -259,6 +260,10 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle(f"AV Downloader {APP_VERSION}")
         self.setMinimumSize(800, 600)
+        # 지난번 창 크기·위치 (모니터가 바뀌어 화면 밖이면 Qt 가 안으로 옮긴다)
+        geometry = self.config.get("window_geometry", "")
+        if geometry:
+            self.restoreGeometry(QByteArray.fromBase64(geometry.encode("ascii")))
         self.setAcceptDrops(True)
         QShortcut(QKeySequence(QKeySequence.StandardKey.Paste), self, self._on_paste_links)
         self._build_ui()
@@ -1328,8 +1333,10 @@ class MainWindow(QMainWindow):
             if reply != QMessageBox.StandardButton.Yes:
                 event.ignore()
                 return
-            self.hide()
 
+        self.config.set("window_geometry", self.saveGeometry().toBase64().data().decode("ascii"))
+        if count:
+            self.hide()
         self.download_manager.shutdown()
         if self._update_check_worker is not None:
             # 도는 중인 QThread 가 소멸하면 앱이 죽는다. 요청 제한시간 5초에 여유를 둔 값.
@@ -1341,18 +1348,18 @@ class MainWindow(QMainWindow):
 
     def _retranslate(self):
         """고정 문구를 지금 언어로 쓴다. 언어를 바꾸면 changeEvent 가 다시 부른다 (F17)."""
-        self.btn_add.setText(translate("MainWindow", "+ 링크 추가"))
+        self.btn_add.setText(translate("MainWindow", "링크 추가"))
         self.btn_clear_done.setText(translate("MainWindow", "완료 지우기"))
         self.btn_clear_done.setToolTip(translate("MainWindow", "완료된 항목을 목록에서 지웁니다. 파일은 지우지 않습니다."))
         self.btn_clear_list.setText(translate("MainWindow", "목록 비우기"))
-        self.btn_prefs.setText(translate("MainWindow", "⚙ 설정"))
-        self.btn_about.setText(translate("MainWindow", "ⓘ 정보"))
+        self.btn_prefs.setText(translate("MainWindow", "설정"))
+        self.btn_about.setText(translate("MainWindow", "정보"))
         self.lbl_banner.setText(translate("MainWindow", "플레이리스트 정보를 가져오는 중입니다..."))
         self.btn_banner_cancel.setText(translate("MainWindow", "취소"))
         self.lbl_empty.setText(translate(
             "MainWindow",
             "다운로드할 링크를 추가하세요\n\n"
-            "+ 링크 추가 버튼을 클릭하거나\n"
+            "링크 추가 버튼을 클릭하거나\n"
             "링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요",
         ))
         self._refresh_summary()
@@ -1375,7 +1382,7 @@ class MainWindow(QMainWindow):
             }
             QLabel#appTitle {
                 color: @text;
-                font-size: 16px;
+                font-size: 12pt;
                 font-weight: bold;
             }
             QWidget#playlistBanner {
@@ -1384,7 +1391,7 @@ class MainWindow(QMainWindow):
             }
             QLabel#playlistBannerLabel {
                 color: @text;
-                font-size: 13px;
+                font-size: 9.75pt;
             }
             QProgressBar#playlistBannerBar {
                 background: @track;
@@ -1398,27 +1405,26 @@ class MainWindow(QMainWindow):
             QPushButton#btnAdd {
                 border-radius: 6px;
                 padding: 0 16px;
-                font-size: 13px;
+                font-size: 9.75pt;
             }
             /* 툴바 보조 버튼 바탕·hover 는 공통 윤곽형 (테마 1.4.0 — 회색 채움은 꺼진 버튼으로 읽힌다) */
             QPushButton#btnClearList {
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
-                font-size: 12px;
+                font-size: 9pt;
             }
-            QPushButton#btnClearList:hover { background: @danger; color: @on_strong; }
             QPushButton#btnClearDone {
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
-                font-size: 12px;
+                font-size: 9pt;
             }
             QPushButton#btnPrefs, QPushButton#btnAbout {
                 color: @text2;
                 border-radius: 6px;
                 padding: 0 12px;
-                font-size: 12px;
+                font-size: 9pt;
             }
             QScrollArea#listScroll {
                 background: @base;
@@ -1428,19 +1434,19 @@ class MainWindow(QMainWindow):
                 background: @base;
             }
             QLabel#emptyLabel {
-                color: @faint;
-                font-size: 14px;
+                color: @muted;
+                font-size: 10.5pt;
                 line-height: 1.8;
             }
             QStatusBar#mainStatusBar::item { border: none; }
             QLabel#statusInfo {
                 color: @muted;
-                font-size: 11px;
+                font-size: 8.25pt;
                 padding: 0 8px;
             }
             QStatusBar#mainStatusBar {
                 background: @surface;
                 color: @muted;
-                font-size: 11px;
+                font-size: 8.25pt;
             }
         """))

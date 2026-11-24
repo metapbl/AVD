@@ -86,16 +86,16 @@
         <translation>查看错误原因和原文</translation>
     </message>
     <message>
-        <source>📂 열기</source>
-        <translation>📂 打开</translation>
+        <source>열기</source>
+        <translation>打开</translation>
     </message>
     <message>
         <source>저장 폴더에서 파일 보기</source>
         <translation>在文件夹中显示文件</translation>
     </message>
     <message>
-        <source>▶ 재생</source>
-        <translation>▶ 播放</translation>
+        <source>재생</source>
+        <translation>播放</translation>
     </message>
     <message>
         <source>기본 앱으로 재생</source>
@@ -572,8 +572,8 @@
         <translation>要取消 {0} 个未完成的下载并退出吗？</translation>
     </message>
     <message>
-        <source>+ 링크 추가</source>
-        <translation>+ 添加链接</translation>
+        <source>링크 추가</source>
+        <translation>添加链接</translation>
     </message>
     <message>
         <source>완료 지우기</source>
@@ -584,12 +584,12 @@
         <translation>从列表中移除已完成的项目。不会删除文件。</translation>
     </message>
     <message>
-        <source>⚙ 설정</source>
-        <translation>⚙ 设置</translation>
+        <source>설정</source>
+        <translation>设置</translation>
     </message>
     <message>
-        <source>ⓘ 정보</source>
-        <translation>ⓘ 关于</translation>
+        <source>정보</source>
+        <translation>关于</translation>
     </message>
     <message>
         <source>플레이리스트 정보를 가져오는 중입니다...</source>
@@ -598,11 +598,11 @@
     <message>
         <source>다운로드할 링크를 추가하세요
 
-+ 링크 추가 버튼을 클릭하거나
+링크 추가 버튼을 클릭하거나
 링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요</source>
         <translation>添加要下载的链接
 
-点击“+ 添加链接”按钮，
+点击“添加链接”按钮，
 或复制链接后按 Ctrl+V，或拖放到窗口中</translation>
     </message>
 </context>

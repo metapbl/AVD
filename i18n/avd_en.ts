@@ -86,16 +86,16 @@ Notices for bundled components are in the THIRD_PARTY_LICENSES file.</translatio
         <translation>Show the cause and the original error</translation>
     </message>
     <message>
-        <source>📂 열기</source>
-        <translation>📂 Open</translation>
+        <source>열기</source>
+        <translation>Open</translation>
     </message>
     <message>
         <source>저장 폴더에서 파일 보기</source>
         <translation>Show the file in its folder</translation>
     </message>
     <message>
-        <source>▶ 재생</source>
-        <translation>▶ Play</translation>
+        <source>재생</source>
+        <translation>Play</translation>
     </message>
     <message>
         <source>기본 앱으로 재생</source>
@@ -572,8 +572,8 @@ Restart the app after they finish to use the new version.</translation>
         <translation>Cancel {0} unfinished download(s) and quit?</translation>
     </message>
     <message>
-        <source>+ 링크 추가</source>
-        <translation>+ Add links</translation>
+        <source>링크 추가</source>
+        <translation>Add links</translation>
     </message>
     <message>
         <source>완료 지우기</source>
@@ -584,12 +584,12 @@ Restart the app after they finish to use the new version.</translation>
         <translation>Removes finished items from the list. Files are not deleted.</translation>
     </message>
     <message>
-        <source>⚙ 설정</source>
-        <translation>⚙ Settings</translation>
+        <source>설정</source>
+        <translation>Settings</translation>
     </message>
     <message>
-        <source>ⓘ 정보</source>
-        <translation>ⓘ About</translation>
+        <source>정보</source>
+        <translation>About</translation>
     </message>
     <message>
         <source>플레이리스트 정보를 가져오는 중입니다...</source>
@@ -598,11 +598,11 @@ Restart the app after they finish to use the new version.</translation>
     <message>
         <source>다운로드할 링크를 추가하세요
 
-+ 링크 추가 버튼을 클릭하거나
+링크 추가 버튼을 클릭하거나
 링크를 복사한 뒤 Ctrl+V 를 누르거나 창으로 끌어다 놓으세요</source>
         <translation>Add links to download
 
-Click + Add links,
+Click Add links,
 or copy a link and press Ctrl+V, or drag it onto the window</translation>
     </message>
 </context>

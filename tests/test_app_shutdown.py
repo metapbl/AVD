@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from PySide6.QtCore import QByteArray
 from PySide6.QtWidgets import QMessageBox
 
 from controllers.download_manager import DownloadManager
@@ -77,7 +78,8 @@ def _close(monkeypatch, count, reply=None):
     monkeypatch.setattr(QMessageBox, "question", question)
     hidden = []
     window = SimpleNamespace(
-        download_manager=_Manager(count), hide=lambda: hidden.append(True), _update_check_worker=None
+        download_manager=_Manager(count), hide=lambda: hidden.append(True), _update_check_worker=None,
+        config=SimpleNamespace(set=lambda k, v: None), saveGeometry=QByteArray,
     )
     event = _Event()
     MainWindow.closeEvent(window, event)

@@ -82,7 +82,7 @@ def test_app_cookie_help_link_opens_that_language_readme_section(lang):
     assert anchor in anchors(file)
 
 
-SHOTS = [f"docs/images/{screen}-{theme}-v1.png" for screen in ("main", "format") for theme in ("light", "dark")]
+SHOTS = [f"docs/images/{screen}-{theme}-v2.png" for screen in ("main", "format") for theme in ("light", "dark")]
 
 
 @pytest.mark.parametrize("name", FILES)

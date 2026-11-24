@@ -1,4 +1,4 @@
-# 완료 항목 "▶ 재생" 버튼 — 받은 파일을 OS 기본 앱으로 연다 (D049).
+# 완료 항목 "재생" 버튼 — 받은 파일을 OS 기본 앱으로 연다 (D049).
 import pytest
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
